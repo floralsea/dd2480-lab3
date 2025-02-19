@@ -90,12 +90,85 @@ Since there are only four active members in our group, we chose four functions, 
 ## Refactoring
 
 Plan for refactoring complex code:
+1. Extract Methods:
+
+    Break down large functions into smaller helper methods with single responsibilities.
+    This reduces the number of independent paths in a single function.
+    
+2. Replace Nested Conditionals with Early Returns:
+
+    If possible, return early from functions to avoid deep nesting. This reduces unnecessary branches.
+
+3. Refactor switch Statements:
+
+    Convert deeply nested switch-case structures into dedicated handler methods. This improves readability and modularity.
+
+Taking `readObject()` as an example:
+
+Before refactoring (CC=9):
+```Java
+public static final String readObject(JsonIterator iter) throws IOException {
+    byte c = IterImpl.nextToken(iter);
+    switch (c) {
+        case 'n': IterImpl.skipFixedBytes(iter, 3);
+            return null;
+        case '{':  c = IterImpl.nextToken(iter);
+            if (c == '"') {
+                iter.unreadByte();
+                String field = iter.readString();
+                if (IterImpl.nextToken(iter) != ':') {
+                    throw iter.reportError("readObject", "expect :");
+                }
+                return field;
+            }
+            if (c == '}') { return null;}
+            throw iter.reportError("readObject", "expect \" after {");
+        case ',':  String field = iter.readString();
+            if (IterImpl.nextToken(iter) != ':') {
+                throw iter.reportError("readObject", "expect :");
+            }
+            return field;
+        case '}': return null;
+        default: throw iter.reportError("readObject", "expect { or , or } or n, but found: " + (char) c);
+    }
+}
+```
+After refactoring (CC = 5):
+```Java
+public static final String readObject(JsonIterator iter) throws IOException {
+    byte c = IterImpl.nextToken(iter);
+    if (c == 'n') return handleNull(iter);
+    if (c == '{') return handleObject(iter);
+    if (c == ',') return handleCommaSeparated(iter);
+    if (c == '}') return null;
+    throw iter.reportError("readObject", "unexpected token: " + (char) c);
+}
+// Helper functions
+private static String handleNull(JsonIterator iter) throws IOException {...}
+
+private static String handleObject(JsonIterator iter) throws IOException {...}
+
+private static String parseKeyValue(JsonIterator iter) throws IOException {...}
+
+private static String handleCommaSeparated(JsonIterator iter) throws IOException {...}
+```
 
 Estimated impact of refactoring (lower CC, but other drawbacks?).
+
+Potential drawbacks could be that the refactored code introduces additional function calls, which slightly increases stack usage.
+However, this trade-off improves readability and maintainability. Its smaller methods enhance reusability and modularity. Also, small methods
+could be easier to test. While it does increase code length.
+
 
 Carried out refactoring (optional, P+):
 
 git diff ...
+
+For `readObject()` function, **Xu Zuo** refactored it and reduced the complexity by **44.4%**, which can be found in this 
+[commit](https://github.com/floralsea/dd2480-lab3/commit/0551e795428d2a9afeee0460dc757579c558d507). Also, we used the same 
+unit test cases (both the original project and new test cases we added) to test whether the refactored code worked, and the 
+refactored code worked well and passed all test cases. The original `readObject()` CC is `9`, and the refactored `readObject()` 
+by **Xu Zuo** is `5`, since we can't avoid the `switch` clause, we could only reduce it by 4, while this also meets the requirement.
 
 ## Coverage
 
@@ -116,26 +189,118 @@ Running mvn clean test jacoco:report is necessary each time, adding some overhea
 
 ### Your own coverage tool
 
-Show a patch (or link to a branch) that shows the instrumented code to
-gather coverage measurements.
+Our custom coverage tool instruments selected functions to track executed branches and exits. 
+We introduced manual logging using CoverageData.logBranch(type, id), where type differentiates 
+between branch and exit points, and id uniquely identifies each path. The tool collects this 
+data during execution and provides a report summarizing which branches were executed.
 
-The patch is probably too long to be copied here, so please add
-the git command that is used to obtain the patch instead:
+🔗patch link: https://github.com/floralsea/dd2480-lab3/commit/9415c356d3728cd8a6c47718d1d228f82e4db197
 
-git diff ...
+[Here](https://github.com/floralsea/dd2480-lab3/commit/9415c356d3728cd8a6c47718d1d228f82e4db197)
+ you can see how our DIY Coverage Tool works. Our custom DIY coverage tool is designed to manually instrument 
+functions and track their branch execution during runtime. Unlike JaCoCo, which operates at the bytecode level, 
+our tool requires explicit function modifications to log coverage data. Below is a step-by-step explanation of 
+how our coverage tool works, based on the CoverageData and CoverageTool classes.
 
+1. Structure of the Coverage Tool
+
+- Our tool consists of two primary components:
+
+  - `CoverageData` (Tracking Execution Data)
+
+    This class is responsible for recording and reporting branch execution details for instrumented functions.
+    
+    It maintains execution logs per function and computes branch coverage.
+   
+  - `CoverageTool` (Managing and Running Tests)
+
+    This class manages test cases associated with each instrumented function.
+
+    It executes test cases and collects branch execution data.
+
+2. How Our Coverage Tool Works
+
+- step 1: Instrumenting the Target Functions
+  
+    Before running tests, we manually insert calls to CoverageData.logBranch(type, id) inside the target functions. 
+These log statements record branch execution paths by assigning unique IDs to different branches.
+  
+    For example, in an instrumented function:
+    ```Java
+    CoverageData coverage = CoverageData.getInstance("readObject", 9);
+    coverage.logBranch("branch", 1);
+    ```
+  Each function is assigned a name (`"readObject"`) and the total number of `branches (9)`. During execution, the corresponding `branch ID (1, 2, etc.)` is logged whenever a specific branch is executed.
+
+- Step 2: Initializing and Running Tests
+  
+    We register test cases for the instrumented functions inside CoverageTool. For each function, we specify: `function name`, `A test method` and `The total number of branches`.
+      
+    For example:
+    ```Java
+    coverageTool.addTest("readObject", ExperimentFunctionsTest::testReadObject_ValidJson, 11);
+    ```
+    This ensures that when `testReadObject_ValidJson()` is executed, the coverage data for `readObject` is recorded.
+        
+- Step 3: Executing Tests and Capturing Coverage
+  
+    When we invoke:
+    ```Java
+    coverageTool.run();
+    ```
+  The tool retrieves all registered test functions. Each test function is executed, causing the instrumented function to run.
+  During execution, `CoverageData.logBranch()` records which branches were reached. Then the collected data is stored in memory for reporting.
+
+- Step 4: Generating a Coverage Report
+
+  After running all test cases, we generate a report using: `coverageTool.printResults();` This internally calls CoverageData.printAllResults(), 
+  which prints the sequence of executed branches, displays how many times each branch was accessed and calculates and prints the overall branch coverage percentage.
+  Example could be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/9415c356d3728cd8a6c47718d1d228f82e4db197)
+
+  
 What kinds of constructs does your tool support, and how accurate is
 its output?
+
+Our coverage tool supports branch coverage by manually instrumenting functions. 
+Specifically, it logs execution paths inside conditionals (`if`, `switch`, `while`, `for`) by inserting logBranch() 
+calls at key decision points. However, Our DIY coverage tool currently does not explicitly account for `ternary operators` 
+`(condition ? yes : no)` and partially tracks `exceptions`. Our tool allows us to track several key points, such as `Branch execution`, 
+`Exit paths` and `Execution sequences`.
+
+Considering the **accuracy**, since we manually insert logBranch() calls, every branch execution is explicitly recorded. 
+While if a branch is missed due to incorrect instrumentation, it may not be detected. Another drawback is unlike JaCoCo, 
+which analyzes all bytecode paths, our tool only tracks the branches where we manually insert logging.
 
 ### Evaluation
 
 1. How detailed is your coverage measurement?
 
+    Our tool provides detailed insights into branch execution within a function. It tracks which branches were executed and how many times.
+    It stores an execution sequence for debugging and computes branch coverage percentage (executed branches vs. total branches).
+    Also, it provides function-level reports, allowing fine-grained analysis. However, it couldn't track statement or line coverage like JaCoCo and 
+    automatically detect missing branches without explicit logging.
+
 2. What are the limitations of your own tool?
+
+    Potential limitations could be: manual instrumentation required, only tracks functions that are explicitly instrumented,
+    no graphical reports/front-end page, measure branch coverage but not statement or method coverage, and potential for human error.
 
 3. Are the results of your tool consistent with existing coverage tools?
 
+    Compared with JaCoCo, our results are basically consistent with JaCoCo in terms of branch execution tracking.
+    While JaCoCo has a drawback, which can be found in this [issue](https://github.com/jacoco/jacoco/issues/1003), for `throw exception` clause,
+    JaCoCo can't detect/count it unless we add additional code like `System.out.println()`. This is a benefit of our tool, since we can track
+    `Exceptions`. Also, our tool provides a sequence of executed branches, while JaCoCo does not. However, JaCoCo sometimes detects uncovered 
+    branches that our tool misses due to human error in instrumentation.
+
+    Lizard is simpler than JaCoCo based on our experience. It calculates cyclomatic complexity (CC) but does not track execution paths.
+    Our tool is execution-based, whereas Lizard is static analysis-based.
+
 ## Coverage improvement
+
+Since our chosen project used a lot `throw Exceptions` clauses, we have to state this JaCoCo related [issue](https://github.com/jacoco/jacoco/issues/1003) here.
+In this [commit](https://github.com/floralsea/dd2480-lab3/commit/64ab32ebaeccc1d79ed3ac0ad5552b297d32173d#diff-64812f7fd59160730dd32c525c0b8313f6797df093247450a8df678509007dd4),
+we have to add additional `System.out.println()` before each `throw` clause so that we can observe the `coverage improvement` changes.
 
 Show the comments that describe the requirements for the coverage.
 
@@ -148,6 +313,10 @@ Test cases added:
 git diff ...
 
 Number of test cases added: two per team member (P) or at least four (P+).
+
+For `readObject()` function, **Xu Zuo** added four unit test cases and improved the branch coverage, from 61% to 92%, which 
+can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/64ab32ebaeccc1d79ed3ac0ad5552b297d32173d). We track the changes 
+by using `issue` in our repo, and it relates to this issue `#12`.
 
 ## Self-assessment: Way of working
 
