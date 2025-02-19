@@ -5,9 +5,11 @@ import com.jsoniter.spi.JsonException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+
+import jdk.jshell.spi.ExecutionControl;
 import junit.framework.TestCase;
 import org.junit.experimental.categories.Category;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+//import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 public class IterImplForStreamingTest extends TestCase {
 
@@ -77,8 +79,12 @@ public class IterImplForStreamingTest extends TestCase {
 
 			@Override
 			public int read() throws IOException {
-				throw new NotImplementedException();
-			}
+                try {
+                    throw new ExecutionControl.NotImplementedException("xzuo");
+                } catch (ExecutionControl.NotImplementedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
 
 			@Override
 			public int read(byte[] b, int off, int len) throws IOException {
