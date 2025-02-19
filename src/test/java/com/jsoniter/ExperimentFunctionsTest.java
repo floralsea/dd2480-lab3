@@ -16,6 +16,7 @@ public class ExperimentFunctionsTest {
         coverageTool.addTest("readObjectCB", this::testReadObjectCB_EmptyObject, 8);
     }
 
+    // Test example from Xu Zuo
     @Test
     public void testReadObject_ValidJson() {
         assertDoesNotThrow(() -> {
@@ -25,6 +26,7 @@ public class ExperimentFunctionsTest {
         });
     }
 
+    // Test example from Xu Zuo
     @Test
     public void testReadObject_Null() {
         assertDoesNotThrow(() -> {
@@ -34,6 +36,7 @@ public class ExperimentFunctionsTest {
         });
     }
 
+    // Test example from Xu Zuo
     @Test
     public void testReadObjectCB_EmptyObject() {
         assertDoesNotThrow(() -> {
