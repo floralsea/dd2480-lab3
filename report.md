@@ -101,10 +101,18 @@ git diff ...
 
 ### Tools
 
-Document your experience in using a "new"/different coverage tool.
+We used both **_Lizard_** and **_JaCoCo_** for code complexity analysis, and both of them
+are well-documented for users, so it's easy to use it following the instructions.
 
-How well was the tool documented? Was it possible/easy/difficult to
-integrate it with your build environment?
+As for Lizard, it's very easy to integrate because it runs as a standalone command-line tool. 
+We simply executed it on our project files without modifying the code or build process. 
+However, its lack of filtering and fine-grained output control meant that we had to manually 
+extract relevant information.
+
+JaCoCo, though the front-end page is simple, it's more powerful, required more effort to 
+integrate. Adding it as a dependency in the Maven pom.xml file is straightforward, but 
+every change in test code required recompilation and regeneration of the coverage report. 
+Running mvn clean test jacoco:report is necessary each time, adding some overhead to our workflow.
 
 ### Your own coverage tool
 
