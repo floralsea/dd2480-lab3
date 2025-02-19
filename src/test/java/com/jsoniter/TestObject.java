@@ -8,11 +8,14 @@ import com.jsoniter.spi.EmptyExtension;
 import com.jsoniter.spi.JsonException;
 import com.jsoniter.spi.JsoniterSpi;
 import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestObject extends TestCase {
 
@@ -58,6 +61,68 @@ public class TestObject extends TestCase {
         iter.reset(iter.buf);
         assertEquals("hello", ((Map) iter.read()).get("field1"));
     }
+
+//    @Test
+//    Test Coverage Improvement from Xu Zuo
+    public void testReadObject_Null() {
+        assertDoesNotThrow(() -> {
+            JsonIterator iter = JsonIterator.parse("null");
+            String result = iter.readObject();
+            assertNull(result);
+        });
+    }
+
+    // if (IterImpl.nextToken(iter) != ':')`
+    public void testReadObject_MissingColon() {
+        JsonIterator iter = JsonIterator.parse("{\"key\"}");
+//        Exception exception = assertThrows(JsonException.class, () -> {
+//            iter.readObject();
+//        });
+//        assertTrue(exception.getMessage().contains("expect :"));
+        try {
+            iter.readObject();
+            fail("Expected JsonException was not thrown");
+        } catch (JsonException e) {
+            assertTrue(e.getMessage().contains("expect :"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // `case ','`
+    public void testReadObject_UnexpectedComma() {
+        JsonIterator iter = JsonIterator.parse("{,}");
+//
+//        Exception exception = assertThrows(JsonException.class, () -> {
+//            iter.readObject();
+//        });
+//        assertTrue(exception.getMessage().contains("expect \" after {"));
+        try {
+            iter.readObject();
+            fail("Expected JsonException was not thrown");
+        } catch (JsonException e) {
+            assertTrue(e.getMessage().contains("expect \" after {"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // `default`
+    public void testReadObject_UnexpectedToken () {
+        JsonIterator iter = JsonIterator.parse("[\"unexpected\"]");
+        try {
+            iter.readObject();
+            fail("Expected JsonException was not thrown");
+        } catch (JsonException | IOException e) {
+            assertTrue(e.getMessage().contains("expect { or , or } or n"));
+        }
+    }
+//        JsonIterator iter = JsonIterator.parse("[\"unexpected\"]");
+//        Exception exception = assertThrows(JsonException.class, () -> {
+//            iter.readObject();
+//        });
+//        assertTrue(exception.getMessage().contains("expect { or , or } or n"));
+//    }
 
     public void test_two_fields() throws IOException {
 //        JsonIterator.setMode(DecodingMode.DYNAMIC_MODE_AND_MATCH_FIELD_WITH_HASH);
