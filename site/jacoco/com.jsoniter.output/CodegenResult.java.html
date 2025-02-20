@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CodegenResult.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.output</a> &gt; <span class="el_source">CodegenResult.java</span></div><h1>CodegenResult.java</h1><pre class="source lang-java linenums">package com.jsoniter.output;
+
+import com.jsoniter.spi.JsoniterSpi;
+
+class CodegenResult {
+
+    private final boolean supportBuffer;
+<span class="fc" id="L8">    String prelude = null; // first</span>
+<span class="fc" id="L9">    String epilogue = null; // last</span>
+<span class="fc" id="L10">    private StringBuilder lines = new StringBuilder();</span>
+<span class="fc" id="L11">    private StringBuilder buffered = new StringBuilder();</span>
+
+<span class="fc" id="L13">    public CodegenResult() {</span>
+<span class="fc bfc" id="L14" title="All 2 branches covered.">        supportBuffer = JsoniterSpi.getCurrentConfig().indentionStep() == 0;</span>
+<span class="fc" id="L15">    }</span>
+
+    public void append(String str) {
+<span class="fc bfc" id="L18" title="All 2 branches covered.">        if (str.contains(&quot;stream&quot;)) {</span>
+            // maintain the order of write op
+            // must flush now
+<span class="fc" id="L21">            appendBuffer();</span>
+        }
+<span class="fc" id="L23">        lines.append(str);</span>
+<span class="fc" id="L24">        lines.append(&quot;\n&quot;);</span>
+<span class="fc" id="L25">    }</span>
+
+    public void buffer(char c) {
+<span class="pc bpc" id="L28" title="1 of 2 branches missed.">        if (supportBuffer) {</span>
+<span class="fc" id="L29">            buffered.append(c);</span>
+        } else {
+<span class="nc" id="L31">            throw new UnsupportedOperationException(&quot;internal error: should not call buffer when indention step &gt; 0&quot;);</span>
+        }
+<span class="fc" id="L33">    }</span>
+
+    public void buffer(String s) {
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">        if (s == null) {</span>
+<span class="nc" id="L37">            return;</span>
+        }
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        if (supportBuffer) {</span>
+<span class="fc" id="L40">            buffered.append(s);</span>
+        } else {
+<span class="nc" id="L42">            throw new UnsupportedOperationException(&quot;internal error: should not call buffer when indention step &gt; 0&quot;);</span>
+
+        }
+<span class="fc" id="L45">    }</span>
+
+    public void flushBuffer() {
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (buffered.length() == 0) {</span>
+<span class="fc" id="L49">            return;</span>
+        }
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (prelude == null) {</span>
+<span class="fc" id="L52">            prelude = buffered.toString();</span>
+        } else {
+<span class="fc" id="L54">            epilogue = buffered.toString();</span>
+        }
+<span class="fc" id="L56">        buffered.setLength(0);</span>
+<span class="fc" id="L57">    }</span>
+
+    public String toString() {
+<span class="fc" id="L60">        return lines.toString();</span>
+    }
+
+    public void appendBuffer() {
+<span class="fc" id="L64">        flushBuffer();</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (epilogue != null) {</span>
+<span class="fc" id="L66">            lines.append(bufferToWriteOp(epilogue));</span>
+<span class="fc" id="L67">            lines.append(&quot;\n&quot;);</span>
+<span class="fc" id="L68">            epilogue = null;</span>
+        }
+<span class="fc" id="L70">    }</span>
+
+    public String generateWrapperCode(Class clazz) {
+<span class="fc" id="L73">        flushBuffer();</span>
+<span class="fc" id="L74">        StringBuilder lines = new StringBuilder();</span>
+<span class="fc" id="L75">        append(lines, &quot;public void encode(java.lang.Object obj, com.jsoniter.output.JsonStream stream) throws java.io.IOException {&quot;);</span>
+<span class="fc" id="L76">        append(lines, &quot;if (obj == null) { stream.writeNull(); return; }&quot;);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (prelude != null) {</span>
+<span class="fc" id="L78">            append(lines, CodegenResult.bufferToWriteOp(prelude));</span>
+        }
+<span class="fc" id="L80">        append(lines, String.format(&quot;encode_((%s)obj, stream);&quot;, clazz.getCanonicalName()));</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        if (epilogue != null) {</span>
+<span class="fc" id="L82">            append(lines, CodegenResult.bufferToWriteOp(epilogue));</span>
+        }
+<span class="fc" id="L84">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L85">        return lines.toString();</span>
+    }
+
+    private static void append(StringBuilder lines, String line) {
+<span class="fc" id="L89">        lines.append(line);</span>
+<span class="fc" id="L90">        lines.append('\n');</span>
+<span class="fc" id="L91">    }</span>
+
+    public static String bufferToWriteOp(String buffered) {
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (buffered == null) {</span>
+<span class="nc" id="L95">            return &quot;&quot;;</span>
+        }
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        if (buffered.length() == 1) {</span>
+<span class="fc" id="L98">            return String.format(&quot;stream.write((byte)'%s');&quot;, escape(buffered.charAt(0)));</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        } else if (buffered.length() == 2) {</span>
+<span class="fc" id="L100">            return String.format(&quot;stream.write((byte)'%s', (byte)'%s');&quot;,</span>
+<span class="fc" id="L101">                    escape(buffered.charAt(0)), escape(buffered.charAt(1)));</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">        } else if (buffered.length() == 3) {</span>
+<span class="nc" id="L103">            return String.format(&quot;stream.write((byte)'%s', (byte)'%s', (byte)'%s');&quot;,</span>
+<span class="nc" id="L104">                    escape(buffered.charAt(0)), escape(buffered.charAt(1)), escape(buffered.charAt(2)));</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        } else if (buffered.length() == 4) {</span>
+<span class="fc" id="L106">            return String.format(&quot;stream.write((byte)'%s', (byte)'%s', (byte)'%s', (byte)'%s');&quot;,</span>
+<span class="fc" id="L107">                    escape(buffered.charAt(0)), escape(buffered.charAt(1)), escape(buffered.charAt(2)), escape(buffered.charAt(3)));</span>
+        } else {
+<span class="fc" id="L109">            StringBuilder escaped = new StringBuilder();</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">            for (int i = 0; i &lt; buffered.length(); i++) {</span>
+<span class="fc" id="L111">                char c = buffered.charAt(i);</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">                if (c == '&quot;') {</span>
+<span class="fc" id="L113">                    escaped.append('\\');</span>
+                }
+<span class="fc" id="L115">                escaped.append(c);</span>
+            }
+<span class="fc" id="L117">            return String.format(&quot;stream.writeRaw(\&quot;%s\&quot;, %s);&quot;, escaped.toString(), buffered.length());</span>
+        }
+    }
+
+    private static String escape(char c) {
+<span class="fc bfc" id="L122" title="All 2 branches covered.">        if (c == '&quot;') {</span>
+<span class="fc" id="L123">            return &quot;\\\&quot;&quot;;</span>
+        }
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (c == '\\') {</span>
+<span class="nc" id="L126">            return &quot;\\\\&quot;;</span>
+        }
+<span class="fc" id="L128">        return String.valueOf(c);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

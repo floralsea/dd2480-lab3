@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>OmitValue.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.spi</a> &gt; <span class="el_source">OmitValue.java</span></div><h1>OmitValue.java</h1><pre class="source lang-java linenums">package com.jsoniter.spi;
+
+import java.lang.reflect.Type;
+
+public interface OmitValue {
+
+    boolean shouldOmit(Object val);
+
+    String code();
+
+<span class="fc" id="L11">    class Null implements OmitValue {</span>
+
+        @Override
+        public boolean shouldOmit(Object val) {
+<span class="fc bfc" id="L15" title="All 2 branches covered.">            return val == null;</span>
+        }
+
+        @Override
+        public String code() {
+<span class="fc" id="L20">            return &quot;null == %s&quot;;</span>
+        }
+    }
+
+<span class="fc" id="L24">    class ZeroByte implements OmitValue {</span>
+
+        @Override
+        public boolean shouldOmit(Object val) {
+<span class="fc bfc" id="L28" title="All 2 branches covered.">            return (Byte) val == 0;</span>
+        }
+
+        @Override
+        public String code() {
+<span class="fc" id="L33">            return &quot;0 == %s&quot;;</span>
+        }
+    }
+
+<span class="fc" id="L37">    class ZeroShort implements OmitValue {</span>
+
+        @Override
+        public boolean shouldOmit(Object val) {
+<span class="fc bfc" id="L41" title="All 2 branches covered.">            return (Short) val == 0;</span>
+        }
+
+        @Override
+        public String code() {
+<span class="fc" id="L46">            return &quot;0 == %s&quot;;</span>
+        }
+    }
+
+<span class="fc" id="L50">    class ZeroInt implements OmitValue {</span>
+
+        @Override
+        public boolean shouldOmit(Object val) {
+<span class="fc bfc" id="L54" title="All 2 branches covered.">            return ((Integer) val) == 0;</span>
+        }
+
+        @Override
+        public String code() {
+<span class="fc" id="L59">            return &quot;0 == %s&quot;;</span>
+        }
+    }
+
+<span class="fc" id="L63">    class ZeroLong implements OmitValue {</span>
+
+        @Override
+        public boolean shouldOmit(Object val) {
+<span class="fc bfc" id="L67" title="All 2 branches covered.">            return ((Long) val) == 0;</span>
+        }
+
+        @Override
+        public String code() {
+<span class="fc" id="L72">            return &quot;0 == %s&quot;;</span>
+        }
+    }
+
+<span class="fc" id="L76">    class ZeroFloat implements OmitValue {</span>
+
+        @Override
+        public boolean shouldOmit(Object val) {
+<span class="fc bfc" id="L80" title="All 2 branches covered.">            return ((Float) val) == 0;</span>
+        }
+
+        @Override
+        public String code() {
+<span class="fc" id="L85">            return &quot;0 == %s&quot;;</span>
+        }
+    }
+
+<span class="fc" id="L89">    class ZeroDouble implements OmitValue {</span>
+
+        @Override
+        public boolean shouldOmit(Object val) {
+<span class="fc bfc" id="L93" title="All 2 branches covered.">            return ((Double) val) == 0;</span>
+        }
+
+        @Override
+        public String code() {
+<span class="fc" id="L98">            return &quot;0 == %s&quot;;</span>
+        }
+    }
+
+<span class="fc" id="L102">    class ZeroChar implements OmitValue {</span>
+
+        @Override
+        public boolean shouldOmit(Object val) {
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            return (Character) val == 0;</span>
+        }
+
+        @Override
+        public String code() {
+<span class="fc" id="L111">            return &quot;0 == %s&quot;;</span>
+        }
+    }
+
+<span class="fc" id="L115">    class False implements OmitValue {</span>
+
+        @Override
+        public boolean shouldOmit(Object val) {
+<span class="fc bfc" id="L119" title="All 2 branches covered.">            return !((Boolean) val);</span>
+        }
+
+        @Override
+        public String code() {
+<span class="fc" id="L124">            return &quot;false == %s&quot;;</span>
+        }
+    }
+
+    class Parsed implements OmitValue {
+
+        private final Object defaultValue;
+        private final String code;
+
+<span class="fc" id="L133">        public Parsed(Object defaultValue, String code) {</span>
+<span class="fc" id="L134">            this.defaultValue = defaultValue;</span>
+<span class="fc" id="L135">            this.code = code;</span>
+<span class="fc" id="L136">        }</span>
+
+        public static OmitValue parse(Type valueType, String defaultValueToOmit) {
+<span class="fc bfc" id="L139" title="All 2 branches covered.">            if (&quot;void&quot;.equals(defaultValueToOmit)) {</span>
+<span class="fc" id="L140">                return null;</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            } else if (&quot;null&quot;.equals(defaultValueToOmit)) {</span>
+<span class="fc" id="L142">                return new OmitValue.Null();</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">            } else if (boolean.class.equals(valueType)) {</span>
+<span class="fc" id="L144">                Boolean defaultValue = Boolean.valueOf(defaultValueToOmit);</span>
+<span class="fc" id="L145">                return new OmitValue.Parsed(defaultValue, defaultValueToOmit + &quot; == %s&quot;);</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">            } else if (Boolean.class.equals(valueType)) {</span>
+<span class="fc" id="L147">                Boolean defaultValue = Boolean.valueOf(defaultValueToOmit);</span>
+<span class="fc" id="L148">                return new OmitValue.Parsed(defaultValue, defaultValueToOmit + &quot; == %s.booleanValue()&quot;);</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">            } else if (int.class.equals(valueType)) {</span>
+<span class="fc" id="L150">                Integer defaultValue = Integer.valueOf(defaultValueToOmit);</span>
+<span class="fc" id="L151">                return new OmitValue.Parsed(defaultValue, defaultValueToOmit + &quot; == %s&quot;);</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">            } else if (Integer.class.equals(valueType)) {</span>
+<span class="fc" id="L153">                Integer defaultValue = Integer.valueOf(defaultValueToOmit);</span>
+<span class="fc" id="L154">                return new OmitValue.Parsed(defaultValue, defaultValueToOmit + &quot; == %s.intValue()&quot;);</span>
+<span class="fc bfc" id="L155" title="All 2 branches covered.">            } else if (byte.class.equals(valueType)) {</span>
+<span class="fc" id="L156">                Byte defaultValue = Byte.valueOf(defaultValueToOmit);</span>
+<span class="fc" id="L157">                return new OmitValue.Parsed(defaultValue, defaultValueToOmit + &quot; == %s&quot;);</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">            } else if (Byte.class.equals(valueType)) {</span>
+<span class="fc" id="L159">                Byte defaultValue = Byte.valueOf(defaultValueToOmit);</span>
+<span class="fc" id="L160">                return new OmitValue.Parsed(defaultValue, defaultValueToOmit + &quot; == %s.byteValue()&quot;);</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">            } else if (short.class.equals(valueType)) {</span>
+<span class="fc" id="L162">                Short defaultValue = Short.valueOf(defaultValueToOmit);</span>
+<span class="fc" id="L163">                return new OmitValue.Parsed(defaultValue, defaultValueToOmit + &quot; == %s&quot;);</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">            } else if (Short.class.equals(valueType)) {</span>
+<span class="fc" id="L165">                Short defaultValue = Short.valueOf(defaultValueToOmit);</span>
+<span class="fc" id="L166">                return new OmitValue.Parsed(defaultValue, defaultValueToOmit + &quot; == %s.shortValue()&quot;);</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">            } else if (long.class.equals(valueType)) {</span>
+<span class="fc" id="L168">                Long defaultValue = Long.valueOf(defaultValueToOmit);</span>
+<span class="fc" id="L169">                return new OmitValue.Parsed(defaultValue, defaultValueToOmit + &quot;L == %s&quot;);</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">            } else if (Long.class.equals(valueType)) {</span>
+<span class="fc" id="L171">                Long defaultValue = Long.valueOf(defaultValueToOmit);</span>
+<span class="fc" id="L172">                return new OmitValue.Parsed(defaultValue, defaultValueToOmit + &quot;L == %s.longValue()&quot;);</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">            } else if (float.class.equals(valueType)) {</span>
+<span class="fc" id="L174">                Float defaultValue = Float.valueOf(defaultValueToOmit);</span>
+<span class="fc" id="L175">                return new OmitValue.Parsed(defaultValue, defaultValueToOmit + &quot;F == %s&quot;);</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">            } else if (Float.class.equals(valueType)) {</span>
+<span class="fc" id="L177">                Float defaultValue = Float.valueOf(defaultValueToOmit);</span>
+<span class="fc" id="L178">                return new OmitValue.Parsed(defaultValue, defaultValueToOmit + &quot;F == %s.floatValue()&quot;);</span>
+<span class="fc bfc" id="L179" title="All 2 branches covered.">            } else if (double.class.equals(valueType)) {</span>
+<span class="fc" id="L180">                Double defaultValue = Double.valueOf(defaultValueToOmit);</span>
+<span class="fc" id="L181">                return new OmitValue.Parsed(defaultValue, defaultValueToOmit + &quot;D == %s&quot;);</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">            } else if (Double.class.equals(valueType)) {</span>
+<span class="fc" id="L183">                Double defaultValue = Double.valueOf(defaultValueToOmit);</span>
+<span class="fc" id="L184">                return new OmitValue.Parsed(defaultValue, defaultValueToOmit + &quot;D == %s.doubleValue()&quot;);</span>
+<span class="pc bpc" id="L185" title="1 of 4 branches missed.">            } else if (char.class.equals(valueType) &amp;&amp; defaultValueToOmit.length() == 1) {</span>
+<span class="fc" id="L186">                Character defaultValue = defaultValueToOmit.charAt(0);</span>
+<span class="fc" id="L187">                return new OmitValue.Parsed(defaultValue, &quot;'&quot; + defaultValueToOmit + &quot;' == %s&quot;);</span>
+<span class="pc bpc" id="L188" title="2 of 4 branches missed.">            } else if (Character.class.equals(valueType) &amp;&amp; defaultValueToOmit.length() == 1) {</span>
+<span class="fc" id="L189">                Character defaultValue = defaultValueToOmit.charAt(0);</span>
+<span class="fc" id="L190">                return new OmitValue.Parsed(defaultValue, &quot;'&quot; + defaultValueToOmit + &quot;' == %s.charValue()&quot;);</span>
+            } else {
+<span class="nc" id="L192">                throw new UnsupportedOperationException(&quot;failed to parse defaultValueToOmit: &quot; + defaultValueToOmit);</span>
+            }
+        }
+
+        @Override
+        public boolean shouldOmit(Object val) {
+<span class="fc" id="L198">            return defaultValue.equals(val);</span>
+        }
+
+        @Override
+        public String code() {
+<span class="fc" id="L203">            return code;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

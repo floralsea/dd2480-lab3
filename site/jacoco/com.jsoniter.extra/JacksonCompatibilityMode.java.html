@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JacksonCompatibilityMode.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.extra</a> &gt; <span class="el_source">JacksonCompatibilityMode.java</span></div><h1>JacksonCompatibilityMode.java</h1><pre class="source lang-java linenums">package com.jsoniter.extra;
+
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.jsoniter.annotation.*;
+import com.jsoniter.spi.Decoder;
+import com.jsoniter.spi.Encoder;
+import com.jsoniter.spi.Config;
+
+import java.lang.annotation.Annotation;
+
+public class JacksonCompatibilityMode extends Config {
+
+<span class="fc" id="L14">    public static class Builder extends Config.Builder {</span>
+        public JacksonCompatibilityMode build() {
+<span class="fc" id="L16">            return (JacksonCompatibilityMode) super.build();</span>
+        }
+
+        @Override
+        protected Config doBuild(String configName) {
+<span class="fc" id="L21">            return new JacksonCompatibilityMode(configName, this);</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L26">            return super.toString() + &quot; =&gt; JacksonCompatibilityMode{}&quot;;</span>
+        }
+    }
+
+    private JacksonCompatibilityMode(String configName, Builder builder) {
+<span class="fc" id="L31">        super(configName, builder);</span>
+<span class="fc" id="L32">    }</span>
+
+    @Override
+    protected JsonIgnore getJsonIgnore(Annotation[] annotations) {
+<span class="fc" id="L36">        JsonIgnore jsoniterObj = super.getJsonIgnore(annotations);</span>
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if (jsoniterObj != null) {</span>
+<span class="nc" id="L38">            return jsoniterObj;</span>
+        }
+<span class="fc" id="L40">        final com.fasterxml.jackson.annotation.JsonIgnore jacksonObj = getAnnotation(</span>
+                annotations, com.fasterxml.jackson.annotation.JsonIgnore.class);
+<span class="fc bfc" id="L42" title="All 2 branches covered.">        if (jacksonObj == null) {</span>
+<span class="fc" id="L43">            return null;</span>
+        }
+<span class="fc" id="L45">        return new JsonIgnore() {</span>
+            @Override
+            public boolean ignoreDecoding() {
+<span class="fc" id="L48">                return jacksonObj.value();</span>
+            }
+
+            @Override
+            public boolean ignoreEncoding() {
+<span class="fc" id="L53">                return jacksonObj.value();</span>
+            }
+
+            @Override
+            public Class&lt;? extends Annotation&gt; annotationType() {
+<span class="nc" id="L58">                return JsonIgnore.class;</span>
+            }
+        };
+    }
+
+    @Override
+    protected JsonProperty getJsonProperty(Annotation[] annotations) {
+<span class="fc" id="L65">        JsonProperty jsoniterObj = super.getJsonProperty(annotations);</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (jsoniterObj != null) {</span>
+<span class="nc" id="L67">            return jsoniterObj;</span>
+        }
+<span class="fc" id="L69">        final com.fasterxml.jackson.annotation.JsonProperty jacksonObj = getAnnotation(</span>
+                annotations, com.fasterxml.jackson.annotation.JsonProperty.class);
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (jacksonObj == null) {</span>
+<span class="fc" id="L72">            return null;</span>
+        }
+<span class="fc" id="L74">        return new JsonProperty() {</span>
+            @Override
+            public String value() {
+<span class="fc" id="L77">                return &quot;&quot;;</span>
+            }
+
+            @Override
+            public String[] from() {
+<span class="fc" id="L82">                return new String[]{jacksonObj.value()};</span>
+            }
+
+            @Override
+            public String[] to() {
+<span class="fc" id="L87">                return new String[]{jacksonObj.value()};</span>
+            }
+
+            @Override
+            public boolean required() {
+<span class="fc" id="L92">                return jacksonObj.required();</span>
+            }
+
+            @Override
+            public Class&lt;? extends Decoder&gt; decoder() {
+<span class="fc" id="L97">                return Decoder.class;</span>
+            }
+
+            @Override
+            public Class&lt;?&gt; implementation() {
+<span class="fc" id="L102">                return Object.class;</span>
+            }
+
+            @Override
+            public Class&lt;? extends Encoder&gt; encoder() {
+<span class="fc" id="L107">                return Encoder.class;</span>
+            }
+
+            @Override
+            public boolean nullable() {
+<span class="fc" id="L112">                return true;</span>
+            }
+
+            @Override
+            public boolean collectionValueNullable() {
+<span class="fc" id="L117">                return true;</span>
+            }
+
+            @Override
+            public String defaultValueToOmit() {
+<span class="fc" id="L122">                return &quot;&quot;;</span>
+            }
+
+            @Override
+            public Class&lt;? extends Annotation&gt; annotationType() {
+<span class="nc" id="L127">                return JsonProperty.class;</span>
+            }
+        };
+    }
+
+    @Override
+    protected JsonCreator getJsonCreator(Annotation[] annotations) {
+<span class="fc" id="L134">        JsonCreator jsoniterObj = super.getJsonCreator(annotations);</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (jsoniterObj != null) {</span>
+<span class="nc" id="L136">            return jsoniterObj;</span>
+        }
+<span class="fc" id="L138">        com.fasterxml.jackson.annotation.JsonCreator jacksonObj = getAnnotation(</span>
+                annotations, com.fasterxml.jackson.annotation.JsonCreator.class);
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">        if (jacksonObj == null) {</span>
+<span class="fc" id="L141">            return null;</span>
+        }
+<span class="nc" id="L143">        return new JsonCreator() {</span>
+            @Override
+            public Class&lt;? extends Annotation&gt; annotationType() {
+<span class="nc" id="L146">                return JsonCreator.class;</span>
+            }
+        };
+    }
+
+    @Override
+    protected JsonUnwrapper getJsonUnwrapper(Annotation[] annotations) {
+<span class="fc" id="L153">        JsonUnwrapper jsoniterObj = super.getJsonUnwrapper(annotations);</span>
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        if (jsoniterObj != null) {</span>
+<span class="nc" id="L155">            return jsoniterObj;</span>
+        }
+<span class="fc" id="L157">        JsonAnyGetter jacksonObj = getAnnotation(annotations, JsonAnyGetter.class);</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        if (jacksonObj == null) {</span>
+<span class="fc" id="L159">            return null;</span>
+        }
+<span class="fc" id="L161">        return new JsonUnwrapper() {</span>
+            @Override
+            public Class&lt;? extends Annotation&gt; annotationType() {
+<span class="nc" id="L164">                return JsonUnwrapper.class;</span>
+            }
+        };
+    }
+
+    @Override
+    protected JsonWrapper getJsonWrapper(Annotation[] annotations) {
+<span class="fc" id="L171">        JsonWrapper jsoniterObj = super.getJsonWrapper(annotations);</span>
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        if (jsoniterObj != null) {</span>
+<span class="nc" id="L173">            return jsoniterObj;</span>
+        }
+<span class="fc" id="L175">        JsonAnySetter jacksonObj = getAnnotation(annotations, JsonAnySetter.class);</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        if (jacksonObj == null) {</span>
+<span class="fc" id="L177">            return null;</span>
+        }
+<span class="fc" id="L179">        return new JsonWrapper() {</span>
+            @Override
+            public JsonWrapperType value() {
+<span class="fc" id="L182">                return JsonWrapperType.KEY_VALUE;</span>
+            }
+
+            @Override
+            public Class&lt;? extends Annotation&gt; annotationType() {
+<span class="nc" id="L187">                return JsonWrapper.class;</span>
+            }
+        };
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

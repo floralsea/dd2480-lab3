@@ -1,0 +1,556 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Config.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.spi</a> &gt; <span class="el_source">Config.java</span></div><h1>Config.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">package com.jsoniter.spi;</span>
+
+import com.jsoniter.annotation.*;
+import com.jsoniter.output.EncodingMode;
+
+import java.lang.annotation.Annotation;
+import java.lang.reflect.*;
+import java.util.*;
+
+public class Config extends EmptyExtension {
+
+    private final String configName;
+    private final Builder builder;
+<span class="fc" id="L14">    private static volatile Map&lt;String, Config&gt; configs = new HashMap&lt;String, Config&gt;();</span>
+<span class="fc" id="L15">    private volatile Map&lt;Type, String&gt; decoderCacheKeys = new HashMap&lt;Type, String&gt;();</span>
+<span class="fc" id="L16">    private volatile Map&lt;Type, String&gt; encoderCacheKeys = new HashMap&lt;Type, String&gt;();</span>
+<span class="fc" id="L17">    private final static Map&lt;Class, OmitValue&gt; primitiveOmitValues = new HashMap&lt;Class, OmitValue&gt;() {{</span>
+<span class="fc" id="L18">        put(boolean.class, new OmitValue.False());</span>
+<span class="fc" id="L19">        put(char.class, new OmitValue.ZeroChar());</span>
+<span class="fc" id="L20">        put(byte.class, new OmitValue.ZeroByte());</span>
+<span class="fc" id="L21">        put(short.class, new OmitValue.ZeroShort());</span>
+<span class="fc" id="L22">        put(int.class, new OmitValue.ZeroInt());</span>
+<span class="fc" id="L23">        put(long.class, new OmitValue.ZeroLong());</span>
+<span class="fc" id="L24">        put(float.class, new OmitValue.ZeroFloat());</span>
+<span class="fc" id="L25">        put(double.class, new OmitValue.ZeroDouble());</span>
+    }};
+
+<span class="fc" id="L28">    protected Config(String configName, Builder builder) {</span>
+<span class="fc" id="L29">        this.configName = configName;</span>
+<span class="fc" id="L30">        this.builder = builder;</span>
+<span class="fc" id="L31">    }</span>
+
+    public String configName() {
+<span class="fc" id="L34">        return configName;</span>
+    }
+
+    public String getDecoderCacheKey(Type type) {
+<span class="fc" id="L38">        String cacheKey = decoderCacheKeys.get(type);</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (cacheKey != null) {</span>
+<span class="fc" id="L40">            return cacheKey;</span>
+        }
+<span class="fc" id="L42">        synchronized (this) {</span>
+<span class="fc" id="L43">            cacheKey = decoderCacheKeys.get(type);</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">            if (cacheKey != null) {</span>
+<span class="nc" id="L45">                return cacheKey;</span>
+            }
+<span class="fc" id="L47">            cacheKey = TypeLiteral.create(type).getDecoderCacheKey(configName);</span>
+<span class="fc" id="L48">            HashMap&lt;Type, String&gt; newCache = new HashMap&lt;Type, String&gt;(decoderCacheKeys);</span>
+<span class="fc" id="L49">            newCache.put(type, cacheKey);</span>
+<span class="fc" id="L50">            decoderCacheKeys = newCache;</span>
+<span class="fc" id="L51">            return cacheKey;</span>
+        }
+    }
+
+    public String getEncoderCacheKey(Type type) {
+<span class="fc" id="L56">        String cacheKey = encoderCacheKeys.get(type);</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (cacheKey != null) {</span>
+<span class="fc" id="L58">            return cacheKey;</span>
+        }
+<span class="fc" id="L60">        synchronized (this) {</span>
+<span class="fc" id="L61">            cacheKey = encoderCacheKeys.get(type);</span>
+<span class="pc bpc" id="L62" title="1 of 2 branches missed.">            if (cacheKey != null) {</span>
+<span class="nc" id="L63">                return cacheKey;</span>
+            }
+<span class="fc" id="L65">            cacheKey = TypeLiteral.create(type).getEncoderCacheKey(configName);</span>
+<span class="fc" id="L66">            HashMap&lt;Type, String&gt; newCache = new HashMap&lt;Type, String&gt;(encoderCacheKeys);</span>
+<span class="fc" id="L67">            newCache.put(type, cacheKey);</span>
+<span class="fc" id="L68">            encoderCacheKeys = newCache;</span>
+<span class="fc" id="L69">            return cacheKey;</span>
+        }
+    }
+
+    public DecodingMode decodingMode() {
+<span class="fc" id="L74">        return builder.decodingMode;</span>
+    }
+
+    protected Builder builder() {
+<span class="fc" id="L78">        return builder;</span>
+    }
+
+    public Builder copyBuilder() {
+<span class="fc" id="L82">        return builder.copy();</span>
+    }
+
+    public int indentionStep() {
+<span class="fc" id="L86">        return builder.indentionStep;</span>
+    }
+
+    public boolean omitDefaultValue() {
+<span class="fc" id="L90">        return builder.omitDefaultValue;</span>
+    }
+
+    public boolean escapeUnicode() {
+<span class="fc" id="L94">        return builder.escapeUnicode;</span>
+    }
+
+    public EncodingMode encodingMode() {
+<span class="fc" id="L98">        return builder.encodingMode;</span>
+    }
+
+    public static class Builder {
+
+        private DecodingMode decodingMode;
+        private EncodingMode encodingMode;
+        private int indentionStep;
+<span class="fc" id="L106">        private boolean escapeUnicode = true;</span>
+<span class="fc" id="L107">        private boolean omitDefaultValue = false;</span>
+
+<span class="fc" id="L109">        public Builder() {</span>
+<span class="fc" id="L110">            String envMode = System.getenv(&quot;JSONITER_DECODING_MODE&quot;);</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">            if (envMode != null) {</span>
+<span class="nc" id="L112">                decodingMode = DecodingMode.valueOf(envMode);</span>
+            } else {
+<span class="fc" id="L114">                decodingMode = DecodingMode.REFLECTION_MODE;</span>
+            }
+<span class="fc" id="L116">            envMode = System.getenv(&quot;JSONITER_ENCODING_MODE&quot;);</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">            if (envMode != null) {</span>
+<span class="nc" id="L118">                encodingMode = EncodingMode.valueOf(envMode);</span>
+            } else {
+<span class="fc" id="L120">                encodingMode = EncodingMode.REFLECTION_MODE;</span>
+            }
+<span class="fc" id="L122">        }</span>
+
+        public Builder decodingMode(DecodingMode decodingMode) {
+<span class="fc" id="L125">            this.decodingMode = decodingMode;</span>
+<span class="fc" id="L126">            return this;</span>
+        }
+
+        public Builder encodingMode(EncodingMode encodingMode) {
+<span class="fc" id="L130">            this.encodingMode = encodingMode;</span>
+<span class="fc" id="L131">            return this;</span>
+        }
+
+        public Builder indentionStep(int indentionStep) {
+<span class="fc" id="L135">            this.indentionStep = indentionStep;</span>
+<span class="fc" id="L136">            return this;</span>
+        }
+
+        public Builder omitDefaultValue(boolean omitDefaultValue) {
+<span class="fc" id="L140">            this.omitDefaultValue = omitDefaultValue;</span>
+<span class="fc" id="L141">            return this;</span>
+        }
+
+        public Builder escapeUnicode(boolean escapeUnicode) {
+<span class="fc" id="L145">            this.escapeUnicode = escapeUnicode;</span>
+<span class="fc" id="L146">            return this;</span>
+        }
+
+        public Config build() {
+<span class="fc" id="L150">            String configName = JsoniterSpi.assignConfigName(this);</span>
+<span class="fc" id="L151">            Config config = configs.get(configName);</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">            if (config != null) {</span>
+<span class="fc" id="L153">                return config;</span>
+            }
+<span class="fc" id="L155">            synchronized (Config.class) {</span>
+<span class="fc" id="L156">                config = configs.get(configName);</span>
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">                if (config != null) {</span>
+<span class="nc" id="L158">                    return config;</span>
+                }
+<span class="fc" id="L160">                config = doBuild(configName);</span>
+<span class="fc" id="L161">                HashMap&lt;String, Config&gt; newCache = new HashMap&lt;String, Config&gt;(configs);</span>
+<span class="fc" id="L162">                newCache.put(configName, config);</span>
+<span class="fc" id="L163">                configs = newCache;</span>
+<span class="fc" id="L164">                return config;</span>
+            }
+        }
+
+        protected Config doBuild(String configName) {
+<span class="fc" id="L169">            return new Config(configName, this);</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">            if (this == o) return true;</span>
+<span class="pc bpc" id="L175" title="1 of 4 branches missed.">            if (o == null || getClass() != o.getClass()) return false;</span>
+
+<span class="fc" id="L177">            Builder builder = (Builder) o;</span>
+
+<span class="pc bpc" id="L179" title="1 of 2 branches missed.">            if (indentionStep != builder.indentionStep) return false;</span>
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">            if (escapeUnicode != builder.escapeUnicode) return false;</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">            if (decodingMode != builder.decodingMode) return false;</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">            if (omitDefaultValue != builder.omitDefaultValue) return false;</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">            return encodingMode == builder.encodingMode;</span>
+        }
+
+        @Override
+        public int hashCode() {
+<span class="pc bpc" id="L188" title="1 of 2 branches missed.">            int result = decodingMode != null ? decodingMode.hashCode() : 0;</span>
+<span class="pc bpc" id="L189" title="1 of 2 branches missed.">            result = 31 * result + (encodingMode != null ? encodingMode.hashCode() : 0);</span>
+<span class="fc" id="L190">            result = 31 * result + indentionStep;</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">            result = 31 * result + (escapeUnicode ? 1 : 0);</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">            result = 31 * result + (omitDefaultValue ? 1 : 0);</span>
+<span class="fc" id="L193">            return result;</span>
+        }
+
+        public Builder copy() {
+<span class="fc" id="L197">            Builder builder = new Builder();</span>
+<span class="fc" id="L198">            builder.encodingMode = encodingMode;</span>
+<span class="fc" id="L199">            builder.decodingMode = decodingMode;</span>
+<span class="fc" id="L200">            builder.indentionStep = indentionStep;</span>
+<span class="fc" id="L201">            builder.escapeUnicode = escapeUnicode;</span>
+<span class="fc" id="L202">            builder.omitDefaultValue = omitDefaultValue;</span>
+<span class="fc" id="L203">            return builder;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L208">            return &quot;Config{&quot; +</span>
+                    &quot;decodingMode=&quot; + decodingMode +
+                    &quot;, encodingMode=&quot; + encodingMode +
+                    &quot;, indentionStep=&quot; + indentionStep +
+                    &quot;, escapeUnicode=&quot; + escapeUnicode +
+                    &quot;, omitDefaultValue=&quot; + omitDefaultValue +
+                    '}';
+        }
+    }
+
+<span class="fc" id="L218">    public static final Config INSTANCE = new Builder().build();</span>
+
+    @Override
+    public void updateClassDescriptor(ClassDescriptor desc) {
+<span class="fc" id="L222">        JsonObject jsonObject = (JsonObject) desc.clazz.getAnnotation(JsonObject.class);</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">        if (jsonObject != null) {</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">            if (jsonObject.asExtraForUnknownProperties()) {</span>
+<span class="fc" id="L225">                desc.asExtraForUnknownProperties = true;</span>
+            }
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">            for (String fieldName : jsonObject.unknownPropertiesWhitelist()) {</span>
+<span class="nc" id="L228">                Binding binding = new Binding(desc.classInfo, desc.lookup, Object.class);</span>
+<span class="nc" id="L229">                binding.name = fieldName;</span>
+<span class="nc" id="L230">                binding.fromNames = new String[]{binding.name};</span>
+<span class="nc" id="L231">                binding.toNames = new String[0];</span>
+<span class="nc" id="L232">                binding.shouldSkip = true;</span>
+<span class="nc" id="L233">                desc.fields.add(binding);</span>
+            }
+<span class="fc bfc" id="L235" title="All 2 branches covered.">            for (String fieldName : jsonObject.unknownPropertiesBlacklist()) {</span>
+<span class="fc" id="L236">                Binding binding = new Binding(desc.classInfo, desc.lookup, Object.class);</span>
+<span class="fc" id="L237">                binding.name = fieldName;</span>
+<span class="fc" id="L238">                binding.fromNames = new String[]{binding.name};</span>
+<span class="fc" id="L239">                binding.toNames = new String[0];</span>
+<span class="fc" id="L240">                binding.asExtraWhenPresent = true;</span>
+<span class="fc" id="L241">                desc.fields.add(binding);</span>
+            }
+        }
+<span class="fc" id="L244">        List&lt;Method&gt; allMethods = new ArrayList&lt;Method&gt;();</span>
+<span class="fc" id="L245">        Class current = desc.clazz;</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">        while (current != null) {</span>
+<span class="fc" id="L247">            allMethods.addAll(Arrays.asList(current.getDeclaredMethods()));</span>
+<span class="fc" id="L248">            current = current.getSuperclass();</span>
+        }
+<span class="fc" id="L250">        updateBindings(desc);</span>
+<span class="fc" id="L251">        detectCtor(desc);</span>
+<span class="fc" id="L252">        detectStaticFactory(desc, allMethods);</span>
+<span class="fc" id="L253">        detectWrappers(desc, allMethods);</span>
+<span class="fc" id="L254">        detectUnwrappers(desc, allMethods);</span>
+<span class="fc" id="L255">    }</span>
+
+    private void detectUnwrappers(ClassDescriptor desc, List&lt;Method&gt; allMethods) {
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        for (Method method : allMethods) {</span>
+<span class="fc bfc" id="L259" title="All 2 branches covered.">            if (Modifier.isStatic(method.getModifiers())) {</span>
+<span class="fc" id="L260">                continue;</span>
+            }
+<span class="fc bfc" id="L262" title="All 2 branches covered.">            if (getJsonUnwrapper(method.getAnnotations()) == null) {</span>
+<span class="fc" id="L263">                continue;</span>
+            }
+<span class="fc" id="L265">            desc.unwrappers.add(new UnwrapperDescriptor(method));</span>
+<span class="fc" id="L266">        }</span>
+<span class="fc" id="L267">    }</span>
+
+    private void detectWrappers(ClassDescriptor desc, List&lt;Method&gt; allMethods) {
+<span class="fc bfc" id="L270" title="All 2 branches covered.">        for (Method method : allMethods) {</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">            if (Modifier.isStatic(method.getModifiers())) {</span>
+<span class="fc" id="L272">                continue;</span>
+            }
+<span class="fc" id="L274">            JsonWrapper jsonWrapper = getJsonWrapper(method.getAnnotations());</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">            if (jsonWrapper == null) {</span>
+<span class="fc" id="L276">                continue;</span>
+            }
+<span class="fc" id="L278">            Annotation[][] annotations = method.getParameterAnnotations();</span>
+<span class="fc" id="L279">            String[] paramNames = getParamNames(method, annotations.length);</span>
+<span class="fc" id="L280">            Iterator&lt;Binding&gt; iter = desc.setters.iterator();</span>
+<span class="fc bfc" id="L281" title="All 2 branches covered.">            while(iter.hasNext()) {</span>
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">                if (method.equals(iter.next().method)) {</span>
+<span class="fc" id="L283">                    iter.remove();</span>
+                }
+            }
+<span class="fc bfc" id="L286" title="All 2 branches covered.">            if (JsonWrapperType.BINDING.equals(jsonWrapper.value())) {</span>
+<span class="fc" id="L287">                WrapperDescriptor wrapper = new WrapperDescriptor();</span>
+<span class="fc" id="L288">                wrapper.method = method;</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">                for (int i = 0; i &lt; annotations.length; i++) {</span>
+<span class="fc" id="L290">                    Annotation[] paramAnnotations = annotations[i];</span>
+<span class="fc" id="L291">                    Binding binding = new Binding(desc.classInfo, desc.lookup, method.getGenericParameterTypes()[i]);</span>
+<span class="fc" id="L292">                    JsonProperty jsonProperty = getJsonProperty(paramAnnotations);</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">                    if (jsonProperty != null) {</span>
+<span class="fc" id="L294">                        updateBindingWithJsonProperty(binding, jsonProperty);</span>
+                    }
+<span class="pc bpc" id="L296" title="2 of 4 branches missed.">                    if (binding.name == null || binding.name.length() == 0) {</span>
+<span class="nc" id="L297">                        binding.name = paramNames[i];</span>
+                    }
+<span class="fc" id="L299">                    binding.fromNames = new String[]{binding.name};</span>
+<span class="fc" id="L300">                    binding.toNames = new String[]{binding.name};</span>
+<span class="fc" id="L301">                    binding.annotations = paramAnnotations;</span>
+<span class="fc" id="L302">                    wrapper.parameters.add(binding);</span>
+                }
+<span class="fc" id="L304">                desc.bindingTypeWrappers.add(wrapper);</span>
+<span class="pc bpc" id="L305" title="1 of 2 branches missed.">            } else if (JsonWrapperType.KEY_VALUE.equals(jsonWrapper.value())) {</span>
+<span class="fc" id="L306">                desc.keyValueTypeWrappers.add(method);</span>
+            } else {
+<span class="nc" id="L308">                throw new JsonException(&quot;unknown json wrapper type: &quot; + jsonWrapper.value());</span>
+            }
+<span class="fc" id="L310">        }</span>
+<span class="fc" id="L311">    }</span>
+
+    private String[] getParamNames(Object obj, int paramCount) {
+<span class="fc" id="L314">        String[] paramNames = new String[paramCount];</span>
+        try {
+<span class="fc" id="L316">            Object params = reflectCall(obj, &quot;getParameters&quot;);</span>
+<span class="fc bfc" id="L317" title="All 2 branches covered.">            for (int i = 0; i &lt; paramNames.length; i++) {</span>
+<span class="fc" id="L318">                paramNames[i] = (String) reflectCall(Array.get(params, i), &quot;getName&quot;);</span>
+            }
+<span class="nc" id="L320">        } catch (Exception e) {</span>
+<span class="fc" id="L321">        }</span>
+<span class="fc" id="L322">        return paramNames;</span>
+    }
+
+    private Object reflectCall(Object obj, String methodName, Object... args) throws Exception {
+<span class="fc" id="L326">        Method method = obj.getClass().getMethod(methodName);</span>
+<span class="fc" id="L327">        return method.invoke(obj, args);</span>
+    }
+
+    private void detectStaticFactory(ClassDescriptor desc, List&lt;Method&gt; allMethods) {
+<span class="fc bfc" id="L331" title="All 2 branches covered.">        for (Method method : allMethods) {</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">            if (!Modifier.isStatic(method.getModifiers())) {</span>
+<span class="fc" id="L333">                continue;</span>
+            }
+<span class="fc" id="L335">            JsonCreator jsonCreator = getJsonCreator(method.getAnnotations());</span>
+<span class="fc bfc" id="L336" title="All 2 branches covered.">            if (jsonCreator == null) {</span>
+<span class="fc" id="L337">                continue;</span>
+            }
+<span class="fc" id="L339">            desc.ctor.staticMethodName = method.getName();</span>
+<span class="fc" id="L340">            desc.ctor.staticFactory = method;</span>
+<span class="fc" id="L341">            desc.ctor.ctor = null;</span>
+<span class="fc" id="L342">            Annotation[][] annotations = method.getParameterAnnotations();</span>
+<span class="fc" id="L343">            String[] paramNames = getParamNames(method, annotations.length);</span>
+<span class="fc bfc" id="L344" title="All 2 branches covered.">            for (int i = 0; i &lt; annotations.length; i++) {</span>
+<span class="fc" id="L345">                Annotation[] paramAnnotations = annotations[i];</span>
+<span class="fc" id="L346">                JsonProperty jsonProperty = getJsonProperty(paramAnnotations);</span>
+<span class="fc" id="L347">                Binding binding = new Binding(desc.classInfo, desc.lookup, method.getGenericParameterTypes()[i]);</span>
+<span class="pc bpc" id="L348" title="1 of 2 branches missed.">                if (jsonProperty != null) {</span>
+<span class="fc" id="L349">                    updateBindingWithJsonProperty(binding, jsonProperty);</span>
+                }
+<span class="pc bpc" id="L351" title="2 of 4 branches missed.">                if (binding.name == null || binding.name.length() == 0) {</span>
+<span class="nc" id="L352">                    binding.name = paramNames[i];</span>
+                }
+<span class="fc" id="L354">                binding.fromNames = new String[]{binding.name};</span>
+<span class="fc" id="L355">                binding.toNames = new String[]{binding.name};</span>
+<span class="fc" id="L356">                binding.annotations = paramAnnotations;</span>
+<span class="fc" id="L357">                desc.ctor.parameters.add(binding);</span>
+            }
+<span class="fc" id="L359">        }</span>
+<span class="fc" id="L360">    }</span>
+
+    private void detectCtor(ClassDescriptor desc) {
+<span class="fc bfc" id="L363" title="All 2 branches covered.">        if (desc.ctor == null) {</span>
+<span class="fc" id="L364">            return;</span>
+        }
+<span class="fc bfc" id="L366" title="All 2 branches covered.">        for (Constructor ctor : desc.clazz.getDeclaredConstructors()) {</span>
+<span class="fc" id="L367">            JsonCreator jsonCreator = getJsonCreator(ctor.getAnnotations());</span>
+<span class="fc bfc" id="L368" title="All 2 branches covered.">            if (jsonCreator == null) {</span>
+<span class="fc" id="L369">                continue;</span>
+            }
+<span class="fc" id="L371">            desc.ctor.staticMethodName = null;</span>
+<span class="fc" id="L372">            desc.ctor.ctor = ctor;</span>
+<span class="fc" id="L373">            desc.ctor.staticFactory = null;</span>
+<span class="fc" id="L374">            Annotation[][] annotations = ctor.getParameterAnnotations();</span>
+<span class="fc" id="L375">            String[] paramNames = getParamNames(ctor, annotations.length);</span>
+<span class="fc bfc" id="L376" title="All 2 branches covered.">            for (int i = 0; i &lt; annotations.length; i++) {</span>
+<span class="fc" id="L377">                Annotation[] paramAnnotations = annotations[i];</span>
+<span class="fc" id="L378">                JsonProperty jsonProperty = getJsonProperty(paramAnnotations);</span>
+<span class="fc" id="L379">                Binding binding = new Binding(desc.classInfo, desc.lookup, ctor.getGenericParameterTypes()[i]);</span>
+<span class="pc bpc" id="L380" title="1 of 2 branches missed.">                if (jsonProperty != null) {</span>
+<span class="fc" id="L381">                    updateBindingWithJsonProperty(binding, jsonProperty);</span>
+                }
+<span class="pc bpc" id="L383" title="2 of 4 branches missed.">                if (binding.name == null || binding.name.length() == 0) {</span>
+<span class="nc" id="L384">                    binding.name = paramNames[i];</span>
+                }
+<span class="fc" id="L386">                binding.fromNames = new String[]{binding.name};</span>
+<span class="fc" id="L387">                binding.toNames = new String[]{binding.name};</span>
+<span class="fc" id="L388">                binding.annotations = paramAnnotations;</span>
+<span class="fc" id="L389">                desc.ctor.parameters.add(binding);</span>
+            }
+        }
+<span class="fc" id="L392">    }</span>
+
+    private void updateBindings(ClassDescriptor desc) {
+<span class="fc" id="L395">        boolean globalOmitDefault = JsoniterSpi.getCurrentConfig().omitDefaultValue();</span>
+<span class="fc bfc" id="L396" title="All 2 branches covered.">        for (Binding binding : desc.allBindings()) {</span>
+<span class="fc" id="L397">            boolean annotated = false;</span>
+<span class="fc" id="L398">            JsonIgnore jsonIgnore = getJsonIgnore(binding.annotations);</span>
+<span class="fc bfc" id="L399" title="All 2 branches covered.">            if (jsonIgnore != null) {</span>
+<span class="fc" id="L400">                annotated = true;</span>
+<span class="fc bfc" id="L401" title="All 2 branches covered.">                if (jsonIgnore.ignoreDecoding()) {</span>
+<span class="fc" id="L402">                    binding.fromNames = new String[0];</span>
+                }
+<span class="fc bfc" id="L404" title="All 2 branches covered.">                if (jsonIgnore.ignoreEncoding()) {</span>
+<span class="fc" id="L405">                    binding.toNames = new String[0];</span>
+                }
+            }
+            // map JsonUnwrapper is not getter
+<span class="fc" id="L409">            JsonUnwrapper jsonUnwrapper = getJsonUnwrapper(binding.annotations);</span>
+<span class="fc bfc" id="L410" title="All 2 branches covered.">            if (jsonUnwrapper != null) {</span>
+<span class="fc" id="L411">                annotated = true;</span>
+<span class="fc" id="L412">                binding.fromNames = new String[0];</span>
+<span class="fc" id="L413">                binding.toNames = new String[0];</span>
+            }
+<span class="fc bfc" id="L415" title="All 2 branches covered.">            if (globalOmitDefault) {</span>
+<span class="fc" id="L416">                binding.defaultValueToOmit = createOmitValue(binding.valueType);</span>
+            }
+<span class="fc" id="L418">            JsonProperty jsonProperty = getJsonProperty(binding.annotations);</span>
+<span class="fc bfc" id="L419" title="All 2 branches covered.">            if (jsonProperty != null) {</span>
+<span class="fc" id="L420">                annotated = true;</span>
+<span class="fc" id="L421">                updateBindingWithJsonProperty(binding, jsonProperty);</span>
+            }
+<span class="fc bfc" id="L423" title="All 2 branches covered.">            if (getAnnotation(binding.annotations, JsonMissingProperties.class) != null) {</span>
+<span class="fc" id="L424">                annotated = true;</span>
+                // this binding will not bind from json
+                // instead it will be set by jsoniter with missing property names
+<span class="fc" id="L427">                binding.fromNames = new String[0];</span>
+<span class="fc" id="L428">                desc.onMissingProperties = binding;</span>
+            }
+<span class="fc bfc" id="L430" title="All 2 branches covered.">            if (getAnnotation(binding.annotations, JsonExtraProperties.class) != null) {</span>
+<span class="fc" id="L431">                annotated = true;</span>
+                // this binding will not bind from json
+                // instead it will be set by jsoniter with extra properties
+<span class="fc" id="L434">                binding.fromNames = new String[0];</span>
+<span class="fc" id="L435">                desc.onExtraProperties = binding;</span>
+            }
+<span class="fc bfc" id="L437" title="All 4 branches covered.">            if (annotated &amp;&amp; binding.field != null) {</span>
+<span class="fc bfc" id="L438" title="All 2 branches covered.">                if (desc.setters != null) {</span>
+<span class="fc bfc" id="L439" title="All 2 branches covered.">                    for (Binding setter : desc.setters) {</span>
+<span class="fc bfc" id="L440" title="All 2 branches covered.">                        if (binding.field.getName().equals(setter.name)) {</span>
+<span class="fc" id="L441">                            setter.fromNames = new String[0];</span>
+<span class="fc" id="L442">                            setter.toNames = new String[0];</span>
+                        }
+<span class="fc" id="L444">                    }</span>
+                }
+<span class="pc bpc" id="L446" title="1 of 2 branches missed.">                if (desc.getters != null) {</span>
+<span class="fc bfc" id="L447" title="All 2 branches covered.">                    for (Binding getter : desc.getters) {</span>
+<span class="pc bpc" id="L448" title="1 of 2 branches missed.">                        if (binding.field.getName().equals(getter.name)) {</span>
+<span class="fc" id="L449">                            getter.fromNames = new String[0];</span>
+<span class="fc" id="L450">                            getter.toNames = new String[0];</span>
+                        }
+<span class="fc" id="L452">                    }</span>
+                }
+            }
+<span class="fc" id="L455">        }</span>
+<span class="fc" id="L456">    }</span>
+
+    private void updateBindingWithJsonProperty(Binding binding, JsonProperty jsonProperty) {
+<span class="fc" id="L459">        binding.asMissingWhenNotPresent = jsonProperty.required();</span>
+<span class="fc" id="L460">        binding.isNullable = jsonProperty.nullable();</span>
+<span class="fc" id="L461">        binding.isCollectionValueNullable = jsonProperty.collectionValueNullable();</span>
+<span class="fc" id="L462">        String defaultValueToOmit = jsonProperty.defaultValueToOmit();</span>
+<span class="fc bfc" id="L463" title="All 2 branches covered.">        if (!defaultValueToOmit.isEmpty()) {</span>
+<span class="fc" id="L464">            binding.defaultValueToOmit = OmitValue.Parsed.parse(binding.valueType, defaultValueToOmit);</span>
+        }
+<span class="fc" id="L466">        String altName = jsonProperty.value();</span>
+<span class="fc bfc" id="L467" title="All 2 branches covered.">        if (!altName.isEmpty()) {</span>
+<span class="fc bfc" id="L468" title="All 2 branches covered.">            if (binding.name == null) {</span>
+<span class="fc" id="L469">                binding.name = altName;</span>
+            }
+<span class="fc" id="L471">            binding.fromNames = new String[]{altName};</span>
+<span class="fc" id="L472">            binding.toNames = new String[]{altName};</span>
+        }
+<span class="fc bfc" id="L474" title="All 2 branches covered.">        if (jsonProperty.from().length &gt; 0) {</span>
+<span class="fc" id="L475">            binding.fromNames = jsonProperty.from();</span>
+        }
+<span class="fc bfc" id="L477" title="All 2 branches covered.">        if (jsonProperty.to().length &gt; 0) {</span>
+<span class="fc" id="L478">            binding.toNames = jsonProperty.to();</span>
+        }
+<span class="fc" id="L480">        Class decoderClass = jsonProperty.decoder();</span>
+<span class="fc bfc" id="L481" title="All 2 branches covered.">        if (decoderClass != Decoder.class) {</span>
+            try {
+                try {
+<span class="fc" id="L484">                    Constructor decoderCtor = decoderClass.getConstructor(Binding.class);</span>
+<span class="fc" id="L485">                    binding.decoder = (Decoder) decoderCtor.newInstance(binding);</span>
+<span class="fc" id="L486">                } catch (NoSuchMethodException e) {</span>
+<span class="fc" id="L487">                    binding.decoder = (Decoder) decoderClass.newInstance();</span>
+<span class="fc" id="L488">                }</span>
+<span class="nc" id="L489">            } catch (RuntimeException e) {</span>
+<span class="nc" id="L490">                throw e;</span>
+<span class="nc" id="L491">            } catch (Exception e) {</span>
+<span class="nc" id="L492">                throw new JsonException(e);</span>
+<span class="fc" id="L493">            }</span>
+        }
+<span class="fc" id="L495">        Class encoderClass = jsonProperty.encoder();</span>
+<span class="fc bfc" id="L496" title="All 2 branches covered.">        if (encoderClass != Encoder.class) {</span>
+            try {
+                try {
+<span class="nc" id="L499">                    Constructor encoderCtor = encoderClass.getConstructor(Binding.class);</span>
+<span class="nc" id="L500">                    binding.encoder = (Encoder) encoderCtor.newInstance(binding);</span>
+<span class="fc" id="L501">                } catch (NoSuchMethodException e) {</span>
+<span class="fc" id="L502">                    binding.encoder = (Encoder) encoderClass.newInstance();</span>
+<span class="nc" id="L503">                }</span>
+<span class="nc" id="L504">            } catch (JsonException e) {</span>
+<span class="nc" id="L505">                throw e;</span>
+<span class="nc" id="L506">            } catch (Exception e) {</span>
+<span class="nc" id="L507">                throw new JsonException(e);</span>
+<span class="fc" id="L508">            }</span>
+        }
+<span class="fc bfc" id="L510" title="All 2 branches covered.">        if (jsonProperty.implementation() != Object.class) {</span>
+<span class="fc" id="L511">            binding.valueType = GenericsHelper.useImpl(binding.valueType, jsonProperty.implementation());</span>
+<span class="fc" id="L512">            binding.valueTypeLiteral = TypeLiteral.create(binding.valueType);</span>
+        }
+<span class="fc" id="L514">    }</span>
+
+    protected OmitValue createOmitValue(Type valueType) {
+<span class="fc" id="L517">        OmitValue omitValue = primitiveOmitValues.get(valueType);</span>
+<span class="fc bfc" id="L518" title="All 2 branches covered.">        if (omitValue != null) {</span>
+<span class="fc" id="L519">            return omitValue;</span>
+        }
+<span class="fc" id="L521">        return new OmitValue.Null();</span>
+    }
+
+    protected JsonWrapper getJsonWrapper(Annotation[] annotations) {
+<span class="fc" id="L525">        return getAnnotation(annotations, JsonWrapper.class);</span>
+    }
+
+    protected JsonUnwrapper getJsonUnwrapper(Annotation[] annotations) {
+<span class="fc" id="L529">        return getAnnotation(annotations, JsonUnwrapper.class);</span>
+    }
+
+    protected JsonCreator getJsonCreator(Annotation[] annotations) {
+<span class="fc" id="L533">        return getAnnotation(annotations, JsonCreator.class);</span>
+    }
+
+    protected JsonProperty getJsonProperty(Annotation[] annotations) {
+<span class="fc" id="L537">        return getAnnotation(annotations, JsonProperty.class);</span>
+    }
+
+    protected JsonIgnore getJsonIgnore(Annotation[] annotations) {
+<span class="fc" id="L541">        return getAnnotation(annotations, JsonIgnore.class);</span>
+    }
+
+    protected static &lt;T extends Annotation&gt; T getAnnotation(Annotation[] annotations, Class&lt;T&gt; annotationClass) {
+<span class="fc bfc" id="L545" title="All 2 branches covered.">        if (annotations == null) {</span>
+<span class="fc" id="L546">            return null;</span>
+        }
+<span class="fc bfc" id="L548" title="All 2 branches covered.">        for (Annotation annotation : annotations) {</span>
+<span class="fc bfc" id="L549" title="All 2 branches covered.">            if (annotationClass.isAssignableFrom(annotation.getClass())) {</span>
+<span class="fc" id="L550">                return (T) annotation;</span>
+            }
+        }
+<span class="fc" id="L553">        return null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

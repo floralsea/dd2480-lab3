@@ -1,0 +1,567 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JsonIterator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">JsonIterator.java</span></div><h1>JsonIterator.java</h1><pre class="source lang-java linenums">package com.jsoniter;
+
+import com.jsoniter.any.Any;
+import com.jsoniter.spi.*;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class JsonIterator implements Closeable {
+
+    public Config configCache;
+<span class="fc" id="L20">    private static boolean isStreamingEnabled = false;</span>
+<span class="fc" id="L21">    final static ValueType[] valueTypes = new ValueType[256];</span>
+    InputStream in;
+    byte[] buf;
+    // Whenever buf is not large enough new one is created with size of
+    // buf.length + autoExpandBufferStep. Set to &lt; 1 to disable auto expanding.
+    int autoExpandBufferStep;
+    int head;
+    int tail;
+<span class="fc" id="L29">    int skipStartedAt = -1; // skip should keep bytes starting at this pos</span>
+
+<span class="fc" id="L31">    Map&lt;String, Object&gt; tempObjects = null; // used in reflection object decoder</span>
+<span class="fc" id="L32">    final Slice reusableSlice = new Slice(null, 0, 0);</span>
+<span class="fc" id="L33">    char[] reusableChars = new char[32];</span>
+<span class="fc" id="L34">    Object existingObject = null; // the object should be bind to next</span>
+
+    static {
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        for (int i = 0; i &lt; valueTypes.length; i++) {</span>
+<span class="fc" id="L38">            valueTypes[i] = ValueType.INVALID;</span>
+        }
+<span class="fc" id="L40">        valueTypes['&quot;'] = ValueType.STRING;</span>
+<span class="fc" id="L41">        valueTypes['-'] = ValueType.NUMBER;</span>
+<span class="fc" id="L42">        valueTypes['0'] = ValueType.NUMBER;</span>
+<span class="fc" id="L43">        valueTypes['1'] = ValueType.NUMBER;</span>
+<span class="fc" id="L44">        valueTypes['2'] = ValueType.NUMBER;</span>
+<span class="fc" id="L45">        valueTypes['3'] = ValueType.NUMBER;</span>
+<span class="fc" id="L46">        valueTypes['4'] = ValueType.NUMBER;</span>
+<span class="fc" id="L47">        valueTypes['5'] = ValueType.NUMBER;</span>
+<span class="fc" id="L48">        valueTypes['6'] = ValueType.NUMBER;</span>
+<span class="fc" id="L49">        valueTypes['7'] = ValueType.NUMBER;</span>
+<span class="fc" id="L50">        valueTypes['8'] = ValueType.NUMBER;</span>
+<span class="fc" id="L51">        valueTypes['9'] = ValueType.NUMBER;</span>
+<span class="fc" id="L52">        valueTypes['t'] = ValueType.BOOLEAN;</span>
+<span class="fc" id="L53">        valueTypes['f'] = ValueType.BOOLEAN;</span>
+<span class="fc" id="L54">        valueTypes['n'] = ValueType.NULL;</span>
+<span class="fc" id="L55">        valueTypes['['] = ValueType.ARRAY;</span>
+<span class="fc" id="L56">        valueTypes['{'] = ValueType.OBJECT;</span>
+    }
+
+<span class="fc" id="L59">    private JsonIterator(InputStream in, byte[] buf, int head, int tail) {</span>
+<span class="fc" id="L60">        this.in = in;</span>
+<span class="fc" id="L61">        this.buf = buf;</span>
+<span class="fc" id="L62">        this.head = head;</span>
+<span class="fc" id="L63">        this.tail = tail;</span>
+<span class="fc" id="L64">    }</span>
+
+    private JsonIterator(InputStream in, byte[] buf, int autoExpandBufferStep) {
+<span class="nc" id="L67">        this(in, buf, 0, 0);</span>
+<span class="nc" id="L68">        this.autoExpandBufferStep = autoExpandBufferStep;</span>
+<span class="nc" id="L69">    }</span>
+
+    public JsonIterator() {
+<span class="nc" id="L72">        this(null, new byte[0], 0, 0);</span>
+<span class="nc" id="L73">    }</span>
+
+    public static JsonIterator parse(InputStream in, int bufSize) {
+<span class="nc" id="L76">        return parse(in, bufSize, bufSize);</span>
+    }
+
+    public static JsonIterator parse(InputStream in, int bufSize, int autoExpandBufferStep) {
+<span class="nc" id="L80">        enableStreamingSupport();</span>
+<span class="nc" id="L81">        return new JsonIterator(in, new byte[bufSize], autoExpandBufferStep);</span>
+    }
+
+    public static JsonIterator parse(byte[] buf) {
+<span class="fc" id="L85">        return new JsonIterator(null, buf, 0, buf.length);</span>
+    }
+
+    public static JsonIterator parse(byte[] buf, int head, int tail) {
+<span class="fc" id="L89">        return new JsonIterator(null, buf, head, tail);</span>
+    }
+
+    public static JsonIterator parse(String str) {
+<span class="fc" id="L93">        return parse(str.getBytes());</span>
+    }
+
+    public static JsonIterator parse(Slice slice) {
+<span class="nc" id="L97">        return new JsonIterator(null, slice.data(), slice.head(), slice.tail());</span>
+    }
+
+    public final void reset(byte[] buf) {
+<span class="fc" id="L101">        this.buf = buf;</span>
+<span class="fc" id="L102">        this.head = 0;</span>
+<span class="fc" id="L103">        this.tail = buf.length;</span>
+<span class="fc" id="L104">    }</span>
+
+    public final void reset(byte[] buf, int head, int tail) {
+<span class="fc" id="L107">        this.buf = buf;</span>
+<span class="fc" id="L108">        this.head = head;</span>
+<span class="fc" id="L109">        this.tail = tail;</span>
+<span class="fc" id="L110">    }</span>
+
+    public final void reset(Slice value) {
+<span class="nc" id="L113">        this.buf = value.data();</span>
+<span class="nc" id="L114">        this.head = value.head();</span>
+<span class="nc" id="L115">        this.tail = value.tail();</span>
+<span class="nc" id="L116">    }</span>
+
+    public final void reset(InputStream in) {
+<span class="nc" id="L119">        JsonIterator.enableStreamingSupport();</span>
+<span class="nc" id="L120">        this.in = in;</span>
+<span class="nc" id="L121">        this.head = 0;</span>
+<span class="nc" id="L122">        this.tail = 0;</span>
+<span class="nc" id="L123">    }</span>
+
+    public final void close() throws IOException {
+<span class="nc bnc" id="L126" title="All 2 branches missed.">        if (in != null) {</span>
+<span class="nc" id="L127">            in.close();</span>
+        }
+<span class="nc" id="L129">    }</span>
+
+    final void unreadByte() {
+<span class="pc bpc" id="L132" title="1 of 2 branches missed.">        if (head == 0) {</span>
+<span class="nc" id="L133">            throw reportError(&quot;unreadByte&quot;, &quot;unread too many bytes&quot;);</span>
+        }
+<span class="fc" id="L135">        head--;</span>
+<span class="fc" id="L136">    }</span>
+
+    public final JsonException reportError(String op, String msg) {
+<span class="fc" id="L139">        int peekStart = head - 10;</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        if (peekStart &lt; 0) {</span>
+<span class="fc" id="L141">            peekStart = 0;</span>
+        }
+<span class="fc" id="L143">        int peekSize = head - peekStart;</span>
+<span class="pc bpc" id="L144" title="1 of 2 branches missed.">        if (head &gt; tail) {</span>
+<span class="nc" id="L145">            peekSize = tail - peekStart;</span>
+        }
+<span class="fc" id="L147">        String peek = new String(buf, peekStart, peekSize);</span>
+<span class="fc" id="L148">        throw new JsonException(op + &quot;: &quot; + msg + &quot;, head: &quot; + head + &quot;, peek: &quot; + peek + &quot;, buf: &quot; + new String(buf));</span>
+    }
+
+    public final String currentBuffer() {
+<span class="nc" id="L152">        int peekStart = head - 10;</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        if (peekStart &lt; 0) {</span>
+<span class="nc" id="L154">            peekStart = 0;</span>
+        }
+<span class="nc" id="L156">        String peek = new String(buf, peekStart, head - peekStart);</span>
+<span class="nc" id="L157">        return &quot;head: &quot; + head + &quot;, peek: &quot; + peek + &quot;, buf: &quot; + new String(buf);</span>
+    }
+
+    public final boolean readNull() throws IOException {
+<span class="fc" id="L161">        byte c = IterImpl.nextToken(this);</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        if (c != 'n') {</span>
+<span class="fc" id="L163">            unreadByte();</span>
+<span class="fc" id="L164">            return false;</span>
+        }
+<span class="fc" id="L166">        IterImpl.skipFixedBytes(this, 3); // null</span>
+<span class="fc" id="L167">        return true;</span>
+    }
+
+    public final boolean readBoolean() throws IOException {
+<span class="fc" id="L171">        byte c = IterImpl.nextToken(this);</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        if ('t' == c) {</span>
+<span class="fc" id="L173">            IterImpl.skipFixedBytes(this, 3); // true</span>
+<span class="fc" id="L174">            return true;</span>
+        }
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">        if ('f' == c) {</span>
+<span class="fc" id="L177">            IterImpl.skipFixedBytes(this, 4); // false</span>
+<span class="fc" id="L178">            return false;</span>
+        }
+<span class="nc" id="L180">        throw reportError(&quot;readBoolean&quot;, &quot;expect t or f, found: &quot; + c);</span>
+    }
+
+    public final short readShort() throws IOException {
+<span class="nc" id="L184">        int v = readInt();</span>
+<span class="nc bnc" id="L185" title="All 4 branches missed.">        if (Short.MIN_VALUE &lt;= v &amp;&amp; v &lt;= Short.MAX_VALUE) {</span>
+<span class="nc" id="L186">            return (short) v;</span>
+        } else {
+<span class="nc" id="L188">            throw reportError(&quot;readShort&quot;, &quot;short overflow: &quot; + v);</span>
+        }
+    }
+
+    public final int readInt() throws IOException {
+<span class="fc" id="L193">        return IterImplNumber.readInt(this);</span>
+    }
+
+    public final long readLong() throws IOException {
+<span class="fc" id="L197">        return IterImplNumber.readLong(this);</span>
+    }
+
+    public final boolean readArray() throws IOException {
+<span class="fc" id="L201">        return IterImplArray.readArray(this);</span>
+    }
+
+    public String readNumberAsString() throws IOException {
+<span class="fc" id="L205">        IterImplForStreaming.numberChars numberChars = IterImplForStreaming.readNumber(this);</span>
+<span class="fc" id="L206">        return new String(numberChars.chars, 0, numberChars.charsLength);</span>
+    }
+
+    public static interface ReadArrayCallback {
+        boolean handle(JsonIterator iter, Object attachment) throws IOException;
+    }
+
+    public final boolean readArrayCB(ReadArrayCallback callback, Object attachment) throws IOException {
+<span class="fc" id="L214">        return IterImplArray.readArrayCB(this, callback, attachment);</span>
+    }
+
+    public final String readString() throws IOException {
+<span class="fc" id="L218">        return IterImplString.readString(this);</span>
+    }
+
+    public final Slice readStringAsSlice() throws IOException {
+<span class="fc" id="L222">        return IterImpl.readSlice(this);</span>
+    }
+
+    public final String readObject() throws IOException {
+<span class="fc" id="L226">        return IterImplObject.readObject(this);</span>
+    }
+
+    public static interface ReadObjectCallback {
+        boolean handle(JsonIterator iter, String field, Object attachment) throws IOException;
+    }
+
+    public final void readObjectCB(ReadObjectCallback cb, Object attachment) throws IOException {
+<span class="fc" id="L234">        IterImplObject.readObjectCB(this, cb, attachment);</span>
+<span class="fc" id="L235">    }</span>
+
+    public final float readFloat() throws IOException {
+<span class="fc" id="L238">        return IterImplNumber.readFloat(this);</span>
+    }
+
+    public final double readDouble() throws IOException {
+<span class="fc" id="L242">        return IterImplNumber.readDouble(this);</span>
+    }
+
+    public final BigDecimal readBigDecimal() throws IOException {
+        // skip whitespace by read next
+<span class="fc" id="L247">        ValueType valueType = whatIsNext();</span>
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">        if (valueType == ValueType.NULL) {</span>
+<span class="nc" id="L249">            skip();</span>
+<span class="nc" id="L250">            return null;</span>
+        }
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">        if (valueType != ValueType.NUMBER) {</span>
+<span class="nc" id="L253">            throw reportError(&quot;readBigDecimal&quot;, &quot;not number&quot;);</span>
+        }
+<span class="fc" id="L255">        IterImplForStreaming.numberChars numberChars = IterImplForStreaming.readNumber(this);</span>
+<span class="fc" id="L256">        return new BigDecimal(numberChars.chars, 0, numberChars.charsLength);</span>
+    }
+
+    public final BigInteger readBigInteger() throws IOException {
+        // skip whitespace by read next
+<span class="nc" id="L261">        ValueType valueType = whatIsNext();</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">        if (valueType == ValueType.NULL) {</span>
+<span class="nc" id="L263">            skip();</span>
+<span class="nc" id="L264">            return null;</span>
+        }
+<span class="nc bnc" id="L266" title="All 2 branches missed.">        if (valueType != ValueType.NUMBER) {</span>
+<span class="nc" id="L267">            throw reportError(&quot;readBigDecimal&quot;, &quot;not number&quot;);</span>
+        }
+<span class="nc" id="L269">        IterImplForStreaming.numberChars numberChars = IterImplForStreaming.readNumber(this);</span>
+<span class="nc" id="L270">        return new BigInteger(new String(numberChars.chars, 0, numberChars.charsLength));</span>
+    }
+
+    public final Any readAny() throws IOException {
+        try {
+<span class="fc" id="L275">            return IterImpl.readAny(this);</span>
+<span class="nc" id="L276">        } catch (ArrayIndexOutOfBoundsException e) {</span>
+<span class="nc" id="L277">            throw reportError(&quot;read&quot;, &quot;premature end&quot;);</span>
+        }
+    }
+
+<span class="fc" id="L281">    private final static ReadArrayCallback fillArray = new ReadArrayCallback() {</span>
+        @Override
+        public boolean handle(JsonIterator iter, Object attachment) throws IOException {
+<span class="fc" id="L284">            List list = (List) attachment;</span>
+<span class="fc" id="L285">            list.add(iter.read());</span>
+<span class="fc" id="L286">            return true;</span>
+        }
+    };
+
+<span class="fc" id="L290">    private final static ReadObjectCallback fillObject = new ReadObjectCallback() {</span>
+        @Override
+        public boolean handle(JsonIterator iter, String field, Object attachment) throws IOException {
+<span class="fc" id="L293">            Map map = (Map) attachment;</span>
+<span class="fc" id="L294">            map.put(field, iter.read());</span>
+<span class="fc" id="L295">            return true;</span>
+        }
+    };
+
+    public final Object read() throws IOException {
+        try {
+<span class="fc" id="L301">            ValueType valueType = whatIsNext();</span>
+<span class="pc bpc" id="L302" title="2 of 7 branches missed.">            switch (valueType) {</span>
+                case STRING:
+<span class="fc" id="L304">                    return readString();</span>
+                case NUMBER:
+<span class="fc" id="L306">                    IterImplForStreaming.numberChars numberChars = IterImplForStreaming.readNumber(this);</span>
+<span class="fc" id="L307">                    String numberStr = new String(numberChars.chars, 0, numberChars.charsLength);</span>
+<span class="fc" id="L308">                    Double number = Double.valueOf(numberStr);</span>
+<span class="fc bfc" id="L309" title="All 2 branches covered.">                    if (numberChars.dotFound) {</span>
+<span class="fc" id="L310">                        return number;</span>
+                    }
+<span class="fc" id="L312">                    double doubleNumber = number;</span>
+<span class="pc bpc" id="L313" title="2 of 4 branches missed.">                    if (doubleNumber == Math.floor(doubleNumber) &amp;&amp; !Double.isInfinite(doubleNumber)) {</span>
+<span class="fc" id="L314">                        long longNumber = Long.valueOf(numberStr);</span>
+<span class="pc bpc" id="L315" title="2 of 4 branches missed.">                        if (longNumber &lt;= Integer.MAX_VALUE &amp;&amp; longNumber &gt;= Integer.MIN_VALUE) {</span>
+<span class="fc" id="L316">                            return (int) longNumber;</span>
+                        }
+<span class="nc" id="L318">                        return longNumber;</span>
+                    }
+<span class="nc" id="L320">                    return number;</span>
+                case NULL:
+<span class="fc" id="L322">                    IterImpl.skipFixedBytes(this, 4);</span>
+<span class="fc" id="L323">                    return null;</span>
+                case BOOLEAN:
+<span class="nc" id="L325">                    return readBoolean();</span>
+                case ARRAY:
+<span class="fc" id="L327">                    ArrayList list = new ArrayList(4);</span>
+<span class="fc" id="L328">                    readArrayCB(fillArray, list);</span>
+<span class="fc" id="L329">                    return list;</span>
+                case OBJECT:
+<span class="fc" id="L331">                    Map map = new HashMap(4);</span>
+<span class="fc" id="L332">                    readObjectCB(fillObject, map);</span>
+<span class="fc" id="L333">                    return map;</span>
+                default:
+<span class="nc" id="L335">                    throw reportError(&quot;read&quot;, &quot;unexpected value type: &quot; + valueType);</span>
+            }
+<span class="nc" id="L337">        } catch (ArrayIndexOutOfBoundsException e) {</span>
+<span class="nc" id="L338">            throw reportError(&quot;read&quot;, &quot;premature end&quot;);</span>
+        }
+    }
+
+    /**
+     * try to bind to existing object, returned object might not the same instance
+     *
+     * @param existingObject the object instance to reuse
+     * @param &lt;T&gt;            object type
+     * @return data binding result, might not be the same object
+     * @throws IOException if I/O went wrong
+     */
+    public final &lt;T&gt; T read(T existingObject) throws IOException {
+        try {
+<span class="fc" id="L352">            this.existingObject = existingObject;</span>
+<span class="fc" id="L353">            Class&lt;?&gt; clazz = existingObject.getClass();</span>
+<span class="fc" id="L354">            String cacheKey = currentConfig().getDecoderCacheKey(clazz);</span>
+<span class="fc" id="L355">            return (T) Codegen.getDecoder(cacheKey, clazz).decode(this);</span>
+<span class="nc" id="L356">        } catch (ArrayIndexOutOfBoundsException e) {</span>
+<span class="nc" id="L357">            throw reportError(&quot;read&quot;, &quot;premature end&quot;);</span>
+        }
+    }
+
+    private Config currentConfig() {
+<span class="fc bfc" id="L362" title="All 2 branches covered.">        if (configCache == null) {</span>
+<span class="fc" id="L363">            configCache = JsoniterSpi.getCurrentConfig();</span>
+        }
+<span class="fc" id="L365">        return configCache;</span>
+    }
+
+    /**
+     * try to bind to existing object, returned object might not the same instance
+     *
+     * @param typeLiteral    the type object
+     * @param existingObject the object instance to reuse
+     * @param &lt;T&gt;            object type
+     * @return data binding result, might not be the same object
+     * @throws IOException if I/O went wrong
+     */
+    public final &lt;T&gt; T read(TypeLiteral&lt;T&gt; typeLiteral, T existingObject) throws IOException {
+        try {
+<span class="fc" id="L379">            this.existingObject = existingObject;</span>
+<span class="fc" id="L380">            String cacheKey = currentConfig().getDecoderCacheKey(typeLiteral.getType());</span>
+<span class="fc" id="L381">            return (T) Codegen.getDecoder(cacheKey, typeLiteral.getType()).decode(this);</span>
+<span class="nc" id="L382">        } catch (ArrayIndexOutOfBoundsException e) {</span>
+<span class="nc" id="L383">            throw reportError(&quot;read&quot;, &quot;premature end&quot;);</span>
+        }
+    }
+
+    public final &lt;T&gt; T read(Class&lt;T&gt; clazz) throws IOException {
+<span class="fc" id="L388">        return (T) read((Type) clazz);</span>
+    }
+
+    public final &lt;T&gt; T read(TypeLiteral&lt;T&gt; typeLiteral) throws IOException {
+<span class="fc" id="L392">        return (T) read(typeLiteral.getType());</span>
+    }
+
+    public final Object read(Type type) throws IOException {
+        try {
+<span class="fc" id="L397">            String cacheKey = currentConfig().getDecoderCacheKey(type);</span>
+<span class="fc" id="L398">            return Codegen.getDecoder(cacheKey, type).decode(this);</span>
+<span class="fc" id="L399">        } catch (ArrayIndexOutOfBoundsException e) {</span>
+<span class="nc" id="L400">            throw reportError(&quot;read&quot;, &quot;premature end&quot;);</span>
+        }
+    }
+
+    public ValueType whatIsNext() throws IOException {
+<span class="fc" id="L405">        ValueType valueType = valueTypes[IterImpl.nextToken(this)];</span>
+<span class="fc" id="L406">        unreadByte();</span>
+<span class="fc" id="L407">        return valueType;</span>
+    }
+
+    public void skip() throws IOException {
+<span class="fc" id="L411">        IterImplSkip.skip(this);</span>
+<span class="fc" id="L412">    }</span>
+
+    public static final &lt;T&gt; T deserialize(Config config, String input, Class&lt;T&gt; clazz) {
+<span class="fc" id="L415">        JsoniterSpi.setCurrentConfig(config);</span>
+        try {
+<span class="fc" id="L417">            return deserialize(input.getBytes(), clazz);</span>
+        } finally {
+<span class="fc" id="L419">            JsoniterSpi.clearCurrentConfig();</span>
+        }
+    }
+
+    public static final &lt;T&gt; T deserialize(String input, Class&lt;T&gt; clazz) {
+<span class="fc" id="L424">        return deserialize(input.getBytes(), clazz);</span>
+    }
+
+    public static final &lt;T&gt; T deserialize(Config config, String input, TypeLiteral&lt;T&gt; typeLiteral) {
+<span class="fc" id="L428">        JsoniterSpi.setCurrentConfig(config);</span>
+        try {
+<span class="fc" id="L430">            return deserialize(input.getBytes(), typeLiteral);</span>
+        } finally {
+<span class="fc" id="L432">            JsoniterSpi.clearCurrentConfig();</span>
+        }
+    }
+
+    public static final &lt;T&gt; T deserialize(String input, TypeLiteral&lt;T&gt; typeLiteral) {
+<span class="fc" id="L437">        return deserialize(input.getBytes(), typeLiteral);</span>
+    }
+
+    public static final &lt;T&gt; T deserialize(Config config, byte[] input, Class&lt;T&gt; clazz) {
+<span class="nc" id="L441">        JsoniterSpi.setCurrentConfig(config);</span>
+        try {
+<span class="nc" id="L443">            return deserialize(input, clazz);</span>
+        } finally {
+<span class="nc" id="L445">            JsoniterSpi.clearCurrentConfig();</span>
+        }
+    }
+
+    public static final &lt;T&gt; T deserialize(byte[] input, Class&lt;T&gt; clazz) {
+<span class="fc" id="L450">        int lastNotSpacePos = findLastNotSpacePos(input);</span>
+<span class="fc" id="L451">        JsonIterator iter = JsonIteratorPool.borrowJsonIterator();</span>
+<span class="fc" id="L452">        iter.reset(input, 0, lastNotSpacePos);</span>
+        try {
+<span class="fc" id="L454">            T val = iter.read(clazz);</span>
+<span class="pc bpc" id="L455" title="1 of 2 branches missed.">            if (iter.head != lastNotSpacePos) {</span>
+<span class="nc" id="L456">                throw iter.reportError(&quot;deserialize&quot;, &quot;trailing garbage found&quot;);</span>
+            }
+<span class="fc" id="L458">            return val;</span>
+<span class="nc" id="L459">        } catch (ArrayIndexOutOfBoundsException e) {</span>
+<span class="nc" id="L460">            throw iter.reportError(&quot;deserialize&quot;, &quot;premature end&quot;);</span>
+<span class="nc" id="L461">        } catch (IOException e) {</span>
+<span class="nc" id="L462">            throw new JsonException(e);</span>
+        } finally {
+<span class="fc" id="L464">            JsonIteratorPool.returnJsonIterator(iter);</span>
+        }
+    }
+
+    public static final &lt;T&gt; T deserialize(Config config, byte[] input, TypeLiteral&lt;T&gt; typeLiteral) {
+<span class="nc" id="L469">        JsoniterSpi.setCurrentConfig(config);</span>
+        try {
+<span class="nc" id="L471">            return deserialize(input, typeLiteral);</span>
+        } finally {
+<span class="nc" id="L473">            JsoniterSpi.clearCurrentConfig();</span>
+        }
+    }
+
+    public static final &lt;T&gt; T deserialize(byte[] input, TypeLiteral&lt;T&gt; typeLiteral) {
+<span class="fc" id="L478">        int lastNotSpacePos = findLastNotSpacePos(input);</span>
+<span class="fc" id="L479">        JsonIterator iter = JsonIteratorPool.borrowJsonIterator();</span>
+<span class="fc" id="L480">        iter.reset(input, 0, lastNotSpacePos);</span>
+        try {
+<span class="fc" id="L482">            T val = iter.read(typeLiteral);</span>
+<span class="pc bpc" id="L483" title="1 of 2 branches missed.">            if (iter.head != lastNotSpacePos) {</span>
+<span class="nc" id="L484">                throw iter.reportError(&quot;deserialize&quot;, &quot;trailing garbage found&quot;);</span>
+            }
+<span class="fc" id="L486">            return val;</span>
+<span class="nc" id="L487">        } catch (ArrayIndexOutOfBoundsException e) {</span>
+<span class="nc" id="L488">            throw iter.reportError(&quot;deserialize&quot;, &quot;premature end&quot;);</span>
+<span class="nc" id="L489">        } catch (IOException e) {</span>
+<span class="nc" id="L490">            throw new JsonException(e);</span>
+        } finally {
+<span class="fc" id="L492">            JsonIteratorPool.returnJsonIterator(iter);</span>
+        }
+    }
+
+    public static final Any deserialize(Config config, String input) {
+<span class="nc" id="L497">        JsoniterSpi.setCurrentConfig(config);</span>
+        try {
+<span class="nc" id="L499">            return deserialize(input.getBytes());</span>
+        } finally {
+<span class="nc" id="L501">            JsoniterSpi.clearCurrentConfig();</span>
+        }
+    }
+
+    public static final Any deserialize(String input) {
+<span class="fc" id="L506">        return deserialize(input.getBytes());</span>
+    }
+
+    public static final Any deserialize(Config config, byte[] input) {
+<span class="nc" id="L510">        JsoniterSpi.setCurrentConfig(config);</span>
+        try {
+<span class="nc" id="L512">            return deserialize(input);</span>
+        } finally {
+<span class="nc" id="L514">            JsoniterSpi.clearCurrentConfig();</span>
+        }
+    }
+
+    public static final Any deserialize(byte[] input) {
+<span class="fc" id="L519">        int lastNotSpacePos = findLastNotSpacePos(input);</span>
+<span class="fc" id="L520">        JsonIterator iter = JsonIteratorPool.borrowJsonIterator();</span>
+<span class="fc" id="L521">        iter.reset(input, 0, lastNotSpacePos);</span>
+        try {
+<span class="fc" id="L523">            Any val = iter.readAny();</span>
+<span class="pc bpc" id="L524" title="1 of 2 branches missed.">            if (iter.head != lastNotSpacePos) {</span>
+<span class="nc" id="L525">                throw iter.reportError(&quot;deserialize&quot;, &quot;trailing garbage found&quot;);</span>
+            }
+<span class="fc" id="L527">            return val;</span>
+<span class="nc" id="L528">        } catch (ArrayIndexOutOfBoundsException e) {</span>
+<span class="nc" id="L529">            throw iter.reportError(&quot;deserialize&quot;, &quot;premature end&quot;);</span>
+<span class="nc" id="L530">        } catch (IOException e) {</span>
+<span class="nc" id="L531">            throw new JsonException(e);</span>
+        } finally {
+<span class="fc" id="L533">            JsonIteratorPool.returnJsonIterator(iter);</span>
+        }
+    }
+
+    private static int findLastNotSpacePos(byte[] input) {
+<span class="pc bpc" id="L538" title="1 of 2 branches missed.">        for (int i = input.length - 1; i &gt;= 0; i--) {</span>
+<span class="fc" id="L539">            byte c = input[i];</span>
+<span class="pc bpc" id="L540" title="3 of 8 branches missed.">            if (c != ' ' &amp;&amp; c != '\t' &amp;&amp; c != '\n' &amp;&amp; c != '\r') {</span>
+<span class="fc" id="L541">                return i + 1;</span>
+            }
+        }
+<span class="nc" id="L544">        return 0;</span>
+    }
+
+    public static void setMode(DecodingMode mode) {
+<span class="fc" id="L548">        Config newConfig = JsoniterSpi.getDefaultConfig().copyBuilder().decodingMode(mode).build();</span>
+<span class="fc" id="L549">        JsoniterSpi.setDefaultConfig(newConfig);</span>
+<span class="fc" id="L550">        JsoniterSpi.setCurrentConfig(newConfig);</span>
+<span class="fc" id="L551">    }</span>
+
+    public static void enableStreamingSupport() {
+<span class="pc bpc" id="L554" title="1 of 2 branches missed.">        if (isStreamingEnabled) {</span>
+<span class="nc" id="L555">            return;</span>
+        }
+<span class="fc" id="L557">        isStreamingEnabled = true;</span>
+        try {
+<span class="nc" id="L559">            DynamicCodegen.enableStreamingSupport();</span>
+<span class="nc" id="L560">        }  catch (JsonException e) {</span>
+<span class="nc" id="L561">            throw e;</span>
+<span class="fc" id="L562">        } catch (Exception e) {</span>
+<span class="fc" id="L563">            throw new JsonException(e);</span>
+<span class="nc" id="L564">        }</span>
+<span class="nc" id="L565">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

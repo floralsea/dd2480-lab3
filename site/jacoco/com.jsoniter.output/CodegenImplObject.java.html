@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CodegenImplObject.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.output</a> &gt; <span class="el_source">CodegenImplObject.java</span></div><h1>CodegenImplObject.java</h1><pre class="source lang-java linenums">package com.jsoniter.output;
+
+import com.jsoniter.spi.*;
+
+import java.util.*;
+
+<span class="nc" id="L7">class CodegenImplObject {</span>
+    public static CodegenResult genObject(ClassInfo classInfo) {
+<span class="fc bfc" id="L9" title="All 2 branches covered.">        boolean noIndention = JsoniterSpi.getCurrentConfig().indentionStep() == 0;</span>
+<span class="fc" id="L10">        CodegenResult ctx = new CodegenResult();</span>
+<span class="fc" id="L11">        ClassDescriptor desc = ClassDescriptor.getEncodingClassDescriptor(classInfo, false);</span>
+<span class="fc" id="L12">        List&lt;EncodeTo&gt; encodeTos = desc.encodeTos();</span>
+<span class="fc" id="L13">        ctx.append(String.format(&quot;public static void encode_(%s obj, com.jsoniter.output.JsonStream stream) throws java.io.IOException {&quot;, classInfo.clazz.getCanonicalName()));</span>
+<span class="fc bfc" id="L14" title="All 2 branches covered.">        if (hasFieldOutput(desc)) {</span>
+<span class="fc" id="L15">            int notFirst = 0;</span>
+<span class="fc bfc" id="L16" title="All 2 branches covered.">            if (noIndention) {</span>
+<span class="fc" id="L17">                ctx.buffer('{');</span>
+            } else {
+<span class="fc" id="L19">                ctx.append(&quot;stream.writeObjectStart();&quot;);</span>
+            }
+<span class="fc bfc" id="L21" title="All 2 branches covered.">            for (EncodeTo encodeTo : encodeTos) {</span>
+<span class="fc" id="L22">                notFirst = genField(ctx, encodeTo.binding, encodeTo.toName, notFirst);</span>
+<span class="fc" id="L23">            }</span>
+<span class="fc bfc" id="L24" title="All 2 branches covered.">            for (UnwrapperDescriptor unwrapper : desc.unwrappers) {</span>
+<span class="fc bfc" id="L25" title="All 2 branches covered.">                if (unwrapper.isMap) {</span>
+<span class="fc" id="L26">                    ctx.append(String.format(&quot;java.util.Map map = (java.util.Map)obj.%s();&quot;, unwrapper.method.getName()));</span>
+<span class="fc" id="L27">                    ctx.append(&quot;java.util.Iterator iter = map.entrySet().iterator();&quot;);</span>
+<span class="fc" id="L28">                    ctx.append(&quot;while(iter.hasNext()) {&quot;);</span>
+<span class="fc" id="L29">                    ctx.append(&quot;java.util.Map.Entry entry = (java.util.Map.Entry)iter.next();&quot;);</span>
+<span class="fc" id="L30">                    notFirst = appendComma(ctx, notFirst);</span>
+<span class="fc" id="L31">                    ctx.append(&quot;stream.writeObjectField(entry.getKey().toString());&quot;);</span>
+<span class="fc" id="L32">                    ctx.append(&quot;if (entry.getValue() == null) { stream.writeNull(); } else {&quot;);</span>
+<span class="fc" id="L33">                    CodegenImplNative.genWriteOp(ctx, &quot;entry.getValue()&quot;, unwrapper.mapValueTypeLiteral.getType(), true);</span>
+<span class="fc" id="L34">                    ctx.append(&quot;}&quot;);</span>
+<span class="fc" id="L35">                    ctx.append(&quot;}&quot;);</span>
+                } else {
+<span class="fc" id="L37">                    notFirst = appendComma(ctx, notFirst);</span>
+<span class="fc" id="L38">                    ctx.append(String.format(&quot;obj.%s(stream);&quot;, unwrapper.method.getName()));</span>
+                }
+<span class="fc" id="L40">            }</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">            if (noIndention) {</span>
+<span class="fc" id="L42">                ctx.buffer('}');</span>
+            } else {
+<span class="fc bfc" id="L44" title="All 2 branches covered.">                if (notFirst == 1) { // definitely not first</span>
+<span class="fc" id="L45">                    ctx.append(&quot;stream.writeObjectEnd();&quot;);</span>
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">                } else if (notFirst == 2) { // // maybe not first, previous field is omitNull</span>
+<span class="fc" id="L47">                    ctx.append(&quot;if (notFirst) { stream.writeObjectEnd(); } else { stream.write('}'); }&quot;);</span>
+                } else { // this is the first
+<span class="nc" id="L49">                    ctx.append(&quot;stream.write('}');&quot;);</span>
+                }
+            }
+<span class="fc" id="L52">        } else {</span>
+<span class="fc" id="L53">            ctx.buffer(&quot;{}&quot;);</span>
+        }
+<span class="fc" id="L55">        ctx.append(&quot;}&quot;);</span>
+<span class="fc" id="L56">        return ctx;</span>
+    }
+
+
+    private static boolean hasFieldOutput(ClassDescriptor desc) {
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        if (!desc.unwrappers.isEmpty()) {</span>
+<span class="fc" id="L62">            return true;</span>
+        }
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        return !desc.encodeTos().isEmpty();</span>
+    }
+
+    private static int genField(CodegenResult ctx, Binding binding, String toName, int notFirst) {
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        boolean noIndention = JsoniterSpi.getCurrentConfig().indentionStep() == 0;</span>
+<span class="fc" id="L69">        String fieldCacheKey = binding.encoderCacheKey();</span>
+<span class="fc" id="L70">        Encoder encoder = JsoniterSpi.getEncoder(fieldCacheKey);</span>
+<span class="fc" id="L71">        boolean isCollectionValueNullable = binding.isCollectionValueNullable;</span>
+        Class valueClazz;
+        String valueAccessor;
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (binding.field != null) {</span>
+<span class="fc" id="L75">            valueClazz = binding.field.getType();</span>
+<span class="fc" id="L76">            valueAccessor = &quot;obj.&quot; + binding.field.getName();</span>
+        } else {
+<span class="fc" id="L78">            valueClazz = binding.method.getReturnType();</span>
+<span class="fc" id="L79">            valueAccessor = &quot;obj.&quot; + binding.method.getName() + &quot;()&quot;;</span>
+        }
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        if (!supportCollectionValueNullable(valueClazz)) {</span>
+<span class="fc" id="L82">            isCollectionValueNullable = true;</span>
+        }
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        boolean nullable = !valueClazz.isPrimitive();</span>
+<span class="fc" id="L85">        boolean omitZero = JsoniterSpi.getCurrentConfig().omitDefaultValue();</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        if (!binding.isNullable) {</span>
+<span class="fc" id="L87">            nullable = false;</span>
+        }
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (binding.defaultValueToOmit != null) {</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">            if (notFirst == 0) { // no previous field</span>
+<span class="fc" id="L91">                notFirst = 2; // maybe</span>
+<span class="fc" id="L92">                ctx.append(&quot;boolean notFirst = false;&quot;);</span>
+            }
+
+<span class="fc" id="L95">            ctx.append(&quot;if (!(&quot; + String.format(binding.defaultValueToOmit.code(), valueAccessor)+ &quot;)) {&quot;);</span>
+<span class="fc" id="L96">            notFirst = appendComma(ctx, notFirst);</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            if (noIndention) {</span>
+<span class="fc" id="L98">                ctx.append(CodegenResult.bufferToWriteOp(&quot;\&quot;&quot; + toName + &quot;\&quot;:&quot;));</span>
+            } else {
+<span class="fc" id="L100">                ctx.append(String.format(&quot;stream.writeObjectField(\&quot;%s\&quot;);&quot;, toName));</span>
+            }
+        } else {
+<span class="fc" id="L103">            notFirst = appendComma(ctx, notFirst);</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            if (noIndention) {</span>
+<span class="fc" id="L105">                ctx.buffer('&quot;');</span>
+<span class="fc" id="L106">                ctx.buffer(toName);</span>
+<span class="fc" id="L107">                ctx.buffer('&quot;');</span>
+<span class="fc" id="L108">                ctx.buffer(':');</span>
+            } else {
+<span class="fc" id="L110">                ctx.append(String.format(&quot;stream.writeObjectField(\&quot;%s\&quot;);&quot;, toName));</span>
+            }
+<span class="fc bfc" id="L112" title="All 2 branches covered.">            if (nullable) {</span>
+<span class="fc" id="L113">                ctx.append(String.format(&quot;if (%s == null) { stream.writeNull(); } else {&quot;, valueAccessor));</span>
+            }
+        }
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        if (encoder == null) {</span>
+<span class="fc" id="L117">            CodegenImplNative.genWriteOp(ctx, valueAccessor, binding.valueType, nullable, isCollectionValueNullable);</span>
+        } else {
+<span class="fc" id="L119">            ctx.append(String.format(&quot;com.jsoniter.output.CodegenAccess.writeVal(\&quot;%s\&quot;, %s, stream);&quot;,</span>
+                    fieldCacheKey, valueAccessor));
+        }
+<span class="fc bfc" id="L122" title="All 4 branches covered.">        if (nullable || omitZero) {</span>
+<span class="fc" id="L123">            ctx.append(&quot;}&quot;);</span>
+        }
+<span class="fc" id="L125">        return notFirst;</span>
+    }
+
+    private static int appendComma(CodegenResult ctx, int notFirst) {
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        boolean noIndention = JsoniterSpi.getCurrentConfig().indentionStep() == 0;</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        if (notFirst == 1) { // definitely not first</span>
+<span class="pc bpc" id="L131" title="1 of 2 branches missed.">            if (noIndention) {</span>
+<span class="fc" id="L132">                ctx.buffer(',');</span>
+            } else {
+<span class="nc" id="L134">                ctx.append(&quot;stream.writeMore();&quot;);</span>
+            }
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        } else if (notFirst == 2) { // maybe not first, previous field is omitNull</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">            if (noIndention) {</span>
+<span class="fc" id="L138">                ctx.append(&quot;if (notFirst) { stream.write(','); } else { notFirst = true; }&quot;);</span>
+            } else {
+<span class="fc" id="L140">                ctx.append(&quot;if (notFirst) { stream.writeMore(); } else { stream.writeIndention(); notFirst = true; }&quot;);</span>
+            }
+        } else { // this is the first, do not write comma
+<span class="fc" id="L143">            notFirst = 1;</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">            if (!noIndention) {</span>
+<span class="fc" id="L145">                ctx.append(&quot;stream.writeIndention();&quot;);</span>
+            }
+        }
+<span class="fc" id="L148">        return notFirst;</span>
+    }
+
+
+    private static boolean supportCollectionValueNullable(Class clazz) {
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        if (clazz.isArray()) {</span>
+<span class="fc" id="L154">            return true;</span>
+        }
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">        if (Map.class.isAssignableFrom(clazz)) {</span>
+<span class="nc" id="L157">            return true;</span>
+        }
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        if (Collection.class.isAssignableFrom(clazz)) {</span>
+<span class="fc" id="L160">            return true;</span>
+        }
+<span class="fc" id="L162">        return false;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

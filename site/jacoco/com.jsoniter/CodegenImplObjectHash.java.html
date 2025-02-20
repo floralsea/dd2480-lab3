@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CodegenImplObjectHash.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">CodegenImplObjectHash.java</span></div><h1>CodegenImplObjectHash.java</h1><pre class="source lang-java linenums">package com.jsoniter;
+
+import com.jsoniter.spi.*;
+
+import java.util.*;
+
+<span class="nc" id="L7">class CodegenImplObjectHash {</span>
+
+    // the implementation is from dsljson, it is the fastest although has the risk not matching field strictly
+    public static String genObjectUsingHash(ClassDescriptor desc) {
+<span class="fc" id="L11">        Class clazz = desc.clazz;</span>
+<span class="fc" id="L12">        StringBuilder lines = new StringBuilder();</span>
+        // === if null, return null
+<span class="fc" id="L14">        append(lines, &quot;java.lang.Object existingObj = com.jsoniter.CodegenAccess.resetExistingObject(iter);&quot;);</span>
+<span class="fc" id="L15">        append(lines, &quot;byte nextToken = com.jsoniter.CodegenAccess.readByte(iter);&quot;);</span>
+<span class="fc" id="L16">        append(lines, &quot;if (nextToken != '{') {&quot;);</span>
+<span class="fc" id="L17">        append(lines, &quot;if (nextToken == 'n') {&quot;);</span>
+<span class="fc" id="L18">        append(lines, &quot;com.jsoniter.CodegenAccess.skipFixedBytes(iter, 3);&quot;);</span>
+<span class="fc" id="L19">        append(lines, &quot;return null;&quot;);</span>
+<span class="fc" id="L20">        append(lines, &quot;} else {&quot;);</span>
+<span class="fc" id="L21">        append(lines, &quot;nextToken = com.jsoniter.CodegenAccess.nextToken(iter);&quot;);</span>
+<span class="fc" id="L22">        append(lines, &quot;if (nextToken == 'n') {&quot;);</span>
+<span class="fc" id="L23">        append(lines, &quot;com.jsoniter.CodegenAccess.skipFixedBytes(iter, 3);&quot;);</span>
+<span class="fc" id="L24">        append(lines, &quot;return null;&quot;);</span>
+<span class="fc" id="L25">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L26">        append(lines, &quot;} // end of if null&quot;);</span>
+<span class="fc" id="L27">        append(lines, &quot;} // end of if {&quot;);</span>
+        // === if empty, return empty
+        // ctor requires binding
+<span class="fc bfc" id="L30" title="All 2 branches covered.">        for (Binding parameter : desc.ctor.parameters) {</span>
+<span class="fc" id="L31">            appendVarDef(lines, parameter);</span>
+<span class="fc" id="L32">        }</span>
+<span class="fc" id="L33">        append(lines, &quot;nextToken = com.jsoniter.CodegenAccess.readByte(iter);&quot;);</span>
+<span class="fc" id="L34">        append(lines, &quot;if (nextToken != '\&quot;') {&quot;);</span>
+<span class="fc" id="L35">        append(lines, &quot;if (nextToken == '}') {&quot;);</span>
+<span class="fc" id="L36">        append(lines, &quot;return {{newInst}};&quot;);</span>
+<span class="fc" id="L37">        append(lines, &quot;} else {&quot;);</span>
+<span class="fc" id="L38">        append(lines, &quot;nextToken = com.jsoniter.CodegenAccess.nextToken(iter);&quot;);</span>
+<span class="fc" id="L39">        append(lines, &quot;if (nextToken == '}') {&quot;);</span>
+<span class="fc" id="L40">        append(lines, &quot;return {{newInst}};&quot;);</span>
+<span class="fc" id="L41">        append(lines, &quot;} else {&quot;);</span>
+<span class="fc" id="L42">        append(lines, &quot;com.jsoniter.CodegenAccess.unreadByte(iter);&quot;);</span>
+<span class="fc" id="L43">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L44">        append(lines, &quot;} // end of if end&quot;);</span>
+<span class="fc" id="L45">        append(lines, &quot;} else { com.jsoniter.CodegenAccess.unreadByte(iter); }// end of if not quote&quot;);</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        for (Binding field : desc.fields) {</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">            if (field.fromNames.length == 0) {</span>
+<span class="fc" id="L48">                continue;</span>
+            }
+<span class="fc" id="L50">            appendVarDef(lines, field);</span>
+<span class="fc" id="L51">        }</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        for (Binding setter : desc.setters) {</span>
+<span class="fc" id="L53">            appendVarDef(lines, setter);</span>
+<span class="fc" id="L54">        }</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        for (WrapperDescriptor setter : desc.bindingTypeWrappers) {</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">            for (Binding param : setter.parameters) {</span>
+<span class="fc" id="L57">                appendVarDef(lines, param);</span>
+<span class="fc" id="L58">            }</span>
+<span class="fc" id="L59">        }</span>
+        // === bind fields
+<span class="fc" id="L61">        HashSet&lt;Integer&gt; knownHashes = new HashSet&lt;Integer&gt;();</span>
+<span class="fc" id="L62">        HashMap&lt;String, Binding&gt; bindings = new HashMap&lt;String, Binding&gt;();</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        for (Binding binding : desc.allDecoderBindings()) {</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">            for (String fromName : binding.fromNames) {</span>
+<span class="fc" id="L65">                bindings.put(fromName, binding);</span>
+            }
+<span class="fc" id="L67">        }</span>
+<span class="fc" id="L68">        ArrayList&lt;String&gt; fromNames = new ArrayList&lt;String&gt;(bindings.keySet());</span>
+<span class="fc" id="L69">        Collections.sort(fromNames, new Comparator&lt;String&gt;() {</span>
+            @Override
+            public int compare(String o1, String o2) {
+<span class="fc" id="L72">                int x = calcHash(o1);</span>
+<span class="fc" id="L73">                int y = calcHash(o2);</span>
+<span class="pc bpc" id="L74" title="1 of 4 branches missed.">                return (x &lt; y) ? -1 : ((x == y) ? 0 : 1);</span>
+            }
+        });
+        // === bind more fields
+<span class="fc" id="L78">        append(lines, &quot;do {&quot;);</span>
+<span class="fc" id="L79">        append(lines, &quot;switch (com.jsoniter.CodegenAccess.readObjectFieldAsHash(iter)) {&quot;);</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (String fromName : fromNames) {</span>
+<span class="fc" id="L81">            int intHash = calcHash(fromName);</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">            if (intHash == 0) {</span>
+                // hash collision, 0 can not be used as sentinel
+<span class="nc" id="L84">                return CodegenImplObjectStrict.genObjectUsingStrict(desc);</span>
+            }
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">            if (knownHashes.contains(intHash)) {</span>
+                // hash collision with other field can not be used as sentinel
+<span class="nc" id="L88">                return CodegenImplObjectStrict.genObjectUsingStrict(desc);</span>
+            }
+<span class="fc" id="L90">            knownHashes.add(intHash);</span>
+<span class="fc" id="L91">            append(lines, &quot;case &quot; + intHash + &quot;: &quot;);</span>
+<span class="fc" id="L92">            appendBindingSet(lines, desc, bindings.get(fromName));</span>
+<span class="fc" id="L93">            append(lines, &quot;continue;&quot;);</span>
+<span class="fc" id="L94">        }</span>
+<span class="fc" id="L95">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L96">        append(lines, &quot;iter.skip();&quot;);</span>
+<span class="fc" id="L97">        append(lines, &quot;} while (com.jsoniter.CodegenAccess.nextTokenIsComma(iter));&quot;);</span>
+<span class="fc" id="L98">        append(lines, CodegenImplNative.getTypeName(clazz) + &quot; obj = {{newInst}};&quot;);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (Binding field : desc.fields) {</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">            if (field.fromNames.length == 0) {</span>
+<span class="fc" id="L101">                continue;</span>
+            }
+<span class="fc" id="L103">            append(lines, String.format(&quot;obj.%s = _%s_;&quot;, field.field.getName(), field.name));</span>
+<span class="fc" id="L104">        }</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        for (Binding setter : desc.setters) {</span>
+<span class="fc" id="L106">            append(lines, String.format(&quot;obj.%s(_%s_);&quot;, setter.method.getName(), setter.name));</span>
+<span class="fc" id="L107">        }</span>
+<span class="fc" id="L108">        appendWrappers(desc.bindingTypeWrappers, lines);</span>
+<span class="fc" id="L109">        append(lines, &quot;return obj;&quot;);</span>
+<span class="fc" id="L110">        return lines.toString()</span>
+<span class="fc" id="L111">                .replace(&quot;{{clazz}}&quot;, clazz.getCanonicalName())</span>
+<span class="fc" id="L112">                .replace(&quot;{{newInst}}&quot;, genNewInstCode(clazz, desc.ctor));</span>
+    }
+
+    public static int calcHash(String fromName) {
+<span class="fc" id="L116">        long hash = 0x811c9dc5;</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">        for (byte b : fromName.getBytes()) {</span>
+<span class="fc" id="L118">            hash ^= b;</span>
+<span class="fc" id="L119">            hash *= 0x1000193;</span>
+        }
+<span class="fc" id="L121">        return (int) hash;</span>
+    }
+
+    private static void appendBindingSet(StringBuilder lines, ClassDescriptor desc, Binding binding) {
+<span class="fc" id="L125">        append(lines, String.format(&quot;_%s_ = %s;&quot;, binding.name, CodegenImplNative.genField(binding)));</span>
+<span class="fc" id="L126">    }</span>
+
+    static void appendWrappers(List&lt;WrapperDescriptor&gt; wrappers, StringBuilder lines) {
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        for (WrapperDescriptor wrapper : wrappers) {</span>
+<span class="fc" id="L130">            lines.append(&quot;obj.&quot;);</span>
+<span class="fc" id="L131">            lines.append(wrapper.method.getName());</span>
+<span class="fc" id="L132">            appendInvocation(lines, wrapper.parameters);</span>
+<span class="fc" id="L133">            lines.append(&quot;;\n&quot;);</span>
+<span class="fc" id="L134">        }</span>
+<span class="fc" id="L135">    }</span>
+
+    static void appendVarDef(StringBuilder lines, Binding parameter) {
+<span class="fc" id="L138">        String typeName = CodegenImplNative.getTypeName(parameter.valueType);</span>
+<span class="fc" id="L139">        append(lines, String.format(&quot;%s _%s_ = %s;&quot;, typeName, parameter.name, CodegenImplObjectStrict.DEFAULT_VALUES.get(typeName)));</span>
+<span class="fc" id="L140">    }</span>
+
+    static String genNewInstCode(Class clazz, ConstructorDescriptor ctor) {
+<span class="fc" id="L143">        StringBuilder code = new StringBuilder();</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        if (ctor.parameters.isEmpty()) {</span>
+            // nothing to bind, safe to reuse existing object
+<span class="fc" id="L146">            code.append(&quot;(existingObj == null ? &quot;);</span>
+        }
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        if (ctor.objectFactory != null) {</span>
+<span class="fc" id="L149">            code.append(String.format(&quot;(%s)com.jsoniter.spi.JsoniterSpi.create(%s.class)&quot;,</span>
+<span class="fc" id="L150">                    clazz.getCanonicalName(), clazz.getCanonicalName()));</span>
+        } else {
+<span class="fc bfc" id="L152" title="All 2 branches covered.">            if (ctor.staticMethodName == null) {</span>
+<span class="fc" id="L153">                code.append(String.format(&quot;new %s&quot;, clazz.getCanonicalName()));</span>
+            } else {
+<span class="fc" id="L155">                code.append(String.format(&quot;%s.%s&quot;, clazz.getCanonicalName(), ctor.staticMethodName));</span>
+            }
+        }
+<span class="fc" id="L158">        List&lt;Binding&gt; params = ctor.parameters;</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        if (ctor.objectFactory == null) {</span>
+<span class="fc" id="L160">            appendInvocation(code, params);</span>
+        }
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        if (ctor.parameters.isEmpty()) {</span>
+            // nothing to bind, safe to reuse existing obj
+<span class="fc" id="L164">            code.append(String.format(&quot; : (%s)existingObj)&quot;, clazz.getCanonicalName()));</span>
+        }
+<span class="fc" id="L166">        return code.toString();</span>
+    }
+
+    private static void appendInvocation(StringBuilder code, List&lt;Binding&gt; params) {
+<span class="fc" id="L170">        code.append(&quot;(&quot;);</span>
+<span class="fc" id="L171">        boolean isFirst = true;</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        for (Binding ctorParam : params) {</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">            if (isFirst) {</span>
+<span class="fc" id="L174">                isFirst = false;</span>
+            } else {
+<span class="nc" id="L176">                code.append(&quot;,&quot;);</span>
+            }
+<span class="fc" id="L178">            code.append(String.format(&quot;_%s_&quot;, ctorParam.name));</span>
+<span class="fc" id="L179">        }</span>
+<span class="fc" id="L180">        code.append(&quot;)&quot;);</span>
+<span class="fc" id="L181">    }</span>
+
+    static void append(StringBuilder lines, String str) {
+<span class="fc" id="L184">        lines.append(str);</span>
+<span class="fc" id="L185">        lines.append(&quot;\n&quot;);</span>
+<span class="fc" id="L186">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StreamImplNumber.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.output</a> &gt; <span class="el_source">StreamImplNumber.java</span></div><h1>StreamImplNumber.java</h1><pre class="source lang-java linenums">/*
+this implementations contains significant code from https://github.com/ngs-doo/dsl-json/blob/master/LICENSE
+
+Copyright (c) 2015, Nova Generacija Softvera d.o.o.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+    * Neither the name of Nova Generacija Softvera d.o.o. nor the names of its
+      contributors may be used to endorse or promote products derived from this
+      software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package com.jsoniter.output;
+
+import java.io.IOException;
+
+<span class="nc" id="L36">class StreamImplNumber {</span>
+
+<span class="fc" id="L38">    private final static int[] DIGITS = new int[1000];</span>
+
+    static {
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        for (int i = 0; i &lt; 1000; i++) {</span>
+<span class="fc bfc" id="L42" title="All 4 branches covered.">            DIGITS[i] = (i &lt; 10 ? (2 &lt;&lt; 24) : i &lt; 100 ? (1 &lt;&lt; 24) : 0)</span>
+                    + (((i / 100) + '0') &lt;&lt; 16)
+                    + ((((i / 10) % 10) + '0') &lt;&lt; 8)
+                    + i % 10 + '0';
+        }
+    }
+
+<span class="fc" id="L49">    private static final byte[] MIN_INT = &quot;-2147483648&quot;.getBytes();</span>
+
+    public static final void writeInt(final JsonStream stream, int value) throws IOException {
+<span class="fc" id="L52">        stream.ensure(12);</span>
+<span class="fc" id="L53">        byte[] buf = stream.buf;</span>
+<span class="fc" id="L54">        int pos = stream.count;</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (value &lt; 0) {</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">            if (value == Integer.MIN_VALUE) {</span>
+<span class="nc" id="L57">                System.arraycopy(MIN_INT, 0, buf, pos, MIN_INT.length);</span>
+<span class="nc" id="L58">                stream.count = pos + MIN_INT.length;</span>
+<span class="nc" id="L59">                return;</span>
+            }
+<span class="fc" id="L61">            value = -value;</span>
+<span class="fc" id="L62">            buf[pos++] = '-';</span>
+        }
+<span class="fc" id="L64">        final int q1 = value / 1000;</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (q1 == 0) {</span>
+<span class="fc" id="L66">            pos += writeFirstBuf(buf, DIGITS[value], pos);</span>
+<span class="fc" id="L67">            stream.count = pos;</span>
+<span class="fc" id="L68">            return;</span>
+        }
+<span class="fc" id="L70">        final int r1 = value - q1 * 1000;</span>
+<span class="fc" id="L71">        final int q2 = q1 / 1000;</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        if (q2 == 0) {</span>
+<span class="nc" id="L73">            final int v1 = DIGITS[r1];</span>
+<span class="nc" id="L74">            final int v2 = DIGITS[q1];</span>
+<span class="nc" id="L75">            int off = writeFirstBuf(buf, v2, pos);</span>
+<span class="nc" id="L76">            writeBuf(buf, v1, pos + off);</span>
+<span class="nc" id="L77">            stream.count = pos + 3 + off;</span>
+<span class="nc" id="L78">            return;</span>
+        }
+<span class="fc" id="L80">        final int r2 = q1 - q2 * 1000;</span>
+<span class="fc" id="L81">        final long q3 = q2 / 1000;</span>
+<span class="fc" id="L82">        final int v1 = DIGITS[r1];</span>
+<span class="fc" id="L83">        final int v2 = DIGITS[r2];</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">        if (q3 == 0) {</span>
+<span class="fc" id="L85">            pos += writeFirstBuf(buf, DIGITS[q2], pos);</span>
+        } else {
+<span class="nc" id="L87">            final int r3 = (int) (q2 - q3 * 1000);</span>
+<span class="nc" id="L88">            buf[pos++] = (byte) (q3 + '0');</span>
+<span class="nc" id="L89">            writeBuf(buf, DIGITS[r3], pos);</span>
+<span class="nc" id="L90">            pos += 3;</span>
+        }
+<span class="fc" id="L92">        writeBuf(buf, v2, pos);</span>
+<span class="fc" id="L93">        writeBuf(buf, v1, pos + 3);</span>
+<span class="fc" id="L94">        stream.count = pos + 6;</span>
+<span class="fc" id="L95">    }</span>
+
+    private static int writeFirstBuf(final byte[] buf, final int v, int pos) {
+<span class="fc" id="L98">        final int start = v &gt;&gt; 24;</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        if (start == 0) {</span>
+<span class="fc" id="L100">            buf[pos++] = (byte) (v &gt;&gt; 16);</span>
+<span class="fc" id="L101">            buf[pos++] = (byte) (v &gt;&gt; 8);</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        } else if (start == 1) {</span>
+<span class="fc" id="L103">            buf[pos++] = (byte) (v &gt;&gt; 8);</span>
+        }
+<span class="fc" id="L105">        buf[pos] = (byte) v;</span>
+<span class="fc" id="L106">        return 3 - start;</span>
+    }
+
+    private static void writeBuf(final byte[] buf, final int v, int pos) {
+<span class="fc" id="L110">        buf[pos] = (byte) (v &gt;&gt; 16);</span>
+<span class="fc" id="L111">        buf[pos + 1] = (byte) (v &gt;&gt; 8);</span>
+<span class="fc" id="L112">        buf[pos + 2] = (byte) v;</span>
+<span class="fc" id="L113">    }</span>
+
+<span class="fc" id="L115">    private static final byte[] MIN_LONG = &quot;-9223372036854775808&quot;.getBytes();</span>
+
+    public static final void writeLong(final JsonStream stream, long value) throws IOException {
+<span class="fc" id="L118">        stream.ensure(22);</span>
+<span class="fc" id="L119">        byte[] buf = stream.buf;</span>
+<span class="fc" id="L120">        int pos = stream.count;</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (value &lt; 0) {</span>
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">            if (value == Long.MIN_VALUE) {</span>
+<span class="nc" id="L123">                System.arraycopy(MIN_LONG, 0, buf, pos, MIN_LONG.length);</span>
+<span class="nc" id="L124">                stream.count = pos + MIN_LONG.length;</span>
+<span class="nc" id="L125">                return;</span>
+            }
+<span class="fc" id="L127">            value = -value;</span>
+<span class="fc" id="L128">            buf[pos++] = '-';</span>
+        }
+<span class="fc" id="L130">        final long q1 = value / 1000;</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (q1 == 0) {</span>
+<span class="fc" id="L132">            pos += writeFirstBuf(buf, DIGITS[(int) value], pos);</span>
+<span class="fc" id="L133">            stream.count = pos;</span>
+<span class="fc" id="L134">            return;</span>
+        }
+<span class="fc" id="L136">        final int r1 = (int) (value - q1 * 1000);</span>
+<span class="fc" id="L137">        final long q2 = q1 / 1000;</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">        if (q2 == 0) {</span>
+<span class="fc" id="L139">            final int v1 = DIGITS[r1];</span>
+<span class="fc" id="L140">            final int v2 = DIGITS[(int) q1];</span>
+<span class="fc" id="L141">            int off = writeFirstBuf(buf, v2, pos);</span>
+<span class="fc" id="L142">            writeBuf(buf, v1, pos + off);</span>
+<span class="fc" id="L143">            stream.count = pos + 3 + off;</span>
+<span class="fc" id="L144">            return;</span>
+        }
+<span class="fc" id="L146">        final int r2 = (int) (q1 - q2 * 1000);</span>
+<span class="fc" id="L147">        final long q3 = q2 / 1000;</span>
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        if (q3 == 0) {</span>
+<span class="fc" id="L149">            final int v1 = DIGITS[r1];</span>
+<span class="fc" id="L150">            final int v2 = DIGITS[r2];</span>
+<span class="fc" id="L151">            final int v3 = DIGITS[(int) q2];</span>
+<span class="fc" id="L152">            pos += writeFirstBuf(buf, v3, pos);</span>
+<span class="fc" id="L153">            writeBuf(buf, v2, pos);</span>
+<span class="fc" id="L154">            writeBuf(buf, v1, pos + 3);</span>
+<span class="fc" id="L155">            stream.count = pos + 6;</span>
+<span class="fc" id="L156">            return;</span>
+        }
+<span class="fc" id="L158">        final int r3 = (int) (q2 - q3 * 1000);</span>
+<span class="fc" id="L159">        final int q4 = (int) (q3 / 1000);</span>
+<span class="pc bpc" id="L160" title="1 of 2 branches missed.">        if (q4 == 0) {</span>
+<span class="nc" id="L161">            final int v1 = DIGITS[r1];</span>
+<span class="nc" id="L162">            final int v2 = DIGITS[r2];</span>
+<span class="nc" id="L163">            final int v3 = DIGITS[r3];</span>
+<span class="nc" id="L164">            final int v4 = DIGITS[(int) q3];</span>
+<span class="nc" id="L165">            pos += writeFirstBuf(buf, v4, pos);</span>
+<span class="nc" id="L166">            writeBuf(buf, v3, pos);</span>
+<span class="nc" id="L167">            writeBuf(buf, v2, pos + 3);</span>
+<span class="nc" id="L168">            writeBuf(buf, v1, pos + 6);</span>
+<span class="nc" id="L169">            stream.count = pos + 9;</span>
+<span class="nc" id="L170">            return;</span>
+        }
+<span class="fc" id="L172">        final int r4 = (int) (q3 - q4 * 1000);</span>
+<span class="fc" id="L173">        final int q5 = q4 / 1000;</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        if (q5 == 0) {</span>
+<span class="fc" id="L175">            final int v1 = DIGITS[r1];</span>
+<span class="fc" id="L176">            final int v2 = DIGITS[r2];</span>
+<span class="fc" id="L177">            final int v3 = DIGITS[r3];</span>
+<span class="fc" id="L178">            final int v4 = DIGITS[r4];</span>
+<span class="fc" id="L179">            final int v5 = DIGITS[q4];</span>
+<span class="fc" id="L180">            pos += writeFirstBuf(buf, v5, pos);</span>
+<span class="fc" id="L181">            writeBuf(buf, v4, pos);</span>
+<span class="fc" id="L182">            writeBuf(buf, v3, pos + 3);</span>
+<span class="fc" id="L183">            writeBuf(buf, v2, pos + 6);</span>
+<span class="fc" id="L184">            writeBuf(buf, v1, pos + 9);</span>
+<span class="fc" id="L185">            stream.count = pos + 12;</span>
+<span class="fc" id="L186">            return;</span>
+        }
+<span class="nc" id="L188">        final int r5 = q4 - q5 * 1000;</span>
+<span class="nc" id="L189">        final int q6 = q5 / 1000;</span>
+<span class="nc" id="L190">        final int v1 = DIGITS[r1];</span>
+<span class="nc" id="L191">        final int v2 = DIGITS[r2];</span>
+<span class="nc" id="L192">        final int v3 = DIGITS[r3];</span>
+<span class="nc" id="L193">        final int v4 = DIGITS[r4];</span>
+<span class="nc" id="L194">        final int v5 = DIGITS[r5];</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">        if (q6 == 0) {</span>
+<span class="nc" id="L196">            pos += writeFirstBuf(buf, DIGITS[q5], pos);</span>
+        } else {
+<span class="nc" id="L198">            final int r6 = q5 - q6 * 1000;</span>
+<span class="nc" id="L199">            buf[pos++] = (byte) (q6 + '0');</span>
+<span class="nc" id="L200">            writeBuf(buf, DIGITS[r6], pos);</span>
+<span class="nc" id="L201">            pos += 3;</span>
+        }
+<span class="nc" id="L203">        writeBuf(buf, v5, pos);</span>
+<span class="nc" id="L204">        writeBuf(buf, v4, pos + 3);</span>
+<span class="nc" id="L205">        writeBuf(buf, v3, pos + 6);</span>
+<span class="nc" id="L206">        writeBuf(buf, v2, pos + 9);</span>
+<span class="nc" id="L207">        writeBuf(buf, v1, pos + 12);</span>
+<span class="nc" id="L208">        stream.count = pos + 15;</span>
+<span class="nc" id="L209">    }</span>
+
+<span class="fc" id="L211">    private static final int POW10[] = {1, 10, 100, 1000, 10000, 100000, 1000000};</span>
+
+    public static final void writeFloat(JsonStream stream, float val) throws IOException {
+<span class="fc bfc" id="L214" title="All 2 branches covered.">        if (val &lt; 0) {</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">            if (val == Float.NEGATIVE_INFINITY) {</span>
+<span class="fc" id="L216">                stream.writeVal(&quot;-Infinity&quot;);</span>
+<span class="fc" id="L217">                return;</span>
+            }
+<span class="nc" id="L219">            stream.write('-');</span>
+<span class="nc" id="L220">            val = -val;</span>
+        }
+<span class="fc bfc" id="L222" title="All 2 branches covered.">        if (val &gt; 0x4ffffff) {</span>
+<span class="pc bpc" id="L223" title="1 of 2 branches missed.">            if (val == Float.POSITIVE_INFINITY) {</span>
+<span class="fc" id="L224">                stream.writeVal(&quot;Infinity&quot;);</span>
+<span class="fc" id="L225">                return;</span>
+            }
+<span class="nc" id="L227">            stream.writeRaw(Float.toString(val));</span>
+<span class="nc" id="L228">            return;</span>
+        }
+<span class="fc" id="L230">        int precision = 6;</span>
+<span class="fc" id="L231">        int exp = 1000000; // 6</span>
+<span class="fc" id="L232">        long lval = (long)(val * exp + 0.5);</span>
+<span class="fc" id="L233">        stream.writeVal(lval / exp);</span>
+<span class="fc" id="L234">        long fval = lval % exp;</span>
+<span class="fc bfc" id="L235" title="All 2 branches covered.">        if (fval == 0) {</span>
+<span class="fc" id="L236">            return;</span>
+        }
+<span class="fc" id="L238">        stream.write('.');</span>
+<span class="fc" id="L239">        stream.ensure(11);</span>
+<span class="fc bfc" id="L240" title="All 4 branches covered.">        for (int p = precision - 1; p &gt; 0 &amp;&amp; fval &lt; POW10[p]; p--) {</span>
+<span class="fc" id="L241">            stream.buf[stream.count++] = '0';</span>
+        }
+<span class="fc" id="L243">        stream.writeVal(fval);</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">        while(stream.buf[stream.count-1] == '0') {</span>
+<span class="fc" id="L245">            stream.count--;</span>
+        }
+<span class="fc" id="L247">    }</span>
+
+    public static final void writeDouble(JsonStream stream, double val) throws IOException {
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        if (val &lt; 0) {</span>
+<span class="pc bpc" id="L251" title="1 of 2 branches missed.">            if (val == Double.NEGATIVE_INFINITY) {</span>
+<span class="fc" id="L252">                stream.writeVal(&quot;-Infinity&quot;);</span>
+<span class="fc" id="L253">                return;</span>
+            }
+<span class="nc" id="L255">            val = -val;</span>
+<span class="nc" id="L256">            stream.write('-');</span>
+        }
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        if (val &gt; 0x4ffffff) {</span>
+<span class="fc bfc" id="L259" title="All 2 branches covered.">            if (val == Double.POSITIVE_INFINITY) {</span>
+<span class="fc" id="L260">                stream.writeVal(&quot;Infinity&quot;);</span>
+<span class="fc" id="L261">                return;</span>
+            }
+<span class="fc" id="L263">            stream.writeRaw(Double.toString(val));</span>
+<span class="fc" id="L264">            return;</span>
+        }
+<span class="fc" id="L266">        int precision = 6;</span>
+<span class="fc" id="L267">        int exp = 1000000; // 6</span>
+<span class="fc" id="L268">        long lval = (long)(val * exp + 0.5);</span>
+<span class="fc" id="L269">        stream.writeVal(lval / exp);</span>
+<span class="fc" id="L270">        long fval = lval % exp;</span>
+<span class="fc bfc" id="L271" title="All 2 branches covered.">        if (fval == 0) {</span>
+<span class="fc" id="L272">            return;</span>
+        }
+<span class="fc" id="L274">        stream.write('.');</span>
+<span class="fc" id="L275">        stream.ensure(11);</span>
+<span class="pc bpc" id="L276" title="1 of 4 branches missed.">        for (int p = precision - 1; p &gt; 0 &amp;&amp; fval &lt; POW10[p]; p--) {</span>
+<span class="fc" id="L277">            stream.buf[stream.count++] = '0';</span>
+        }
+<span class="fc" id="L279">        stream.writeVal(fval);</span>
+<span class="fc bfc" id="L280" title="All 2 branches covered.">        while(stream.buf[stream.count-1] == '0') {</span>
+<span class="fc" id="L281">            stream.count--;</span>
+        }
+<span class="fc" id="L283">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

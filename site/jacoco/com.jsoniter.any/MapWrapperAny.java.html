@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MapWrapperAny.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.any</a> &gt; <span class="el_source">MapWrapperAny.java</span></div><h1>MapWrapperAny.java</h1><pre class="source lang-java linenums">package com.jsoniter.any;
+
+import com.jsoniter.ValueType;
+import com.jsoniter.output.JsonStream;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
+class MapWrapperAny extends Any {
+
+    private final Map val;
+    private Map&lt;String, Any&gt; cache;
+
+<span class="nc" id="L19">    public MapWrapperAny(Map val) {</span>
+<span class="nc" id="L20">        this.val = val;</span>
+<span class="nc" id="L21">    }</span>
+
+    @Override
+    public ValueType valueType() {
+<span class="nc" id="L25">        return ValueType.OBJECT;</span>
+    }
+
+    @Override
+    public Object object() {
+<span class="nc" id="L30">        fillCache();</span>
+<span class="nc" id="L31">        return cache;</span>
+    }
+
+    @Override
+    public boolean toBoolean() {
+<span class="nc bnc" id="L36" title="All 2 branches missed.">        return size() != 0;</span>
+    }
+
+    @Override
+    public int toInt() {
+<span class="nc" id="L41">        return size();</span>
+    }
+
+    @Override
+    public long toLong() {
+<span class="nc" id="L46">        return size();</span>
+    }
+
+    @Override
+    public float toFloat() {
+<span class="nc" id="L51">        return size();</span>
+    }
+
+    @Override
+    public double toDouble() {
+<span class="nc" id="L56">        return size();</span>
+    }
+
+    @Override
+    public BigInteger toBigInteger() {
+<span class="nc" id="L61">        return BigInteger.valueOf(size());</span>
+    }
+
+    @Override
+    public BigDecimal toBigDecimal() {
+<span class="nc" id="L66">        return BigDecimal.valueOf(size());</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        if (cache == null) {</span>
+<span class="nc" id="L72">            return JsonStream.serialize(val);</span>
+        } else {
+<span class="nc" id="L74">            fillCache();</span>
+<span class="nc" id="L75">            return JsonStream.serialize(cache);</span>
+        }
+    }
+
+    @Override
+    public void writeTo(JsonStream stream) throws IOException {
+<span class="nc bnc" id="L81" title="All 2 branches missed.">        if (cache == null) {</span>
+<span class="nc" id="L82">            stream.writeVal(val);</span>
+        } else {
+<span class="nc" id="L84">            fillCache();</span>
+<span class="nc" id="L85">            stream.writeVal(cache);</span>
+        }
+<span class="nc" id="L87">    }</span>
+
+    @Override
+    public int size() {
+<span class="nc" id="L91">        return val.size();</span>
+    }
+
+    @Override
+    public Any get(Object key) {
+<span class="nc" id="L96">        return fillCacheUntil(key);</span>
+    }
+
+    @Override
+    public Any get(Object[] keys, int idx) {
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        if (idx == keys.length) {</span>
+<span class="nc" id="L102">            return this;</span>
+        }
+<span class="nc" id="L104">        Object key = keys[idx];</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (isWildcard(key)) {</span>
+<span class="nc" id="L106">            fillCache();</span>
+<span class="nc" id="L107">            HashMap&lt;String, Any&gt; result = new HashMap&lt;String, Any&gt;();</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">            for (Map.Entry&lt;String, Any&gt; entry : cache.entrySet()) {</span>
+<span class="nc" id="L109">                Any mapped = entry.getValue().get(keys, idx + 1);</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">                if (mapped.valueType() != ValueType.INVALID) {</span>
+<span class="nc" id="L111">                    result.put(entry.getKey(), mapped);</span>
+                }
+<span class="nc" id="L113">            }</span>
+<span class="nc" id="L114">            return Any.rewrap(result);</span>
+        }
+<span class="nc" id="L116">        Any child = fillCacheUntil(key);</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (child == null) {</span>
+<span class="nc" id="L118">            return new NotFoundAny(keys, idx, object());</span>
+        }
+<span class="nc" id="L120">        return child.get(keys, idx + 1);</span>
+    }
+
+    @Override
+    public EntryIterator entries() {
+<span class="nc" id="L125">        return new WrapperIterator();</span>
+    }
+
+    private Any fillCacheUntil(Object target) {
+<span class="nc bnc" id="L129" title="All 2 branches missed.">        if (cache == null) {</span>
+<span class="nc" id="L130">            cache = new HashMap&lt;String, Any&gt;();</span>
+        }
+<span class="nc" id="L132">        Any element = cache.get(target);</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        if (element != null) {</span>
+<span class="nc" id="L134">            return element;</span>
+        }
+<span class="nc" id="L136">        Set&lt;Map.Entry&lt;String, Object&gt;&gt; entries = val.entrySet();</span>
+<span class="nc" id="L137">        int targetHashcode = target.hashCode();</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">        for (Map.Entry&lt;String, Object&gt; entry : entries) {</span>
+<span class="nc" id="L139">            String key = entry.getKey();</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">            if (cache.containsKey(key)) {</span>
+<span class="nc" id="L141">                continue;</span>
+            }
+<span class="nc" id="L143">            element = Any.wrap(entry.getValue());</span>
+<span class="nc" id="L144">            cache.put(key, element);</span>
+<span class="nc bnc" id="L145" title="All 4 branches missed.">            if (targetHashcode == key.hashCode() &amp;&amp; target.equals(key)) {</span>
+<span class="nc" id="L146">                return element;</span>
+            }
+<span class="nc" id="L148">        }</span>
+<span class="nc" id="L149">        return new NotFoundAny(target, val);</span>
+    }
+
+    private void fillCache() {
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        if (cache == null) {</span>
+<span class="nc" id="L154">            cache = new HashMap&lt;String, Any&gt;();</span>
+        }
+<span class="nc" id="L156">        Set&lt;Map.Entry&lt;String, Object&gt;&gt; entries = val.entrySet();</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">        for (Map.Entry&lt;String, Object&gt; entry : entries) {</span>
+<span class="nc" id="L158">            String key = entry.getKey();</span>
+<span class="nc bnc" id="L159" title="All 2 branches missed.">            if (cache.containsKey(key)) {</span>
+<span class="nc" id="L160">                continue;</span>
+            }
+<span class="nc" id="L162">            Any element = Any.wrap(entry.getValue());</span>
+<span class="nc" id="L163">            cache.put(key, element);</span>
+<span class="nc" id="L164">        }</span>
+<span class="nc" id="L165">    }</span>
+
+    private class WrapperIterator implements EntryIterator {
+
+        private final Iterator&lt;Map.Entry&lt;String, Object&gt;&gt; iter;
+        private String key;
+        private Any value;
+
+<span class="nc" id="L173">        private WrapperIterator() {</span>
+<span class="nc" id="L174">            Set&lt;Map.Entry&lt;String, Object&gt;&gt; entries = val.entrySet();</span>
+<span class="nc" id="L175">            iter = entries.iterator();</span>
+<span class="nc" id="L176">        }</span>
+
+        @Override
+        public boolean next() {
+<span class="nc bnc" id="L180" title="All 2 branches missed.">            if (cache == null) {</span>
+<span class="nc" id="L181">                cache = new HashMap&lt;String, Any&gt;();</span>
+            }
+<span class="nc bnc" id="L183" title="All 2 branches missed.">            if (!iter.hasNext()) {</span>
+<span class="nc" id="L184">                return false;</span>
+            }
+<span class="nc" id="L186">            Map.Entry&lt;String, Object&gt; entry = iter.next();</span>
+<span class="nc" id="L187">            key = entry.getKey();</span>
+<span class="nc" id="L188">            value = cache.get(key);</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">            if (value == null) {</span>
+<span class="nc" id="L190">                value = Any.wrap(entry.getValue());</span>
+<span class="nc" id="L191">                cache.put(key, value);</span>
+            }
+<span class="nc" id="L193">            return true;</span>
+        }
+
+        @Override
+        public String key() {
+<span class="nc" id="L198">            return key;</span>
+        }
+
+        @Override
+        public Any value() {
+<span class="nc" id="L203">            return value;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

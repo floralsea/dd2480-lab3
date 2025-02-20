@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TypeLiteral.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.spi</a> &gt; <span class="el_source">TypeLiteral.java</span></div><h1>TypeLiteral.java</h1><pre class="source lang-java linenums">package com.jsoniter.spi;
+
+import com.jsoniter.any.Any;
+
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
+
+public class TypeLiteral&lt;T&gt; {
+
+<span class="fc" id="L16">    public enum NativeType {</span>
+<span class="fc" id="L17">        FLOAT,</span>
+<span class="fc" id="L18">        DOUBLE,</span>
+<span class="fc" id="L19">        BOOLEAN,</span>
+<span class="fc" id="L20">        BYTE,</span>
+<span class="fc" id="L21">        SHORT,</span>
+<span class="fc" id="L22">        INT,</span>
+<span class="fc" id="L23">        CHAR,</span>
+<span class="fc" id="L24">        LONG,</span>
+<span class="fc" id="L25">        BIG_DECIMAL,</span>
+<span class="fc" id="L26">        BIG_INTEGER,</span>
+<span class="fc" id="L27">        STRING,</span>
+<span class="fc" id="L28">        OBJECT,</span>
+<span class="fc" id="L29">        ANY,</span>
+    }
+
+<span class="fc" id="L32">    public static Map&lt;Type, NativeType&gt; nativeTypes = new HashMap&lt;Type, NativeType&gt;() {{</span>
+<span class="fc" id="L33">        put(float.class, NativeType.FLOAT);</span>
+<span class="fc" id="L34">        put(Float.class, NativeType.FLOAT);</span>
+<span class="fc" id="L35">        put(double.class, NativeType.DOUBLE);</span>
+<span class="fc" id="L36">        put(Double.class, NativeType.DOUBLE);</span>
+<span class="fc" id="L37">        put(boolean.class, NativeType.BOOLEAN);</span>
+<span class="fc" id="L38">        put(Boolean.class, NativeType.BOOLEAN);</span>
+<span class="fc" id="L39">        put(byte.class, NativeType.BYTE);</span>
+<span class="fc" id="L40">        put(Byte.class, NativeType.BYTE);</span>
+<span class="fc" id="L41">        put(short.class, NativeType.SHORT);</span>
+<span class="fc" id="L42">        put(Short.class, NativeType.SHORT);</span>
+<span class="fc" id="L43">        put(int.class, NativeType.INT);</span>
+<span class="fc" id="L44">        put(Integer.class, NativeType.INT);</span>
+<span class="fc" id="L45">        put(char.class, NativeType.CHAR);</span>
+<span class="fc" id="L46">        put(Character.class, NativeType.CHAR);</span>
+<span class="fc" id="L47">        put(long.class, NativeType.LONG);</span>
+<span class="fc" id="L48">        put(Long.class, NativeType.LONG);</span>
+<span class="fc" id="L49">        put(BigDecimal.class, NativeType.BIG_DECIMAL);</span>
+<span class="fc" id="L50">        put(BigInteger.class, NativeType.BIG_INTEGER);</span>
+<span class="fc" id="L51">        put(String.class, NativeType.STRING);</span>
+<span class="fc" id="L52">        put(Object.class, NativeType.OBJECT);</span>
+<span class="fc" id="L53">        put(Any.class, NativeType.ANY);</span>
+    }};
+
+<span class="fc" id="L56">    private volatile static Map&lt;Type, TypeLiteral&gt; typeLiteralCache = new HashMap&lt;Type, TypeLiteral&gt;();</span>
+    final Type type;
+    final String decoderCacheKey;
+    final String encoderCacheKey;
+    // TODO: remove native type
+    final NativeType nativeType;
+
+    /**
+     * Constructs a new type literal. Derives represented class from type parameter.
+     * Clients create an empty anonymous subclass. Doing so embeds the type parameter in the
+     * anonymous class's type hierarchy so we can reconstitute it at runtime despite erasure.
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L69">    protected TypeLiteral() {</span>
+<span class="fc" id="L70">        this.type = getSuperclassTypeParameter(getClass());</span>
+<span class="fc" id="L71">        nativeType = nativeTypes.get(this.type);</span>
+<span class="fc" id="L72">        decoderCacheKey = generateDecoderCacheKey(type);</span>
+<span class="fc" id="L73">        encoderCacheKey = generateEncoderCacheKey(type);</span>
+<span class="fc" id="L74">    }</span>
+
+<span class="fc" id="L76">    public TypeLiteral(Type type, String decoderCacheKey, String encoderCacheKey) {</span>
+<span class="fc" id="L77">        this.type = type;</span>
+<span class="fc" id="L78">        nativeType = nativeTypes.get(this.type);</span>
+<span class="fc" id="L79">        this.decoderCacheKey = decoderCacheKey;</span>
+<span class="fc" id="L80">        this.encoderCacheKey = encoderCacheKey;</span>
+<span class="fc" id="L81">    }</span>
+
+    private static String generateDecoderCacheKey(Type type) {
+<span class="fc" id="L84">        return generateCacheKey(type, &quot;decoder.&quot;);</span>
+    }
+
+    private static String generateEncoderCacheKey(Type type) {
+<span class="fc" id="L88">        return generateCacheKey(type, &quot;encoder.&quot;);</span>
+    }
+
+    private static String generateCacheKey(Type type, String prefix) {
+<span class="fc" id="L92">        StringBuilder decoderClassName = new StringBuilder(prefix);</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        if (type instanceof Class) {</span>
+<span class="fc" id="L94">            Class clazz = (Class) type;</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">            if (clazz.isAnonymousClass()) {</span>
+<span class="nc" id="L96">                throw new JsonException(&quot;anonymous class not supported: &quot; + clazz);</span>
+            }
+<span class="fc bfc" id="L98" title="All 2 branches covered.">            if (clazz.isArray()) {</span>
+<span class="fc" id="L99">                decoderClassName.append(clazz.getCanonicalName().replace(&quot;[]&quot;, &quot;_array&quot;));</span>
+            } else {
+                // for nested class $
+<span class="fc" id="L102">                decoderClassName.append(clazz.getName().replace(&quot;[]&quot;, &quot;_array&quot;));</span>
+            }
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        } else if (type instanceof ParameterizedType) {</span>
+            try {
+<span class="fc" id="L106">                ParameterizedType pType = (ParameterizedType) type;</span>
+<span class="fc" id="L107">                Class clazz = (Class) pType.getRawType();</span>
+<span class="fc" id="L108">                decoderClassName.append(clazz.getCanonicalName().replace(&quot;[]&quot;, &quot;_array&quot;));</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">                for (int i = 0; i &lt; pType.getActualTypeArguments().length; i++) {</span>
+<span class="fc" id="L110">                    String typeName = formatTypeWithoutSpecialCharacter(pType.getActualTypeArguments()[i]);</span>
+<span class="fc" id="L111">                    decoderClassName.append('_');</span>
+<span class="fc" id="L112">                    decoderClassName.append(typeName);</span>
+                }
+<span class="nc" id="L114">            } catch (JsonException e) {</span>
+<span class="nc" id="L115">                throw e;</span>
+<span class="nc" id="L116">            } catch (Exception e) {</span>
+<span class="nc" id="L117">                throw new JsonException(&quot;failed to generate cache key for: &quot; + type, e);</span>
+<span class="fc" id="L118">            }</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        } else if (type instanceof GenericArrayType) {</span>
+<span class="fc" id="L120">            GenericArrayType gaType = (GenericArrayType) type;</span>
+<span class="fc" id="L121">            Type compType = gaType.getGenericComponentType();</span>
+<span class="fc" id="L122">            decoderClassName.append(formatTypeWithoutSpecialCharacter(compType));</span>
+<span class="fc" id="L123">            decoderClassName.append(&quot;_array&quot;);</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">        } else if (type instanceof WildcardType) {</span>
+<span class="fc" id="L125">            decoderClassName.append(Object.class.getName());</span>
+        } else {
+<span class="nc" id="L127">            throw new UnsupportedOperationException(&quot;do not know how to handle: &quot; + type);</span>
+        }
+<span class="fc" id="L129">        return decoderClassName.toString().replace(&quot;$&quot;, &quot;_&quot;);</span>
+    }
+
+    private static String formatTypeWithoutSpecialCharacter(Type type) {
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        if (type instanceof Class) {</span>
+<span class="fc" id="L134">            Class clazz = (Class) type;</span>
+<span class="fc" id="L135">            return clazz.getCanonicalName();</span>
+        }
+<span class="fc bfc" id="L137" title="All 2 branches covered.">        if (type instanceof ParameterizedType) {</span>
+<span class="fc" id="L138">            ParameterizedType pType = (ParameterizedType) type;</span>
+<span class="fc" id="L139">            String typeName = formatTypeWithoutSpecialCharacter(pType.getRawType());</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">            for (Type typeArg : pType.getActualTypeArguments()) {</span>
+<span class="fc" id="L141">                typeName += &quot;_&quot;;</span>
+<span class="fc" id="L142">                typeName += formatTypeWithoutSpecialCharacter(typeArg);</span>
+            }
+<span class="fc" id="L144">            return typeName;</span>
+        }
+<span class="fc bfc" id="L146" title="All 2 branches covered.">        if (type instanceof GenericArrayType) {</span>
+<span class="fc" id="L147">            GenericArrayType gaType = (GenericArrayType) type;</span>
+<span class="fc" id="L148">            return formatTypeWithoutSpecialCharacter(gaType.getGenericComponentType()) + &quot;_array&quot;;</span>
+        }
+<span class="pc bpc" id="L150" title="1 of 2 branches missed.">        if (type instanceof WildcardType) {</span>
+<span class="fc" id="L151">            return Object.class.getCanonicalName();</span>
+        }
+<span class="nc" id="L153">        throw new JsonException(&quot;unsupported type: &quot; + type + &quot;, of class &quot; + type.getClass());</span>
+    }
+
+    static Type getSuperclassTypeParameter(Class&lt;?&gt; subclass) {
+<span class="fc" id="L157">        Type superclass = subclass.getGenericSuperclass();</span>
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">        if (superclass instanceof Class) {</span>
+<span class="nc" id="L159">            throw new JsonException(&quot;Missing type parameter.&quot;);</span>
+        }
+<span class="fc" id="L161">        ParameterizedType parameterized = (ParameterizedType) superclass;</span>
+<span class="fc" id="L162">        return parameterized.getActualTypeArguments()[0];</span>
+    }
+
+    public static TypeLiteral create(Type valueType) {
+<span class="fc" id="L166">        TypeLiteral typeLiteral = typeLiteralCache.get(valueType);</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        if (typeLiteral != null) {</span>
+<span class="fc" id="L168">            return typeLiteral;</span>
+        }
+<span class="fc" id="L170">        return createNew(valueType);</span>
+    }
+
+    private synchronized static TypeLiteral createNew(Type valueType) {
+<span class="fc" id="L174">        TypeLiteral typeLiteral = typeLiteralCache.get(valueType);</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">        if (typeLiteral != null) {</span>
+<span class="nc" id="L176">            return typeLiteral;</span>
+        }
+<span class="fc" id="L178">        HashMap&lt;Type, TypeLiteral&gt; copy = new HashMap&lt;Type, TypeLiteral&gt;(typeLiteralCache);</span>
+<span class="fc" id="L179">        typeLiteral = new TypeLiteral(valueType,</span>
+<span class="fc" id="L180">                generateDecoderCacheKey(valueType),</span>
+<span class="fc" id="L181">                generateEncoderCacheKey(valueType));</span>
+<span class="fc" id="L182">        copy.put(valueType, typeLiteral);</span>
+<span class="fc" id="L183">        typeLiteralCache = copy;</span>
+<span class="fc" id="L184">        return typeLiteral;</span>
+    }
+
+    public Type getType() {
+<span class="fc" id="L188">        return type;</span>
+    }
+
+    public String getDecoderCacheKey() {
+<span class="fc" id="L192">        return getDecoderCacheKey(JsoniterSpi.getCurrentConfig().configName());</span>
+    }
+
+    public String getDecoderCacheKey(String configName) {
+<span class="fc" id="L196">        return configName + decoderCacheKey;</span>
+    }
+
+    public String getEncoderCacheKey() {
+<span class="fc" id="L200">        return getEncoderCacheKey(JsoniterSpi.getCurrentConfig().configName());</span>
+    }
+
+    public String getEncoderCacheKey(String configName) {
+<span class="fc" id="L204">        return configName + encoderCacheKey;</span>
+    }
+
+    public NativeType getNativeType() {
+<span class="nc" id="L208">        return nativeType;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L213">        return &quot;TypeLiteral{&quot; +</span>
+                &quot;type=&quot; + type +
+                &quot;, decoderCacheKey='&quot; + decoderCacheKey + '\'' +
+                &quot;, encoderCacheKey='&quot; + encoderCacheKey + '\'' +
+                '}';
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

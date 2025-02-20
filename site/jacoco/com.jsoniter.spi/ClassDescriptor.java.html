@@ -1,0 +1,472 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ClassDescriptor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.spi</a> &gt; <span class="el_source">ClassDescriptor.java</span></div><h1>ClassDescriptor.java</h1><pre class="source lang-java linenums">package com.jsoniter.spi;
+
+import java.lang.reflect.*;
+import java.util.*;
+
+import static java.lang.reflect.Modifier.isTransient;
+
+public class ClassDescriptor {
+
+    public ClassInfo classInfo;
+    public Class clazz;
+    public Map&lt;String, Type&gt; lookup;
+    public ConstructorDescriptor ctor;
+    public List&lt;Binding&gt; fields;
+    public List&lt;Binding&gt; setters;
+    public List&lt;Binding&gt; getters;
+    public List&lt;WrapperDescriptor&gt; bindingTypeWrappers;
+    public List&lt;Method&gt; keyValueTypeWrappers;
+    public List&lt;UnwrapperDescriptor&gt; unwrappers;
+    public boolean asExtraForUnknownProperties;
+    public Binding onMissingProperties;
+    public Binding onExtraProperties;
+
+    private ClassDescriptor() {
+    }
+
+    public static ClassDescriptor getDecodingClassDescriptor(ClassInfo classInfo, boolean includingPrivate) {
+<span class="fc" id="L28">        Class clazz = classInfo.clazz;</span>
+<span class="fc" id="L29">        Map&lt;String, Type&gt; lookup = collectTypeVariableLookup(classInfo.type);</span>
+<span class="fc" id="L30">        ClassDescriptor desc = new ClassDescriptor();</span>
+<span class="fc" id="L31">        desc.classInfo = classInfo;</span>
+<span class="fc" id="L32">        desc.clazz = clazz;</span>
+<span class="fc" id="L33">        desc.lookup = lookup;</span>
+<span class="fc" id="L34">        desc.ctor = getCtor(clazz);</span>
+<span class="fc" id="L35">        desc.setters = getSetters(lookup, classInfo, includingPrivate);</span>
+<span class="fc" id="L36">        desc.getters = new ArrayList&lt;Binding&gt;();</span>
+<span class="fc" id="L37">        desc.fields = getFields(lookup, classInfo, includingPrivate);</span>
+<span class="fc" id="L38">        desc.bindingTypeWrappers = new ArrayList&lt;WrapperDescriptor&gt;();</span>
+<span class="fc" id="L39">        desc.keyValueTypeWrappers = new ArrayList&lt;Method&gt;();</span>
+<span class="fc" id="L40">        desc.unwrappers = new ArrayList&lt;UnwrapperDescriptor&gt;();</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        for (Extension extension : JsoniterSpi.getExtensions()) {</span>
+<span class="fc" id="L42">            extension.updateClassDescriptor(desc);</span>
+<span class="fc" id="L43">        }</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        for (Binding field : desc.fields) {</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">            if (field.valueType instanceof Class) {</span>
+<span class="fc" id="L46">                Class valueClazz = (Class) field.valueType;</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">                if (valueClazz.isArray()) {</span>
+<span class="fc" id="L48">                    field.valueCanReuse = false;</span>
+<span class="fc" id="L49">                    continue;</span>
+                }
+            }
+<span class="fc bfc" id="L52" title="All 2 branches covered.">            field.valueCanReuse = field.valueTypeLiteral.nativeType == null;</span>
+<span class="fc" id="L53">        }</span>
+<span class="fc" id="L54">        decodingDeduplicate(desc);</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (includingPrivate) {</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">            if (desc.ctor.ctor != null) {</span>
+<span class="fc" id="L57">                desc.ctor.ctor.setAccessible(true);</span>
+            }
+<span class="fc bfc" id="L59" title="All 2 branches covered.">            if (desc.ctor.staticFactory != null) {</span>
+<span class="fc" id="L60">                desc.ctor.staticFactory.setAccessible(true);</span>
+            }
+<span class="fc bfc" id="L62" title="All 2 branches covered.">            for (WrapperDescriptor setter : desc.bindingTypeWrappers) {</span>
+<span class="fc" id="L63">                setter.method.setAccessible(true);</span>
+<span class="fc" id="L64">            }</span>
+        }
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        for (Binding binding : desc.allDecoderBindings()) {</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">            if (binding.fromNames == null) {</span>
+<span class="nc" id="L68">                binding.fromNames = new String[]{binding.name};</span>
+            }
+<span class="fc bfc" id="L70" title="All 4 branches covered.">            if (binding.field != null &amp;&amp; includingPrivate) {</span>
+<span class="fc" id="L71">                binding.field.setAccessible(true);</span>
+            }
+<span class="fc bfc" id="L73" title="All 4 branches covered.">            if (binding.method != null &amp;&amp; includingPrivate) {</span>
+<span class="fc" id="L74">                binding.method.setAccessible(true);</span>
+            }
+<span class="fc bfc" id="L76" title="All 2 branches covered.">            if (binding.decoder != null) {</span>
+<span class="fc" id="L77">                JsoniterSpi.addNewDecoder(binding.decoderCacheKey(), binding.decoder);</span>
+            }
+<span class="fc" id="L79">        }</span>
+<span class="fc" id="L80">        return desc;</span>
+    }
+
+    public static ClassDescriptor getEncodingClassDescriptor(ClassInfo classInfo, boolean includingPrivate) {
+<span class="fc" id="L84">        Class clazz = classInfo.clazz;</span>
+<span class="fc" id="L85">        Map&lt;String, Type&gt; lookup = collectTypeVariableLookup(classInfo.type);</span>
+<span class="fc" id="L86">        ClassDescriptor desc = new ClassDescriptor();</span>
+<span class="fc" id="L87">        desc.classInfo = classInfo;</span>
+<span class="fc" id="L88">        desc.clazz = clazz;</span>
+<span class="fc" id="L89">        desc.lookup = lookup;</span>
+<span class="fc" id="L90">        desc.fields = getFields(lookup, classInfo, includingPrivate);</span>
+<span class="fc" id="L91">        desc.getters = getGetters(lookup, classInfo, includingPrivate);</span>
+<span class="fc" id="L92">        desc.bindingTypeWrappers = new ArrayList&lt;WrapperDescriptor&gt;();</span>
+<span class="fc" id="L93">        desc.keyValueTypeWrappers = new ArrayList&lt;Method&gt;();</span>
+<span class="fc" id="L94">        desc.unwrappers = new ArrayList&lt;UnwrapperDescriptor&gt;();</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        for (Extension extension : JsoniterSpi.getExtensions()) {</span>
+<span class="fc" id="L96">            extension.updateClassDescriptor(desc);</span>
+<span class="fc" id="L97">        }</span>
+<span class="fc" id="L98">        encodingDeduplicate(desc);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (Binding binding : desc.allEncoderBindings()) {</span>
+<span class="pc bpc" id="L100" title="1 of 2 branches missed.">            if (binding.toNames == null) {</span>
+<span class="nc" id="L101">                binding.toNames = new String[]{binding.name};</span>
+            }
+<span class="fc bfc" id="L103" title="All 4 branches covered.">            if (binding.field != null &amp;&amp; includingPrivate) {</span>
+<span class="fc" id="L104">                binding.field.setAccessible(true);</span>
+            }
+<span class="fc bfc" id="L106" title="All 4 branches covered.">            if (binding.method != null &amp;&amp; includingPrivate) {</span>
+<span class="fc" id="L107">                binding.method.setAccessible(true);</span>
+            }
+<span class="fc bfc" id="L109" title="All 2 branches covered.">            if (binding.encoder != null) {</span>
+<span class="fc" id="L110">                JsoniterSpi.addNewEncoder(binding.encoderCacheKey(), binding.encoder);</span>
+            }
+<span class="fc" id="L112">        }</span>
+<span class="fc" id="L113">        return desc;</span>
+    }
+
+    private static void decodingDeduplicate(ClassDescriptor desc) {
+<span class="fc" id="L117">        HashMap&lt;String, Binding&gt; byFromName = new HashMap&lt;String, Binding&gt;();</span>
+<span class="fc" id="L118">        HashMap&lt;String, Binding&gt; byFieldName = new HashMap&lt;String, Binding&gt;();</span>
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        for (Binding field : desc.fields) {</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">            for (String fromName : field.fromNames) {</span>
+<span class="pc bpc" id="L121" title="1 of 2 branches missed.">                if (byFromName.containsKey(fromName)) {</span>
+<span class="nc" id="L122">                    throw new JsonException(&quot;field decode from same name: &quot; + fromName);</span>
+                }
+<span class="fc" id="L124">                byFromName.put(fromName, field);</span>
+            }
+<span class="fc" id="L126">            byFieldName.put(field.name, field);</span>
+<span class="fc" id="L127">        }</span>
+<span class="fc" id="L128">        ArrayList&lt;Binding&gt; iteratingSetters = new ArrayList&lt;Binding&gt;(desc.setters);</span>
+<span class="fc" id="L129">        Collections.reverse(iteratingSetters);</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        for (Binding setter : iteratingSetters) {</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">            if (setter.fromNames.length == 0) {</span>
+<span class="fc" id="L132">                continue;</span>
+            }
+<span class="fc" id="L134">            Binding existing = byFieldName.get(setter.name);</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">            if (existing != null) {</span>
+<span class="fc" id="L136">                existing.fromNames = new String[0];</span>
+            }
+<span class="fc" id="L138">            deduplicateByFromName(byFromName, setter);</span>
+<span class="fc" id="L139">        }</span>
+<span class="fc bfc" id="L140" title="All 2 branches covered.">        for (WrapperDescriptor wrapper : desc.bindingTypeWrappers) {</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            for (Binding param : wrapper.parameters) {</span>
+<span class="fc" id="L142">                deduplicateByFromName(byFromName, param);</span>
+<span class="fc" id="L143">            }</span>
+<span class="fc" id="L144">        }</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">        for (Binding param : desc.ctor.parameters) {</span>
+<span class="fc" id="L146">            deduplicateByFromName(byFromName, param);</span>
+<span class="fc" id="L147">        }</span>
+<span class="fc" id="L148">    }</span>
+
+    private static void deduplicateByFromName(Map&lt;String, Binding&gt; byFromName, Binding setter) {
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        for (String fromName : setter.fromNames) {</span>
+<span class="fc" id="L152">            Binding existing = byFromName.get(fromName);</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">            if (existing == null) {</span>
+<span class="fc" id="L154">                byFromName.put(fromName, setter);</span>
+<span class="fc" id="L155">                continue;</span>
+            }
+<span class="fc" id="L157">            existing.fromNames = new String[0];</span>
+        }
+<span class="fc" id="L159">    }</span>
+
+    private static void encodingDeduplicate(ClassDescriptor desc) {
+<span class="fc" id="L162">        HashMap&lt;String, Binding&gt; byToName = new HashMap&lt;String, Binding&gt;();</span>
+<span class="fc" id="L163">        HashMap&lt;String, Binding&gt; byFieldName = new HashMap&lt;String, Binding&gt;();</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        for (Binding field : desc.fields) {</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">            for (String toName : field.toNames) {</span>
+<span class="pc bpc" id="L166" title="1 of 2 branches missed.">                if (byToName.containsKey(toName)) {</span>
+<span class="nc" id="L167">                    throw new JsonException(&quot;field encode to same name: &quot; + toName);</span>
+                }
+<span class="fc" id="L169">                byToName.put(toName, field);</span>
+            }
+<span class="fc" id="L171">            byFieldName.put(field.name, field);</span>
+<span class="fc" id="L172">        }</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        for (Binding getter : new ArrayList&lt;Binding&gt;(desc.getters)) {</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">            if (getter.toNames.length == 0) {</span>
+<span class="fc" id="L175">                continue;</span>
+            }
+<span class="fc" id="L177">            Binding existing = byFieldName.get(getter.name);</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">            if (existing != null) {</span>
+<span class="fc" id="L179">                existing.toNames = new String[0];</span>
+            }
+<span class="fc bfc" id="L181" title="All 2 branches covered.">            for (String toName : getter.toNames) {</span>
+<span class="fc" id="L182">                existing = byToName.get(toName);</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">                if (existing == null) {</span>
+<span class="fc" id="L184">                    byToName.put(toName, getter);</span>
+<span class="fc" id="L185">                    continue;</span>
+                }
+<span class="fc" id="L187">                existing.toNames = new String[0];</span>
+            }
+<span class="fc" id="L189">        }</span>
+<span class="fc" id="L190">    }</span>
+
+    private static ConstructorDescriptor getCtor(Class clazz) {
+<span class="fc" id="L193">        ConstructorDescriptor cctor = new ConstructorDescriptor();</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        if (JsoniterSpi.canCreate(clazz)) {</span>
+<span class="fc" id="L195">            cctor.objectFactory = JsoniterSpi.getObjectFactory(clazz);</span>
+<span class="fc" id="L196">            return cctor;</span>
+        }
+        try {
+<span class="fc" id="L199">            cctor.ctor = clazz.getDeclaredConstructor();</span>
+<span class="fc" id="L200">        } catch (Exception e) {</span>
+<span class="fc" id="L201">            cctor.ctor = null;</span>
+<span class="fc" id="L202">        }</span>
+<span class="fc" id="L203">        return cctor;</span>
+    }
+
+    private static List&lt;Binding&gt; getFields(Map&lt;String, Type&gt; lookup, ClassInfo classInfo, boolean includingPrivate) {
+<span class="fc" id="L207">        ArrayList&lt;Binding&gt; bindings = new ArrayList&lt;Binding&gt;();</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        for (Field field : getAllFields(classInfo.clazz)) {</span>
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">            if (Modifier.isStatic(field.getModifiers())) {</span>
+<span class="nc" id="L210">                continue;</span>
+            }
+<span class="fc bfc" id="L212" title="All 2 branches covered.">            if (includingPrivate) {</span>
+<span class="fc" id="L213">                field.setAccessible(true);</span>
+            }
+<span class="fc bfc" id="L215" title="All 2 branches covered.">            if (isTransient(field.getModifiers())) {</span>
+<span class="fc" id="L216">                continue;</span>
+            }
+<span class="fc" id="L218">            Binding binding = createBindingFromField(lookup, classInfo, field);</span>
+<span class="fc bfc" id="L219" title="All 4 branches covered.">            if (!includingPrivate &amp;&amp; !Modifier.isPublic(field.getModifiers())) {</span>
+<span class="fc" id="L220">                binding.toNames = new String[0];</span>
+<span class="fc" id="L221">                binding.fromNames = new String[0];</span>
+            }
+<span class="fc bfc" id="L223" title="All 4 branches covered.">            if (!includingPrivate &amp;&amp; !Modifier.isPublic(field.getType().getModifiers())) {</span>
+<span class="fc" id="L224">                binding.toNames = new String[0];</span>
+<span class="fc" id="L225">                binding.fromNames = new String[0];</span>
+            }
+<span class="fc" id="L227">            bindings.add(binding);</span>
+<span class="fc" id="L228">        }</span>
+<span class="fc" id="L229">        return bindings;</span>
+    }
+
+    private static Binding createBindingFromField(Map&lt;String, Type&gt; lookup, ClassInfo classInfo, Field field) {
+        try {
+<span class="fc" id="L234">            Binding binding = new Binding(classInfo, lookup, field.getGenericType());</span>
+<span class="fc" id="L235">            binding.fromNames = new String[]{field.getName()};</span>
+<span class="fc" id="L236">            binding.toNames = new String[]{field.getName()};</span>
+<span class="fc" id="L237">            binding.name = field.getName();</span>
+<span class="fc" id="L238">            binding.annotations = field.getAnnotations();</span>
+<span class="fc" id="L239">            binding.field = field;</span>
+<span class="fc" id="L240">            return binding;</span>
+<span class="nc" id="L241">        } catch (RuntimeException e) {</span>
+<span class="nc" id="L242">            throw e;</span>
+<span class="nc" id="L243">        } catch (Exception e) {</span>
+<span class="nc" id="L244">            throw new JsonException(&quot;failed to create binding for field: &quot; + field, e);</span>
+        }
+    }
+
+    private static List&lt;Field&gt; getAllFields(Class clazz) {
+<span class="fc" id="L249">        ArrayList&lt;Field&gt; allFields = new ArrayList&lt;Field&gt;();</span>
+<span class="fc" id="L250">        Class current = clazz;</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">        while (current != null) {</span>
+<span class="fc" id="L252">            allFields.addAll(Arrays.asList(current.getDeclaredFields()));</span>
+<span class="fc" id="L253">            current = current.getSuperclass();</span>
+        }
+<span class="fc" id="L255">        return allFields;</span>
+    }
+
+    private static List&lt;Binding&gt; getSetters(Map&lt;String, Type&gt; lookup, ClassInfo classInfo, boolean includingPrivate) {
+<span class="fc" id="L259">        ArrayList&lt;Binding&gt; setters = new ArrayList&lt;Binding&gt;();</span>
+<span class="fc bfc" id="L260" title="All 2 branches covered.">        for (Method method : getAllMethods(classInfo.clazz, includingPrivate)) {</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">            if (Modifier.isStatic(method.getModifiers())) {</span>
+<span class="fc" id="L262">                continue;</span>
+            }
+<span class="fc" id="L264">            String methodName = method.getName();</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">            if (methodName.length() &lt; 4) {</span>
+<span class="nc" id="L266">                continue;</span>
+            }
+<span class="fc bfc" id="L268" title="All 2 branches covered.">            if (!methodName.startsWith(&quot;set&quot;)) {</span>
+<span class="fc" id="L269">                continue;</span>
+            }
+<span class="fc" id="L271">            Type[] paramTypes = method.getGenericParameterTypes();</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">            if (paramTypes.length != 1) {</span>
+<span class="fc" id="L273">                continue;</span>
+            }
+<span class="fc bfc" id="L275" title="All 4 branches covered.">            if (!includingPrivate &amp;&amp; !Modifier.isPublic(method.getParameterTypes()[0].getModifiers())) {</span>
+<span class="fc" id="L276">                continue;</span>
+            }
+<span class="fc bfc" id="L278" title="All 2 branches covered.">            if (includingPrivate) {</span>
+<span class="fc" id="L279">                method.setAccessible(true);</span>
+            }
+            try {
+<span class="fc" id="L282">                String fromName = translateSetterName(methodName);</span>
+<span class="fc" id="L283">                Field field = null;</span>
+                try {
+<span class="fc" id="L285">                    field = method.getDeclaringClass().getDeclaredField(fromName);</span>
+<span class="fc" id="L286">                } catch (NoSuchFieldException e) {</span>
+                    // ignore
+<span class="fc" id="L288">                }</span>
+<span class="fc" id="L289">                Binding setter = new Binding(classInfo, lookup, paramTypes[0]);</span>
+<span class="pc bpc" id="L290" title="1 of 4 branches missed.">                if (field != null &amp;&amp; isTransient(field.getModifiers())) {</span>
+<span class="nc" id="L291">                    setter.fromNames = new String[0];</span>
+                } else {
+<span class="fc" id="L293">                    setter.fromNames = new String[]{fromName};</span>
+                }
+<span class="fc" id="L295">                setter.name = fromName;</span>
+<span class="fc" id="L296">                setter.method = method;</span>
+<span class="fc" id="L297">                setter.annotations = method.getAnnotations();</span>
+<span class="fc" id="L298">                setters.add(setter);</span>
+<span class="nc" id="L299">            } catch (JsonException e) {</span>
+<span class="nc" id="L300">                throw e;</span>
+<span class="nc" id="L301">            } catch (Exception e) {</span>
+<span class="nc" id="L302">                throw new JsonException(&quot;failed to create binding from setter: &quot; + method, e);</span>
+<span class="fc" id="L303">            }</span>
+<span class="fc" id="L304">        }</span>
+<span class="fc" id="L305">        return setters;</span>
+    }
+
+    private static List&lt;Method&gt; getAllMethods(Class clazz, boolean includingPrivate) {
+<span class="fc" id="L309">        List&lt;Method&gt; allMethods = Arrays.asList(clazz.getMethods());</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">        if (includingPrivate) {</span>
+<span class="fc" id="L311">            allMethods = new ArrayList&lt;Method&gt;();</span>
+<span class="fc" id="L312">            Class current = clazz;</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">            while (current != null) {</span>
+<span class="fc" id="L314">                allMethods.addAll(Arrays.asList(current.getDeclaredMethods()));</span>
+<span class="fc" id="L315">                current = current.getSuperclass();</span>
+            }
+        }
+<span class="fc" id="L318">        return allMethods;</span>
+    }
+
+    private static String translateSetterName(String methodName) {
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">        if (!methodName.startsWith(&quot;set&quot;)) {</span>
+<span class="nc" id="L323">            return null;</span>
+        }
+<span class="fc" id="L325">        String fromName = methodName.substring(&quot;set&quot;.length());</span>
+<span class="fc" id="L326">        char[] fromNameChars = fromName.toCharArray();</span>
+<span class="fc" id="L327">        fromNameChars[0] = Character.toLowerCase(fromNameChars[0]);</span>
+<span class="fc" id="L328">        fromName = new String(fromNameChars);</span>
+<span class="fc" id="L329">        return fromName;</span>
+    }
+
+    private static List&lt;Binding&gt; getGetters(Map&lt;String, Type&gt; lookup, ClassInfo classInfo, boolean includingPrivate) {
+<span class="fc" id="L333">        ArrayList&lt;Binding&gt; getters = new ArrayList&lt;Binding&gt;();</span>
+<span class="fc bfc" id="L334" title="All 2 branches covered.">        for (Method method : getAllMethods(classInfo.clazz, includingPrivate)) {</span>
+<span class="fc bfc" id="L335" title="All 2 branches covered.">            if (Modifier.isStatic(method.getModifiers())) {</span>
+<span class="fc" id="L336">                continue;</span>
+            }
+<span class="fc" id="L338">            String methodName = method.getName();</span>
+<span class="fc bfc" id="L339" title="All 2 branches covered.">            if (&quot;getClass&quot;.equals(methodName)) {</span>
+<span class="fc" id="L340">                continue;</span>
+            }
+<span class="pc bpc" id="L342" title="1 of 2 branches missed.">            if (methodName.length() &lt; 4) {</span>
+<span class="nc" id="L343">                continue;</span>
+            }
+<span class="fc bfc" id="L345" title="All 2 branches covered.">            if (!methodName.startsWith(&quot;get&quot;)) {</span>
+<span class="fc" id="L346">                continue;</span>
+            }
+<span class="pc bpc" id="L348" title="1 of 2 branches missed.">            if (method.getGenericParameterTypes().length != 0) {</span>
+<span class="nc" id="L349">                continue;</span>
+            }
+<span class="fc" id="L351">            String toName = methodName.substring(&quot;get&quot;.length());</span>
+<span class="fc" id="L352">            char[] toNameChars = toName.toCharArray();</span>
+<span class="fc" id="L353">            toNameChars[0] = Character.toLowerCase(toNameChars[0]);</span>
+<span class="fc" id="L354">            toName = new String(toNameChars);</span>
+<span class="fc" id="L355">            Binding getter = new Binding(classInfo, lookup, method.getGenericReturnType());</span>
+<span class="fc" id="L356">            Field field = null;</span>
+            try {
+<span class="fc" id="L358">                field = method.getDeclaringClass().getDeclaredField(toName);</span>
+<span class="fc" id="L359">            } catch (NoSuchFieldException e) {</span>
+                // ignore
+<span class="fc" id="L361">            }</span>
+<span class="fc bfc" id="L362" title="All 4 branches covered.">            if (field != null &amp;&amp; isTransient(field.getModifiers())) {</span>
+<span class="fc" id="L363">                getter.toNames = new String[0];</span>
+            } else {
+<span class="fc" id="L365">                getter.toNames = new String[]{toName};</span>
+            }
+<span class="fc" id="L367">            getter.name = toName;</span>
+<span class="fc" id="L368">            getter.method = method;</span>
+<span class="fc" id="L369">            getter.annotations = method.getAnnotations();</span>
+<span class="fc" id="L370">            getters.add(getter);</span>
+<span class="fc" id="L371">        }</span>
+<span class="fc" id="L372">        return getters;</span>
+    }
+
+    private static Map&lt;String, Type&gt; collectTypeVariableLookup(Type type) {
+<span class="fc" id="L376">        HashMap&lt;String, Type&gt; vars = new HashMap&lt;String, Type&gt;();</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">        if (null == type) {</span>
+<span class="fc" id="L378">            return vars;</span>
+        }
+<span class="fc bfc" id="L380" title="All 2 branches covered.">        if (type instanceof ParameterizedType) {</span>
+<span class="fc" id="L381">            ParameterizedType pType = (ParameterizedType) type;</span>
+<span class="fc" id="L382">            Type[] actualTypeArguments = pType.getActualTypeArguments();</span>
+<span class="fc" id="L383">            Class clazz = (Class) pType.getRawType();</span>
+<span class="fc bfc" id="L384" title="All 2 branches covered.">            for (int i = 0; i &lt; clazz.getTypeParameters().length; i++) {</span>
+<span class="fc" id="L385">                TypeVariable variable = clazz.getTypeParameters()[i];</span>
+<span class="fc" id="L386">                vars.put(variable.getName() + &quot;@&quot; + clazz.getCanonicalName(), actualTypeArguments[i]);</span>
+            }
+<span class="fc" id="L388">            vars.putAll(collectTypeVariableLookup(clazz.getGenericSuperclass()));</span>
+<span class="fc" id="L389">            return vars;</span>
+        }
+<span class="pc bpc" id="L391" title="1 of 2 branches missed.">        if (type instanceof Class) {</span>
+<span class="fc" id="L392">            Class clazz = (Class) type;</span>
+<span class="fc" id="L393">            vars.putAll(collectTypeVariableLookup(clazz.getGenericSuperclass()));</span>
+<span class="fc" id="L394">            return vars;</span>
+        }
+<span class="nc bnc" id="L396" title="All 2 branches missed.">        if (type instanceof WildcardType) {</span>
+<span class="nc" id="L397">            return vars;</span>
+        }
+<span class="nc" id="L399">        throw new JsonException(&quot;unexpected type: &quot; + type);</span>
+    }
+
+    public List&lt;Binding&gt; allBindings() {
+<span class="fc" id="L403">        ArrayList&lt;Binding&gt; bindings = new ArrayList&lt;Binding&gt;(8);</span>
+<span class="fc" id="L404">        bindings.addAll(fields);</span>
+<span class="fc bfc" id="L405" title="All 2 branches covered.">        if (setters != null) {</span>
+<span class="fc" id="L406">            bindings.addAll(setters);</span>
+        }
+<span class="pc bpc" id="L408" title="1 of 2 branches missed.">        if (getters != null) {</span>
+<span class="fc" id="L409">            bindings.addAll(getters);</span>
+        }
+<span class="fc bfc" id="L411" title="All 2 branches covered.">        if (ctor != null) {</span>
+<span class="fc" id="L412">            bindings.addAll(ctor.parameters);</span>
+        }
+<span class="pc bpc" id="L414" title="1 of 2 branches missed.">        if (bindingTypeWrappers != null) {</span>
+<span class="pc bpc" id="L415" title="1 of 2 branches missed.">            for (WrapperDescriptor setter : bindingTypeWrappers) {</span>
+<span class="nc" id="L416">                bindings.addAll(setter.parameters);</span>
+<span class="nc" id="L417">            }</span>
+        }
+<span class="fc" id="L419">        return bindings;</span>
+    }
+
+    public List&lt;Binding&gt; allDecoderBindings() {
+<span class="fc" id="L423">        ArrayList&lt;Binding&gt; bindings = new ArrayList&lt;Binding&gt;(8);</span>
+<span class="fc" id="L424">        bindings.addAll(fields);</span>
+<span class="fc" id="L425">        bindings.addAll(setters);</span>
+<span class="pc bpc" id="L426" title="1 of 2 branches missed.">        if (ctor != null) {</span>
+<span class="fc" id="L427">            bindings.addAll(ctor.parameters);</span>
+        }
+<span class="fc bfc" id="L429" title="All 2 branches covered.">        for (WrapperDescriptor setter : bindingTypeWrappers) {</span>
+<span class="fc" id="L430">            bindings.addAll(setter.parameters);</span>
+<span class="fc" id="L431">        }</span>
+<span class="fc" id="L432">        return bindings;</span>
+    }
+
+
+    public List&lt;Binding&gt; allEncoderBindings() {
+<span class="fc" id="L437">        ArrayList&lt;Binding&gt; bindings = new ArrayList&lt;Binding&gt;(8);</span>
+<span class="fc" id="L438">        bindings.addAll(fields);</span>
+<span class="fc" id="L439">        bindings.addAll(getters);</span>
+<span class="fc" id="L440">        return bindings;</span>
+    }
+
+    public List&lt;EncodeTo&gt; encodeTos() {
+<span class="fc" id="L444">        HashMap&lt;String, Integer&gt; previousAppearance = new HashMap&lt;String, Integer&gt;();</span>
+<span class="fc" id="L445">        ArrayList&lt;EncodeTo&gt; encodeTos = new ArrayList&lt;EncodeTo&gt;(8);</span>
+<span class="fc" id="L446">        collectEncodeTo(encodeTos, fields, previousAppearance);</span>
+<span class="fc" id="L447">        collectEncodeTo(encodeTos, getters, previousAppearance);</span>
+<span class="fc" id="L448">        ArrayList&lt;EncodeTo&gt; removedNulls = new ArrayList&lt;EncodeTo&gt;(encodeTos.size());</span>
+<span class="fc bfc" id="L449" title="All 2 branches covered.">        for (EncodeTo encodeTo : encodeTos) {</span>
+<span class="pc bpc" id="L450" title="1 of 2 branches missed.">            if (encodeTo != null) {</span>
+<span class="fc" id="L451">                removedNulls.add(encodeTo);</span>
+            }
+<span class="fc" id="L453">        }</span>
+<span class="fc" id="L454">        return removedNulls;</span>
+    }
+
+    private void collectEncodeTo(ArrayList&lt;EncodeTo&gt; encodeTos, List&lt;Binding&gt; fields, HashMap&lt;String, Integer&gt; previousAppearance) {
+<span class="fc bfc" id="L458" title="All 2 branches covered.">        for (Binding field : fields) {</span>
+<span class="fc bfc" id="L459" title="All 2 branches covered.">            for (String toName : field.toNames) {</span>
+<span class="pc bpc" id="L460" title="1 of 2 branches missed.">                if (previousAppearance.containsKey(toName)) {</span>
+<span class="nc" id="L461">                    encodeTos.set(previousAppearance.get(toName), null);</span>
+                }
+<span class="fc" id="L463">                previousAppearance.put(toName, encodeTos.size());</span>
+<span class="fc" id="L464">                EncodeTo encodeTo = new EncodeTo();</span>
+<span class="fc" id="L465">                encodeTo.binding = field;</span>
+<span class="fc" id="L466">                encodeTo.toName = toName;</span>
+<span class="fc" id="L467">                encodeTos.add(encodeTo);</span>
+            }
+<span class="fc" id="L469">        }</span>
+<span class="fc" id="L470">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

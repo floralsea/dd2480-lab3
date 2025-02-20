@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GenericsHelper.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.spi</a> &gt; <span class="el_source">GenericsHelper.java</span></div><h1>GenericsHelper.java</h1><pre class="source lang-java linenums">package com.jsoniter.spi;
+
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Arrays;
+
+<span class="nc" id="L8">public class GenericsHelper {</span>
+
+    public static GenericArrayType createGenericArrayType(Type componentType) {
+<span class="fc" id="L11">        return new GenericArrayTypeImpl(componentType);</span>
+    }
+
+    public static ParameterizedType createParameterizedType(Type[] actualTypeArguments, Type ownerType, Type rawType) {
+<span class="fc" id="L15">        return new ParameterizedTypeImpl(actualTypeArguments, ownerType, rawType);</span>
+    }
+
+    public static boolean isSameClass(Type type, Class clazz) {
+<span class="pc bpc" id="L19" title="1 of 2 branches missed.">        if (type == clazz) {</span>
+<span class="nc" id="L20">            return true;</span>
+        }
+<span class="pc bpc" id="L22" title="1 of 2 branches missed.">        if (type instanceof ParameterizedType) {</span>
+<span class="fc" id="L23">            ParameterizedType pType = (ParameterizedType) type;</span>
+<span class="pc bpc" id="L24" title="1 of 2 branches missed.">            return pType.getRawType() == clazz;</span>
+        }
+<span class="nc" id="L26">        return false;</span>
+    }
+
+    public static Type useImpl(Type type, Class clazz) {
+<span class="pc bpc" id="L30" title="1 of 2 branches missed.">        if (type instanceof Class) {</span>
+<span class="nc" id="L31">            return clazz;</span>
+        }
+<span class="pc bpc" id="L33" title="1 of 2 branches missed.">        if (type instanceof ParameterizedType) {</span>
+<span class="fc" id="L34">            ParameterizedType pType = (ParameterizedType) type;</span>
+<span class="fc" id="L35">            return createParameterizedType(pType.getActualTypeArguments(), pType.getOwnerType(), clazz);</span>
+        }
+<span class="nc" id="L37">        throw new JsonException(&quot;can not change impl for: &quot; + type);</span>
+    }
+
+    private static class GenericArrayTypeImpl implements GenericArrayType {
+
+        private final Type componentType;
+
+<span class="fc" id="L44">        GenericArrayTypeImpl(Type componentType) {</span>
+<span class="fc" id="L45">            this.componentType = componentType;</span>
+<span class="fc" id="L46">        }</span>
+
+        @Override
+        public Type getGenericComponentType() {
+<span class="fc" id="L50">            return componentType;</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">            if (this == o) return true;</span>
+<span class="pc bpc" id="L56" title="1 of 4 branches missed.">            if (o == null || getClass() != o.getClass()) return false;</span>
+
+<span class="fc" id="L58">            GenericArrayTypeImpl that = (GenericArrayTypeImpl) o;</span>
+
+<span class="pc bpc" id="L60" title="3 of 4 branches missed.">            return componentType != null ? componentType.equals(that.componentType) : that.componentType == null;</span>
+
+        }
+
+        @Override
+        public int hashCode() {
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">            return componentType != null ? componentType.hashCode() : 0;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="nc" id="L71">            return &quot;GenericArrayTypeImpl{&quot; +</span>
+                    &quot;componentType=&quot; + componentType +
+                    '}';
+        }
+    }
+
+    private static class ParameterizedTypeImpl implements ParameterizedType {
+        private final Type[] actualTypeArguments;
+        private final Type   ownerType;
+        private final Type   rawType;
+
+<span class="fc" id="L82">        public ParameterizedTypeImpl(Type[] actualTypeArguments, Type ownerType, Type rawType){</span>
+<span class="fc" id="L83">            this.actualTypeArguments = actualTypeArguments;</span>
+<span class="fc" id="L84">            this.ownerType = ownerType;</span>
+<span class="fc" id="L85">            this.rawType = rawType;</span>
+<span class="fc" id="L86">        }</span>
+
+        public Type[] getActualTypeArguments() {
+<span class="fc" id="L89">            return actualTypeArguments;</span>
+        }
+
+        public Type getOwnerType() {
+<span class="fc" id="L93">            return ownerType;</span>
+        }
+
+        public Type getRawType() {
+<span class="fc" id="L97">            return rawType;</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">            if (this == o) return true;</span>
+<span class="pc bpc" id="L103" title="2 of 4 branches missed.">            if (o == null || getClass() != o.getClass()) return false;</span>
+
+<span class="fc" id="L105">            ParameterizedTypeImpl that = (ParameterizedTypeImpl) o;</span>
+
+            // Probably incorrect - comparing Object[] arrays with Arrays.equals
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            if (!Arrays.equals(actualTypeArguments, that.actualTypeArguments)) return false;</span>
+<span class="pc bpc" id="L109" title="4 of 6 branches missed.">            if (ownerType != null ? !ownerType.equals(that.ownerType) : that.ownerType != null) return false;</span>
+<span class="pc bpc" id="L110" title="3 of 4 branches missed.">            return rawType != null ? rawType.equals(that.rawType) : that.rawType == null;</span>
+
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L116">            int result = Arrays.hashCode(actualTypeArguments);</span>
+<span class="pc bpc" id="L117" title="1 of 2 branches missed.">            result = 31 * result + (ownerType != null ? ownerType.hashCode() : 0);</span>
+<span class="pc bpc" id="L118" title="1 of 2 branches missed.">            result = 31 * result + (rawType != null ? rawType.hashCode() : 0);</span>
+<span class="fc" id="L119">            return result;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L124">            String rawTypeName = rawType.toString();</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">            if (rawType instanceof Class) {</span>
+<span class="fc" id="L126">                Class clazz = (Class) rawType;</span>
+<span class="fc" id="L127">                rawTypeName = clazz.getName();</span>
+            }
+<span class="fc" id="L129">            return &quot;ParameterizedTypeImpl{&quot; +</span>
+<span class="fc" id="L130">                    &quot;actualTypeArguments=&quot; + Arrays.toString(actualTypeArguments) +</span>
+                    &quot;, ownerType=&quot; + ownerType +
+                    &quot;, rawType=&quot; + rawTypeName +
+                    '}';
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

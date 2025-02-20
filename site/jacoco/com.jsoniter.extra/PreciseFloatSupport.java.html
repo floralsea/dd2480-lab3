@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PreciseFloatSupport.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.extra</a> &gt; <span class="el_source">PreciseFloatSupport.java</span></div><h1>PreciseFloatSupport.java</h1><pre class="source lang-java linenums">package com.jsoniter.extra;
+
+import com.jsoniter.spi.JsonException;
+import com.jsoniter.any.Any;
+import com.jsoniter.output.JsonStream;
+import com.jsoniter.spi.Encoder;
+import com.jsoniter.spi.JsoniterSpi;
+
+import java.io.IOException;
+
+/**
+ * default float/double encoding will keep 6 decimal places
+ * enable precise encoding will use JDK toString to be precise
+ */
+<span class="nc" id="L15">public class PreciseFloatSupport {</span>
+    private static boolean enabled;
+
+    public static synchronized void enable() {
+<span class="pc bpc" id="L19" title="1 of 2 branches missed.">        if (enabled) {</span>
+<span class="nc" id="L20">            throw new JsonException(&quot;PreciseFloatSupport.enable can only be called once&quot;);</span>
+        }
+<span class="fc" id="L22">        enabled = true;</span>
+<span class="fc" id="L23">        JsoniterSpi.registerTypeEncoder(Double.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L26">                stream.writeRaw(obj.toString());</span>
+<span class="fc" id="L27">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L31">                Double number = (Double) obj;</span>
+<span class="nc" id="L32">                return Any.wrap(number.doubleValue());</span>
+            }
+        });
+<span class="fc" id="L35">        JsoniterSpi.registerTypeEncoder(double.class, new Encoder.DoubleEncoder() {</span>
+            @Override
+            public void encodeDouble(double obj, JsonStream stream) throws IOException {
+<span class="nc" id="L38">                stream.writeRaw(Double.toString(obj));</span>
+<span class="nc" id="L39">            }</span>
+        });
+<span class="fc" id="L41">        JsoniterSpi.registerTypeEncoder(Float.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L44">                stream.writeRaw(obj.toString());</span>
+<span class="fc" id="L45">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L49">                Float number = (Float) obj;</span>
+<span class="nc" id="L50">                return Any.wrap(number.floatValue());</span>
+            }
+        });
+<span class="fc" id="L53">        JsoniterSpi.registerTypeEncoder(float.class, new Encoder.FloatEncoder() {</span>
+            @Override
+            public void encodeFloat(float obj, JsonStream stream) throws IOException {
+<span class="nc" id="L56">                stream.writeRaw(Float.toString(obj));</span>
+<span class="nc" id="L57">            }</span>
+        });
+<span class="fc" id="L59">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

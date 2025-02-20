@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MapKeyEncoders.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.output</a> &gt; <span class="el_source">MapKeyEncoders.java</span></div><h1>MapKeyEncoders.java</h1><pre class="source lang-java linenums">package com.jsoniter.output;
+
+import com.jsoniter.spi.*;
+
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
+
+<span class="nc" id="L9">class MapKeyEncoders {</span>
+
+    public static Encoder registerOrGetExisting(Type mapKeyType) {
+<span class="fc" id="L12">        String cacheKey = JsoniterSpi.getMapKeyEncoderCacheKey(mapKeyType);</span>
+<span class="fc" id="L13">        Encoder mapKeyEncoder = JsoniterSpi.getMapKeyEncoder(cacheKey);</span>
+<span class="fc bfc" id="L14" title="All 2 branches covered.">        if (null != mapKeyEncoder) {</span>
+<span class="fc" id="L15">            return mapKeyEncoder;</span>
+        }
+<span class="fc" id="L17">        mapKeyEncoder = createDefaultEncoder(mapKeyType);</span>
+<span class="fc" id="L18">        JsoniterSpi.addNewMapEncoder(cacheKey, mapKeyEncoder);</span>
+<span class="fc" id="L19">        return mapKeyEncoder;</span>
+    }
+
+    private static Encoder createDefaultEncoder(Type mapKeyType) {
+<span class="fc bfc" id="L23" title="All 2 branches covered.">        if (mapKeyType == String.class) {</span>
+<span class="fc" id="L24">            return new StringKeyEncoder();</span>
+        }
+<span class="fc bfc" id="L26" title="All 2 branches covered.">        if (mapKeyType == Object.class) {</span>
+<span class="fc" id="L27">            return new DynamicKeyEncoder();</span>
+        }
+<span class="pc bpc" id="L29" title="1 of 2 branches missed.">        if (mapKeyType instanceof WildcardType) {</span>
+<span class="nc" id="L30">            return new DynamicKeyEncoder();</span>
+        }
+<span class="pc bpc" id="L32" title="1 of 4 branches missed.">        if (mapKeyType instanceof Class &amp;&amp; ((Class) mapKeyType).isEnum()) {</span>
+<span class="fc" id="L33">            return new StringKeyEncoder();</span>
+        }
+<span class="fc" id="L35">        Encoder.ReflectionEncoder encoder = CodegenImplNative.NATIVE_ENCODERS.get(mapKeyType);</span>
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">        if (encoder != null) {</span>
+<span class="fc" id="L37">            return new NumberKeyEncoder(encoder);</span>
+        }
+<span class="nc" id="L39">        throw new JsonException(&quot;can not encode map key type: &quot; + mapKeyType);</span>
+    }
+
+    private static class StringKeyEncoder implements Encoder {
+
+        @Override
+        public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L46">            stream.writeVal(obj);</span>
+<span class="fc" id="L47">        }</span>
+    }
+
+    private static class NumberKeyEncoder implements Encoder {
+
+        private final Encoder encoder;
+
+<span class="fc" id="L54">        private NumberKeyEncoder(Encoder encoder) {</span>
+<span class="fc" id="L55">            this.encoder = encoder;</span>
+<span class="fc" id="L56">        }</span>
+
+        @Override
+        public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L60">            stream.write('&quot;');</span>
+<span class="fc" id="L61">            encoder.encode(obj, stream);</span>
+<span class="fc" id="L62">            stream.write('&quot;');</span>
+<span class="fc" id="L63">        }</span>
+    }
+
+    private static class DynamicKeyEncoder implements Encoder {
+
+        @Override
+        public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L70">            Class&lt;?&gt; clazz = obj.getClass();</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">            if (clazz == Object.class) {</span>
+<span class="nc" id="L72">                throw new JsonException(&quot;map key type is Object.class, can not be encoded&quot;);</span>
+            }
+<span class="fc" id="L74">            Encoder mapKeyEncoder = registerOrGetExisting(clazz);</span>
+<span class="fc" id="L75">            mapKeyEncoder.encode(obj, stream);</span>
+<span class="fc" id="L76">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

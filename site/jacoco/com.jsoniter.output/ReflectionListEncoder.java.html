@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReflectionListEncoder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.output</a> &gt; <span class="el_source">ReflectionListEncoder.java</span></div><h1>ReflectionListEncoder.java</h1><pre class="source lang-java linenums">package com.jsoniter.output;
+
+import com.jsoniter.any.Any;
+import com.jsoniter.spi.Encoder;
+import com.jsoniter.spi.TypeLiteral;
+
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.List;
+
+class ReflectionListEncoder implements Encoder.ReflectionEncoder {
+
+    private final TypeLiteral compTypeLiteral;
+
+<span class="fc" id="L15">    public ReflectionListEncoder(Class clazz, Type[] typeArgs) {</span>
+<span class="fc bfc" id="L16" title="All 2 branches covered.">        if (typeArgs.length &gt; 0) {</span>
+<span class="fc" id="L17">            compTypeLiteral = TypeLiteral.create(typeArgs[0]);</span>
+        } else {
+<span class="fc" id="L19">            compTypeLiteral = TypeLiteral.create(Object.class);</span>
+        }
+<span class="fc" id="L21">    }</span>
+
+    @Override
+    public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="pc bpc" id="L25" title="1 of 2 branches missed.">        if (null == obj) {</span>
+<span class="nc" id="L26">            stream.writeNull();</span>
+<span class="nc" id="L27">            return;</span>
+        }
+<span class="fc" id="L29">        List list = (List) obj;</span>
+<span class="fc bfc" id="L30" title="All 2 branches covered.">        if (list.isEmpty()) {</span>
+<span class="fc" id="L31">            stream.writeEmptyArray();</span>
+<span class="fc" id="L32">            return;</span>
+        }
+<span class="fc" id="L34">        stream.writeArrayStart();</span>
+<span class="fc" id="L35">        stream.writeIndention();</span>
+<span class="fc" id="L36">        stream.writeVal(compTypeLiteral, list.get(0));</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        for (int i = 1; i &lt; list.size(); i++) {</span>
+<span class="fc" id="L38">            stream.writeMore();</span>
+<span class="fc" id="L39">            stream.writeVal(compTypeLiteral, list.get(i));</span>
+        }
+<span class="fc" id="L41">        stream.writeArrayEnd();</span>
+<span class="fc" id="L42">    }</span>
+
+    @Override
+    public Any wrap(Object obj) {
+<span class="fc" id="L46">        List col = (List) obj;</span>
+<span class="fc" id="L47">        return Any.wrap(col);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

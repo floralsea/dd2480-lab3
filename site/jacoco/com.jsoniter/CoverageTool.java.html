@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CoverageTool.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">CoverageTool.java</span></div><h1>CoverageTool.java</h1><pre class="source lang-java linenums">package com.jsoniter;
+
+import java.util.*;
+
+/**
+ * The CoverageTool class is responsible for managing and executing test cases
+ * for instrumented functions to measure branch coverage. It keeps track of
+ * the test cases assigned to each function and executes them while collecting
+ * coverage data.
+ */
+public class CoverageTool {
+    // A map storing test cases for each function, indexed by function name.
+    private final Map&lt;String, List&lt;Runnable&gt;&gt; functionTests;
+    // A map storing the total number of branches for each function.
+    private final Map&lt;String, Integer&gt; functionBranchCounts;
+
+    /**
+     * Constructor initializes the CoverageTool with empty maps for tracking
+     * function tests and branch counts.
+     */
+<span class="nc" id="L21">    public CoverageTool() {</span>
+<span class="nc" id="L22">        this.functionTests = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L23">        this.functionBranchCounts = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L24">    }</span>
+
+    /**
+     * Adds a test case for a specific function and records the total number of branches.
+     *
+     * @param functionName The name of the function being tested.
+     * @param test         A Runnable test case that exercises the function.
+     * @param branchCount  The total number of branches in the function.
+     */
+    public void addTest(String functionName, Runnable test, int branchCount) {
+<span class="nc" id="L34">        functionTests.computeIfAbsent(functionName, k -&gt; new ArrayList&lt;&gt;()).add(test);</span>
+<span class="nc" id="L35">        functionBranchCounts.put(functionName, branchCount);</span>
+<span class="nc" id="L36">    }</span>
+
+    /**
+     * Executes all registered test cases while tracking branch coverage.
+     * For each function, its associated tests are executed, and coverage data is recorded.
+     */
+    public void run() {
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        for (Map.Entry&lt;String, List&lt;Runnable&gt;&gt; entry : functionTests.entrySet()) {</span>
+<span class="nc" id="L44">            String functionName = entry.getKey();</span>
+            // Retrieve or create coverage tracking instance
+<span class="nc" id="L46">            CoverageData coverage = CoverageData.getInstance(functionName, functionBranchCounts.get(functionName));</span>
+
+            // Execute all registered test cases for the function
+<span class="nc bnc" id="L49" title="All 2 branches missed.">            for (Runnable test : entry.getValue()) {</span>
+<span class="nc" id="L50">                test.run();</span>
+<span class="nc" id="L51">            }</span>
+<span class="nc" id="L52">        }</span>
+<span class="nc" id="L53">    }</span>
+
+    /**
+     * Prints the coverage report for all instrumented functions.
+     */
+    public void printResults() {
+<span class="nc" id="L59">        CoverageData.printAllResults();</span>
+<span class="nc" id="L60">    }</span>
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ObjectAny.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.any</a> &gt; <span class="el_source">ObjectAny.java</span></div><h1>ObjectAny.java</h1><pre class="source lang-java linenums">package com.jsoniter.any;
+
+import com.jsoniter.ValueType;
+import com.jsoniter.output.JsonStream;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+class ObjectAny extends Any {
+
+    private final Map&lt;String, Any&gt; val;
+
+<span class="fc" id="L17">    public ObjectAny(Map&lt;String, Any&gt; val) {</span>
+<span class="fc" id="L18">        this.val = val;</span>
+<span class="fc" id="L19">    }</span>
+
+    @Override
+    public ValueType valueType() {
+<span class="fc" id="L23">        return ValueType.OBJECT;</span>
+    }
+
+    @Override
+    public Object object() {
+<span class="fc" id="L28">        return val;</span>
+    }
+
+    @Override
+    public void writeTo(JsonStream stream) throws IOException {
+<span class="fc" id="L33">        stream.writeObjectStart();</span>
+<span class="fc" id="L34">        boolean notFirst = false;</span>
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        for (Map.Entry&lt;String, Any&gt; entry : val.entrySet()) {</span>
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">            if (notFirst) {</span>
+<span class="nc" id="L37">                stream.writeMore();</span>
+            } else {
+<span class="fc" id="L39">                notFirst = true;</span>
+            }
+<span class="fc" id="L41">            stream.writeObjectField(entry.getKey());</span>
+<span class="fc" id="L42">            entry.getValue().writeTo(stream);</span>
+<span class="fc" id="L43">        }</span>
+<span class="fc" id="L44">        stream.writeObjectEnd();</span>
+<span class="fc" id="L45">    }</span>
+
+    @Override
+    public boolean toBoolean() {
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        return !val.isEmpty();</span>
+    }
+
+    @Override
+    public int toInt() {
+<span class="nc" id="L54">        return size();</span>
+    }
+
+    @Override
+    public long toLong() {
+<span class="nc" id="L59">        return size();</span>
+    }
+
+    @Override
+    public float toFloat() {
+<span class="nc" id="L64">        return size();</span>
+    }
+
+    @Override
+    public double toDouble() {
+<span class="nc" id="L69">        return size();</span>
+    }
+
+    @Override
+    public BigInteger toBigInteger() {
+<span class="nc" id="L74">        return BigInteger.valueOf(size());</span>
+    }
+
+    @Override
+    public BigDecimal toBigDecimal() {
+<span class="nc" id="L79">        return BigDecimal.valueOf(size());</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L84">        return JsonStream.serialize(this);</span>
+    }
+
+    @Override
+    public Any get(Object key) {
+<span class="fc" id="L89">        Any element = val.get(key);</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (element == null) {</span>
+<span class="fc" id="L91">            return new NotFoundAny(key, object());</span>
+        }
+<span class="nc" id="L93">        return element;</span>
+    }
+
+    @Override
+    public Any get(Object[] keys, int idx) {
+<span class="pc bpc" id="L98" title="1 of 2 branches missed.">        if (idx == keys.length) {</span>
+<span class="nc" id="L99">            return this;</span>
+        }
+<span class="fc" id="L101">        Object key = keys[idx];</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">        if (isWildcard(key)) {</span>
+<span class="fc" id="L103">            HashMap&lt;String, Any&gt; result = new HashMap&lt;String, Any&gt;();</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            for (Map.Entry&lt;String, Any&gt; entry : val.entrySet()) {</span>
+<span class="fc" id="L105">                Any mapped = entry.getValue().get(keys, idx + 1);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">                if (mapped.valueType() != ValueType.INVALID) {</span>
+<span class="fc" id="L107">                    result.put(entry.getKey(), mapped);</span>
+                }
+<span class="fc" id="L109">            }</span>
+<span class="fc" id="L110">            return Any.rewrap(result);</span>
+        }
+<span class="nc" id="L112">        Any element = val.get(key);</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        if (element == null) {</span>
+<span class="nc" id="L114">            return new NotFoundAny(keys, idx, object());</span>
+        }
+<span class="nc" id="L116">        return element.get(keys, idx + 1);</span>
+    }
+
+    @Override
+    public EntryIterator entries() {
+<span class="nc" id="L121">        return new IteratorAdapter(val.entrySet().iterator());</span>
+    }
+
+    public static class IteratorAdapter implements EntryIterator {
+
+        private final Iterator&lt;Map.Entry&lt;String, Any&gt;&gt; iter;
+        private Map.Entry&lt;String, Any&gt; entry;
+
+<span class="nc" id="L129">        public IteratorAdapter(Iterator&lt;Map.Entry&lt;String, Any&gt;&gt; iter) {</span>
+<span class="nc" id="L130">            this.iter = iter;</span>
+<span class="nc" id="L131">        }</span>
+
+        @Override
+        public boolean next() {
+<span class="nc bnc" id="L135" title="All 2 branches missed.">            if (iter.hasNext()) {</span>
+<span class="nc" id="L136">                entry = iter.next();</span>
+<span class="nc" id="L137">                return true;</span>
+            }
+<span class="nc" id="L139">            return false;</span>
+        }
+
+        @Override
+        public String key() {
+<span class="nc" id="L144">            return entry.getKey();</span>
+        }
+
+        @Override
+        public Any value() {
+<span class="nc" id="L149">            return entry.getValue();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

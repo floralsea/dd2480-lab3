@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Slice.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.spi</a> &gt; <span class="el_source">Slice.java</span></div><h1>Slice.java</h1><pre class="source lang-java linenums">package com.jsoniter.spi;
+
+public class Slice {
+
+    private byte[] data;
+    private int head;
+    private int tail;
+    private int hash;
+
+<span class="fc" id="L10">    public Slice(byte[] data, int head, int tail) {</span>
+<span class="fc" id="L11">        this.data = data;</span>
+<span class="fc" id="L12">        this.head = head;</span>
+<span class="fc" id="L13">        this.tail = tail;</span>
+<span class="fc" id="L14">    }</span>
+
+    public void reset(byte[] data, int head, int tail) {
+<span class="fc" id="L17">        this.data = data;</span>
+<span class="fc" id="L18">        this.head = head;</span>
+<span class="fc" id="L19">        this.tail = tail;</span>
+<span class="fc" id="L20">        this.hash = 0;</span>
+<span class="fc" id="L21">    }</span>
+
+    public final byte at(int pos) {
+<span class="nc" id="L24">        return data[head + pos];</span>
+    }
+
+    public final int len() {
+<span class="fc" id="L28">        return tail - head;</span>
+    }
+
+    public final byte[] data() {
+<span class="fc" id="L32">        return data;</span>
+    }
+
+    public final int head() {
+<span class="fc" id="L36">        return head;</span>
+    }
+
+    public final int tail() {
+<span class="fc" id="L40">        return tail;</span>
+    }
+
+    public static Slice make(String str) {
+<span class="fc" id="L44">        byte[] data = str.getBytes();</span>
+<span class="fc" id="L45">        return new Slice(data, 0, data.length);</span>
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+<span class="fc" id="L50">        Slice slice = (Slice) o;</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if ((tail - head) != (slice.tail - slice.head)) return false;</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        for (int i = head, j = slice.head; i &lt; tail; i++, j++)</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">            if (data[i] != slice.data[j])</span>
+<span class="fc" id="L54">                return false;</span>
+<span class="fc" id="L55">        return true;</span>
+    }
+
+    @Override
+    public final int hashCode() {
+<span class="pc bpc" id="L60" title="1 of 4 branches missed.">        if (hash == 0 &amp;&amp; tail - head &gt; 0) {</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            for (int i = head; i &lt; tail; i++) {</span>
+<span class="fc" id="L62">                hash = 31 * hash + data[i];</span>
+            }
+        }
+<span class="fc" id="L65">        return hash;</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L70">        return new String(data, head, tail - head);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Codegen.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">Codegen.java</span></div><h1>Codegen.java</h1><pre class="source lang-java linenums">package com.jsoniter;
+
+import com.jsoniter.spi.*;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
+import java.util.*;
+
+<span class="nc" id="L14">class Codegen {</span>
+
+    // only read/write when generating code with synchronized protection
+<span class="fc" id="L17">    private final static Set&lt;String&gt; generatedClassNames = new HashSet&lt;String&gt;();</span>
+<span class="fc" id="L18">    static CodegenAccess.StaticCodegenTarget isDoingStaticCodegen = null;</span>
+
+    static Decoder getDecoder(String cacheKey, Type type) {
+<span class="fc" id="L21">        Decoder decoder = JsoniterSpi.getDecoder(cacheKey);</span>
+<span class="fc bfc" id="L22" title="All 2 branches covered.">        if (decoder != null) {</span>
+<span class="fc" id="L23">            return decoder;</span>
+        }
+<span class="fc" id="L25">        return gen(cacheKey, type);</span>
+    }
+
+    private synchronized static Decoder gen(String cacheKey, Type type) {
+<span class="fc" id="L29">        Decoder decoder = JsoniterSpi.getDecoder(cacheKey);</span>
+<span class="pc bpc" id="L30" title="1 of 2 branches missed.">        if (decoder != null) {</span>
+<span class="nc" id="L31">            return decoder;</span>
+        }
+<span class="fc" id="L33">        List&lt;Extension&gt; extensions = JsoniterSpi.getExtensions();</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        for (Extension extension : extensions) {</span>
+<span class="fc" id="L35">            type = extension.chooseImplementation(type);</span>
+<span class="fc" id="L36">        }</span>
+<span class="fc" id="L37">        type = chooseImpl(type);</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        for (Extension extension : extensions) {</span>
+<span class="fc" id="L39">            decoder = extension.createDecoder(cacheKey, type);</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">            if (decoder != null) {</span>
+<span class="fc" id="L41">                JsoniterSpi.addNewDecoder(cacheKey, decoder);</span>
+<span class="fc" id="L42">                return decoder;</span>
+            }
+<span class="fc" id="L44">        }</span>
+<span class="fc" id="L45">        ClassInfo classInfo = new ClassInfo(type);</span>
+<span class="fc" id="L46">        decoder = CodegenImplNative.NATIVE_DECODERS.get(classInfo.clazz);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (decoder != null) {</span>
+<span class="fc" id="L48">            return decoder;</span>
+        }
+<span class="fc" id="L50">        addPlaceholderDecoderToSupportRecursiveStructure(cacheKey);</span>
+        try {
+<span class="fc" id="L52">            Config currentConfig = JsoniterSpi.getCurrentConfig();</span>
+<span class="fc" id="L53">            DecodingMode mode = currentConfig.decodingMode();</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">            if (mode == DecodingMode.REFLECTION_MODE) {</span>
+<span class="fc" id="L55">                decoder = ReflectionDecoderFactory.create(classInfo);</span>
+<span class="fc" id="L56">                return decoder;</span>
+            }
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">            if (isDoingStaticCodegen == null) {</span>
+                try {
+<span class="nc" id="L60">                    decoder = (Decoder) Class.forName(cacheKey).newInstance();</span>
+<span class="nc" id="L61">                    return decoder;</span>
+<span class="fc" id="L62">                } catch (Exception e) {</span>
+<span class="pc bpc" id="L63" title="1 of 2 branches missed.">                    if (mode == DecodingMode.STATIC_MODE) {</span>
+<span class="nc" id="L64">                        throw new JsonException(&quot;static gen should provide the decoder we need, but failed to create the decoder&quot;, e);</span>
+                    }
+                }
+            }
+<span class="fc" id="L68">            String source = genSource(mode, classInfo);</span>
+<span class="fc" id="L69">            source = &quot;public static java.lang.Object decode_(com.jsoniter.JsonIterator iter) throws java.io.IOException { &quot;</span>
+                    + source + &quot;}&quot;;
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">            if (&quot;true&quot;.equals(System.getenv(&quot;JSONITER_DEBUG&quot;))) {</span>
+<span class="nc" id="L72">                System.out.println(&quot;&gt;&gt;&gt; &quot; + cacheKey);</span>
+<span class="nc" id="L73">                System.out.println(source);</span>
+            }
+            try {
+<span class="fc" id="L76">                generatedClassNames.add(cacheKey);</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">                if (isDoingStaticCodegen == null) {</span>
+<span class="nc" id="L78">                    decoder = DynamicCodegen.gen(cacheKey, source);</span>
+                } else {
+<span class="nc" id="L80">                    staticGen(cacheKey, source);</span>
+                }
+<span class="nc" id="L82">                return decoder;</span>
+<span class="fc" id="L83">            } catch (Exception e) {</span>
+<span class="fc" id="L84">                String msg = &quot;failed to generate decoder for: &quot; + classInfo + &quot; with &quot; + Arrays.toString(classInfo.typeArgs) + &quot;, exception: &quot; + e;</span>
+<span class="fc" id="L85">                msg = msg + &quot;\n&quot; + source;</span>
+<span class="fc" id="L86">                throw new JsonException(msg, e);</span>
+            }
+        } finally {
+<span class="fc" id="L89">            JsoniterSpi.addNewDecoder(cacheKey, decoder);</span>
+        }
+    }
+
+    private static void addPlaceholderDecoderToSupportRecursiveStructure(final String cacheKey) {
+<span class="fc" id="L94">        JsoniterSpi.addNewDecoder(cacheKey, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="nc" id="L97">                Decoder decoder = JsoniterSpi.getDecoder(cacheKey);</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">                if (this == decoder) {</span>
+<span class="nc bnc" id="L99" title="All 4 branches missed.">                    for(int i = 0; (i &lt; 30) &amp;&amp; (this == decoder); i++) {</span>
+<span class="nc" id="L100">                        decoder = JsoniterSpi.getDecoder(cacheKey);</span>
+                        try {
+<span class="nc" id="L102">                            Thread.sleep(1000);</span>
+<span class="nc" id="L103">                            } catch (InterruptedException e) {</span>
+<span class="nc" id="L104">                                throw new JsonException(e);</span>
+<span class="nc" id="L105">                        }</span>
+                    }
+<span class="nc bnc" id="L107" title="All 2 branches missed.">                    if (this == decoder) {</span>
+<span class="nc" id="L108">                        throw new JsonException(&quot;internal error: placeholder is not replaced with real decoder&quot;);</span>
+                    }
+                }
+<span class="nc" id="L111">                return decoder.decode(iter);</span>
+            }
+        });
+<span class="fc" id="L114">    }</span>
+
+    public static boolean canStaticAccess(String cacheKey) {
+<span class="fc" id="L117">        return generatedClassNames.contains(cacheKey);</span>
+    }
+
+    private static Type chooseImpl(Type type) {
+<span class="fc" id="L121">        Type[] typeArgs = new Type[0];</span>
+        Class clazz;
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (type instanceof ParameterizedType) {</span>
+<span class="fc" id="L124">            ParameterizedType pType = (ParameterizedType) type;</span>
+<span class="fc" id="L125">            clazz = (Class) pType.getRawType();</span>
+<span class="fc" id="L126">            typeArgs = pType.getActualTypeArguments();</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        } else if (type instanceof WildcardType) {</span>
+<span class="fc" id="L128">            return Object.class;</span>
+        } else {
+<span class="fc" id="L130">            clazz = (Class) type;</span>
+        }
+<span class="fc" id="L132">        Class implClazz = JsoniterSpi.getTypeImplementation(clazz);</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">        if (Collection.class.isAssignableFrom(clazz)) {</span>
+<span class="fc" id="L134">            Type compType = Object.class;</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">            if (typeArgs.length == 0) {</span>
+                // default to List&lt;Object&gt;
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">            } else if (typeArgs.length == 1) {</span>
+<span class="fc" id="L138">                compType = typeArgs[0];</span>
+            } else {
+<span class="nc" id="L140">                throw new IllegalArgumentException(</span>
+                        &quot;can not bind to generic collection without argument types, &quot; +
+                                &quot;try syntax like TypeLiteral&lt;List&lt;Integer&gt;&gt;{}&quot;);
+            }
+<span class="fc bfc" id="L144" title="All 2 branches covered.">            if (clazz == List.class) {</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">                clazz = implClazz == null ? ArrayList.class : implClazz;</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">            } else if (clazz == Set.class) {</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">                clazz = implClazz == null ? HashSet.class : implClazz;</span>
+            }
+<span class="fc" id="L149">            return GenericsHelper.createParameterizedType(new Type[]{compType}, null, clazz);</span>
+        }
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        if (Map.class.isAssignableFrom(clazz)) {</span>
+<span class="fc" id="L152">            Type keyType = String.class;</span>
+<span class="fc" id="L153">            Type valueType = Object.class;</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            if (typeArgs.length == 0) {</span>
+                // default to Map&lt;String, Object&gt;
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">            } else if (typeArgs.length == 2) {</span>
+<span class="fc" id="L157">                keyType = typeArgs[0];</span>
+<span class="fc" id="L158">                valueType = typeArgs[1];</span>
+            } else {
+<span class="nc" id="L160">                throw new IllegalArgumentException(</span>
+                        &quot;can not bind to generic collection without argument types, &quot; +
+                                &quot;try syntax like TypeLiteral&lt;Map&lt;String, String&gt;&gt;{}&quot;);
+            }
+<span class="fc bfc" id="L164" title="All 2 branches covered.">            if (clazz == Map.class) {</span>
+<span class="pc bpc" id="L165" title="1 of 2 branches missed.">                clazz = implClazz == null ? HashMap.class : implClazz;</span>
+            }
+<span class="fc bfc" id="L167" title="All 2 branches covered.">            if (keyType == Object.class) {</span>
+<span class="fc" id="L168">                keyType = String.class;</span>
+            }
+<span class="fc" id="L170">            MapKeyDecoders.registerOrGetExisting(keyType);</span>
+<span class="fc" id="L171">            return GenericsHelper.createParameterizedType(new Type[]{keyType, valueType}, null, clazz);</span>
+        }
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        if (implClazz != null) {</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">            if (typeArgs.length == 0) {</span>
+<span class="fc" id="L175">                return implClazz;</span>
+            } else {
+<span class="nc" id="L177">                return GenericsHelper.createParameterizedType(typeArgs, null, implClazz);</span>
+            }
+        }
+<span class="fc" id="L180">        return type;</span>
+    }
+
+    private static void staticGen(String cacheKey, String source) throws IOException {
+<span class="nc" id="L184">        createDir(cacheKey);</span>
+<span class="nc" id="L185">        String fileName = cacheKey.replace('.', '/') + &quot;.java&quot;;</span>
+<span class="nc" id="L186">        FileOutputStream fileOutputStream = new FileOutputStream(new File(isDoingStaticCodegen.outputDir, fileName));</span>
+        try {
+<span class="nc" id="L188">            OutputStreamWriter writer = new OutputStreamWriter(fileOutputStream);</span>
+            try {
+<span class="nc" id="L190">                staticGen(cacheKey, writer, source);</span>
+            } finally {
+<span class="nc" id="L192">                writer.close();</span>
+            }
+        } finally {
+<span class="nc" id="L195">            fileOutputStream.close();</span>
+        }
+<span class="nc" id="L197">    }</span>
+
+    private static void staticGen(String cacheKey, OutputStreamWriter writer, String source) throws IOException {
+<span class="nc" id="L200">        String className = cacheKey.substring(cacheKey.lastIndexOf('.') + 1);</span>
+<span class="nc" id="L201">        String packageName = cacheKey.substring(0, cacheKey.lastIndexOf('.'));</span>
+<span class="nc" id="L202">        writer.write(&quot;package &quot; + packageName + &quot;;\n&quot;);</span>
+<span class="nc" id="L203">        writer.write(&quot;public class &quot; + className + &quot; implements com.jsoniter.spi.Decoder {\n&quot;);</span>
+<span class="nc" id="L204">        writer.write(source);</span>
+<span class="nc" id="L205">        writer.write(&quot;public java.lang.Object decode(com.jsoniter.JsonIterator iter) throws java.io.IOException {\n&quot;);</span>
+<span class="nc" id="L206">        writer.write(&quot;return decode_(iter);\n&quot;);</span>
+<span class="nc" id="L207">        writer.write(&quot;}\n&quot;);</span>
+<span class="nc" id="L208">        writer.write(&quot;}\n&quot;);</span>
+<span class="nc" id="L209">    }</span>
+
+    private static void createDir(String cacheKey) {
+<span class="nc" id="L212">        String[] parts = cacheKey.split(&quot;\\.&quot;);</span>
+<span class="nc" id="L213">        File parent = new File(isDoingStaticCodegen.outputDir);</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">        for (int i = 0; i &lt; parts.length - 1; i++) {</span>
+<span class="nc" id="L215">            String part = parts[i];</span>
+<span class="nc" id="L216">            File current = new File(parent, part);</span>
+<span class="nc" id="L217">            current.mkdir();</span>
+<span class="nc" id="L218">            parent = current;</span>
+        }
+<span class="nc" id="L220">    }</span>
+
+    private static String genSource(DecodingMode mode, ClassInfo classInfo) {
+<span class="fc bfc" id="L223" title="All 2 branches covered.">        if (classInfo.clazz.isArray()) {</span>
+<span class="fc" id="L224">            return CodegenImplArray.genArray(classInfo);</span>
+        }
+<span class="fc bfc" id="L226" title="All 2 branches covered.">        if (Map.class.isAssignableFrom(classInfo.clazz)) {</span>
+<span class="fc" id="L227">            return CodegenImplMap.genMap(classInfo);</span>
+        }
+<span class="fc bfc" id="L229" title="All 2 branches covered.">        if (Collection.class.isAssignableFrom(classInfo.clazz)) {</span>
+<span class="fc" id="L230">            return CodegenImplArray.genCollection(classInfo);</span>
+        }
+<span class="fc bfc" id="L232" title="All 2 branches covered.">        if (classInfo.clazz.isEnum()) {</span>
+<span class="fc" id="L233">            return CodegenImplEnum.genEnum(classInfo);</span>
+        }
+<span class="fc" id="L235">        ClassDescriptor desc = ClassDescriptor.getDecodingClassDescriptor(classInfo, false);</span>
+<span class="fc bfc" id="L236" title="All 2 branches covered.">        if (shouldUseStrictMode(mode, desc)) {</span>
+<span class="fc" id="L237">            return CodegenImplObjectStrict.genObjectUsingStrict(desc);</span>
+        } else {
+<span class="fc" id="L239">            return CodegenImplObjectHash.genObjectUsingHash(desc);</span>
+        }
+    }
+
+    private static boolean shouldUseStrictMode(DecodingMode mode, ClassDescriptor desc) {
+<span class="fc bfc" id="L244" title="All 2 branches covered.">        if (mode == DecodingMode.DYNAMIC_MODE_AND_MATCH_FIELD_STRICTLY) {</span>
+<span class="fc" id="L245">            return true;</span>
+        }
+<span class="fc" id="L247">        List&lt;Binding&gt; allBindings = desc.allDecoderBindings();</span>
+<span class="fc bfc" id="L248" title="All 2 branches covered.">        for (Binding binding : allBindings) {</span>
+<span class="pc bpc" id="L249" title="1 of 6 branches missed.">            if (binding.asMissingWhenNotPresent || binding.asExtraWhenPresent || binding.shouldSkip) {</span>
+                // only slice support mandatory tracking
+<span class="fc" id="L251">                return true;</span>
+            }
+<span class="fc" id="L253">        }</span>
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        if (desc.asExtraForUnknownProperties) {</span>
+            // only slice support unknown field tracking
+<span class="fc" id="L256">            return true;</span>
+        }
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        if (!desc.keyValueTypeWrappers.isEmpty()) {</span>
+<span class="fc" id="L259">            return true;</span>
+        }
+<span class="fc" id="L261">        boolean hasBinding = false;</span>
+<span class="fc bfc" id="L262" title="All 2 branches covered.">        for (Binding allBinding : allBindings) {</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">            if (allBinding.fromNames.length &gt; 0) {</span>
+<span class="fc" id="L264">                hasBinding = true;</span>
+            }
+<span class="fc" id="L266">        }</span>
+<span class="fc bfc" id="L267" title="All 2 branches covered.">        if (!hasBinding) {</span>
+            // empty object can only be handled by strict mode
+<span class="fc" id="L269">            return true;</span>
+        }
+<span class="fc" id="L271">        return false;</span>
+    }
+
+    public static void staticGenDecoders(TypeLiteral[] typeLiterals, CodegenAccess.StaticCodegenTarget staticCodegenTarget) {
+<span class="nc" id="L275">        isDoingStaticCodegen = staticCodegenTarget;</span>
+<span class="nc bnc" id="L276" title="All 2 branches missed.">        for (TypeLiteral typeLiteral : typeLiterals) {</span>
+<span class="nc" id="L277">            gen(typeLiteral.getDecoderCacheKey(), typeLiteral.getType());</span>
+        }
+<span class="nc" id="L279">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

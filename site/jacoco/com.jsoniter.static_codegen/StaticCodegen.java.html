@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StaticCodegen.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.static_codegen</a> &gt; <span class="el_source">StaticCodegen.java</span></div><h1>StaticCodegen.java</h1><pre class="source lang-java linenums">package com.jsoniter.static_codegen;
+
+import com.jsoniter.CodegenAccess;
+import com.jsoniter.spi.DecodingMode;
+import com.jsoniter.JsonIterator;
+import com.jsoniter.output.EncodingMode;
+import com.jsoniter.output.JsonStream;
+import com.jsoniter.spi.JsonException;
+
+import java.io.File;
+
+<span class="nc" id="L12">public class StaticCodegen {</span>
+    public static void main(String[] args) throws Exception {
+<span class="nc bnc" id="L14" title="All 2 branches missed.">        if (args.length == 0) {</span>
+<span class="nc" id="L15">            System.out.println(&quot;StaticCodegen configClassName [outputDir]&quot;);</span>
+<span class="nc" id="L16">            System.out.println(&quot;configClassName: like a.b.Config, a class defining what to codegen&quot;);</span>
+<span class="nc" id="L17">            System.out.println(&quot;outputDir: if not specified, will write to source directory of configClass&quot;);</span>
+<span class="nc" id="L18">            return;</span>
+        }
+<span class="nc" id="L20">        String configClassName = args[0];</span>
+<span class="nc" id="L21">        String configJavaFile = configClassName.replace('.', '/') + &quot;.java&quot;;</span>
+        String outputDir;
+<span class="nc bnc" id="L23" title="All 2 branches missed.">        if (args.length &gt; 1) {</span>
+<span class="nc" id="L24">            outputDir = args[1];</span>
+        } else {
+<span class="nc bnc" id="L26" title="All 2 branches missed.">            if (!new File(configJavaFile).exists()) {</span>
+<span class="nc" id="L27">                throw new JsonException(&quot;must execute static code generator in the java source code directory which contains: &quot; + configJavaFile);</span>
+            }
+<span class="nc" id="L29">            outputDir = new File(&quot;.&quot;).getAbsolutePath();</span>
+        }
+<span class="nc" id="L31">        Class&lt;?&gt; clazz = Class.forName(configClassName);</span>
+<span class="nc" id="L32">        StaticCodegenConfig config = (StaticCodegenConfig) clazz.newInstance();</span>
+<span class="nc" id="L33">        JsonIterator.setMode(DecodingMode.DYNAMIC_MODE_AND_MATCH_FIELD_WITH_HASH);</span>
+<span class="nc" id="L34">        JsonStream.setMode(EncodingMode.DYNAMIC_MODE);</span>
+<span class="nc" id="L35">        config.setup();</span>
+<span class="nc" id="L36">        CodegenAccess.staticGenDecoders(</span>
+<span class="nc" id="L37">                config.whatToCodegen(), new CodegenAccess.StaticCodegenTarget(outputDir));</span>
+<span class="nc" id="L38">        com.jsoniter.output.CodegenAccess.staticGenEncoders(</span>
+<span class="nc" id="L39">                config.whatToCodegen(), new com.jsoniter.output.CodegenAccess.StaticCodegenTarget(outputDir));</span>
+<span class="nc" id="L40">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

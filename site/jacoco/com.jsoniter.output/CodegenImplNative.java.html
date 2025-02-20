@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CodegenImplNative.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.output</a> &gt; <span class="el_source">CodegenImplNative.java</span></div><h1>CodegenImplNative.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">package com.jsoniter.output;</span>
+
+import com.jsoniter.spi.JsonException;
+import com.jsoniter.any.Any;
+import com.jsoniter.spi.*;
+
+import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.Map;
+
+<span class="nc" id="L17">class CodegenImplNative {</span>
+<span class="fc" id="L18">    public static final Map&lt;Type, Encoder.ReflectionEncoder&gt; NATIVE_ENCODERS = new IdentityHashMap&lt;Type, Encoder.ReflectionEncoder&gt;() {{</span>
+<span class="fc" id="L19">        put(boolean.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L22">                stream.writeVal((Boolean) obj);</span>
+<span class="nc" id="L23">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L27">                Boolean val = (Boolean) obj;</span>
+<span class="nc" id="L28">                return Any.wrap((boolean) val);</span>
+            }
+        });
+<span class="fc" id="L31">        put(Boolean.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L34">                stream.writeVal((Boolean) obj);</span>
+<span class="nc" id="L35">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L39">                Boolean val = (Boolean) obj;</span>
+<span class="nc" id="L40">                return Any.wrap((boolean) val);</span>
+            }
+        });
+<span class="fc" id="L43">        put(byte.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L46">                stream.writeVal(((Byte) obj).shortValue());</span>
+<span class="nc" id="L47">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L51">                Byte val = (Byte) obj;</span>
+<span class="nc" id="L52">                return Any.wrap((int) val);</span>
+            }
+        });
+<span class="fc" id="L55">        put(Byte.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L58">                stream.writeVal(((Byte) obj).shortValue());</span>
+<span class="nc" id="L59">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L63">                Byte val = (Byte) obj;</span>
+<span class="nc" id="L64">                return Any.wrap((int) val);</span>
+            }
+        });
+<span class="fc" id="L67">        put(short.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L70">                stream.writeVal((Short) obj);</span>
+<span class="nc" id="L71">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L75">                Short val = (Short) obj;</span>
+<span class="nc" id="L76">                return Any.wrap((int) val);</span>
+            }
+        });
+<span class="fc" id="L79">        put(Short.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L82">                stream.writeVal((Short) obj);</span>
+<span class="fc" id="L83">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L87">                Short val = (Short) obj;</span>
+<span class="nc" id="L88">                return Any.wrap((int) val);</span>
+            }
+        });
+<span class="fc" id="L91">        put(int.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L94">                stream.writeVal((Integer) obj);</span>
+<span class="fc" id="L95">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L99">                Integer val = (Integer) obj;</span>
+<span class="nc" id="L100">                return Any.wrap((int) val);</span>
+            }
+        });
+<span class="fc" id="L103">        put(Integer.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L106">                stream.writeVal((Integer) obj);</span>
+<span class="fc" id="L107">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="fc" id="L111">                Integer val = (Integer) obj;</span>
+<span class="fc" id="L112">                return Any.wrap((int) val);</span>
+            }
+        });
+<span class="fc" id="L115">        put(char.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L118">                stream.writeVal(((Character) obj).charValue());</span>
+<span class="nc" id="L119">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L123">                Character val = (Character) obj;</span>
+<span class="nc" id="L124">                return Any.wrap((int) val);</span>
+            }
+        });
+<span class="fc" id="L127">        put(Character.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L130">                stream.writeVal(((Character) obj).charValue());</span>
+<span class="nc" id="L131">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L135">                Character val = (Character) obj;</span>
+<span class="nc" id="L136">                return Any.wrap((int) val);</span>
+            }
+        });
+<span class="fc" id="L139">        put(long.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L142">                stream.writeVal((Long) obj);</span>
+<span class="fc" id="L143">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L147">                Long val = (Long) obj;</span>
+<span class="nc" id="L148">                return Any.wrap((long) val);</span>
+            }
+        });
+<span class="fc" id="L151">        put(Long.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L154">                stream.writeVal((Long) obj);</span>
+<span class="fc" id="L155">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="fc" id="L159">                Long val = (Long) obj;</span>
+<span class="fc" id="L160">                return Any.wrap((long) val);</span>
+            }
+        });
+<span class="fc" id="L163">        put(float.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L166">                stream.writeVal((Float) obj);</span>
+<span class="nc" id="L167">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L171">                Float val = (Float) obj;</span>
+<span class="nc" id="L172">                return Any.wrap((float) val);</span>
+            }
+        });
+<span class="fc" id="L175">        put(Float.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L178">                stream.writeVal((Float) obj);</span>
+<span class="fc" id="L179">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L183">                Float val = (Float) obj;</span>
+<span class="nc" id="L184">                return Any.wrap((float) val);</span>
+            }
+        });
+<span class="fc" id="L187">        put(double.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L190">                stream.writeVal((Double) obj);</span>
+<span class="nc" id="L191">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L195">                Double val = (Double) obj;</span>
+<span class="nc" id="L196">                return Any.wrap((double) val);</span>
+            }
+        });
+<span class="fc" id="L199">        put(Double.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L202">                stream.writeVal((Double) obj);</span>
+<span class="fc" id="L203">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L207">                Double val = (Double) obj;</span>
+<span class="nc" id="L208">                return Any.wrap((double) val);</span>
+            }
+        });
+<span class="fc" id="L211">        put(String.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L214">                stream.writeVal((String) obj);</span>
+<span class="fc" id="L215">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="fc" id="L219">                String val = (String) obj;</span>
+<span class="fc" id="L220">                return Any.wrap(val);</span>
+            }
+        });
+<span class="fc" id="L223">        put(Object.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="pc bpc" id="L226" title="1 of 4 branches missed.">                if (obj != null &amp;&amp; obj.getClass() == Object.class) {</span>
+<span class="fc" id="L227">                    stream.writeEmptyObject();</span>
+<span class="fc" id="L228">                    return;</span>
+                }
+<span class="fc" id="L230">                stream.writeVal(obj);</span>
+<span class="fc" id="L231">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="pc bpc" id="L235" title="2 of 4 branches missed.">                if (obj != null &amp;&amp; obj.getClass() == Object.class) {</span>
+<span class="fc" id="L236">                    return Any.rewrap(new HashMap&lt;String, Any&gt;());</span>
+                }
+<span class="nc" id="L238">                return CodegenAccess.wrap(obj);</span>
+            }
+        });
+
+<span class="fc" id="L242">        put(BigDecimal.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L245">                BigDecimal val = (BigDecimal) obj;</span>
+<span class="fc" id="L246">                stream.writeRaw(val.toString());</span>
+<span class="fc" id="L247">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L251">                return Any.wrap(obj.toString());</span>
+            }
+        });
+<span class="fc" id="L254">        put(BigInteger.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L257">                BigInteger val = (BigInteger) obj;</span>
+<span class="fc" id="L258">                stream.writeRaw(val.toString());</span>
+<span class="fc" id="L259">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L263">                return Any.wrap(obj.toString());</span>
+            }
+        });
+    }};
+
+    public static void genWriteOp(CodegenResult ctx, String code, Type valueType, boolean isNullable) {
+<span class="fc" id="L269">        genWriteOp(ctx, code, valueType, isNullable, true);</span>
+<span class="fc" id="L270">    }</span>
+
+    public static void genWriteOp(CodegenResult ctx, String code, Type valueType, boolean isNullable, boolean isCollectionValueNullable) {
+<span class="fc bfc" id="L273" title="All 2 branches covered.">        boolean noIndention = JsoniterSpi.getCurrentConfig().indentionStep() == 0;</span>
+<span class="fc" id="L274">        String cacheKey = TypeLiteral.create(valueType).getEncoderCacheKey();</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">        if (JsoniterSpi.getEncoder(cacheKey) == null) {</span>
+<span class="fc bfc" id="L276" title="All 6 branches covered.">            if (noIndention &amp;&amp; !isNullable &amp;&amp; String.class == valueType) {</span>
+<span class="fc" id="L277">                ctx.buffer('&quot;');</span>
+<span class="fc" id="L278">                ctx.append(String.format(&quot;com.jsoniter.output.CodegenAccess.writeStringWithoutQuote((java.lang.String)%s, stream);&quot;, code));</span>
+<span class="fc" id="L279">                ctx.buffer('&quot;');</span>
+<span class="fc" id="L280">                return;</span>
+            }
+<span class="fc bfc" id="L282" title="All 2 branches covered.">            if (NATIVE_ENCODERS.containsKey(valueType)) {</span>
+<span class="fc" id="L283">                ctx.append(String.format(&quot;stream.writeVal((%s)%s);&quot;, getTypeName(valueType), code));</span>
+<span class="fc" id="L284">                return;</span>
+            }
+<span class="fc bfc" id="L286" title="All 2 branches covered.">            if (valueType instanceof WildcardType) {</span>
+<span class="fc" id="L287">                ctx.append(String.format(&quot;stream.writeVal((%s)%s);&quot;, getTypeName(Object.class), code));</span>
+<span class="fc" id="L288">                return;</span>
+            }
+        }
+
+<span class="fc bfc" id="L292" title="All 2 branches covered.">        if (!isCollectionValueNullable) {</span>
+<span class="fc" id="L293">            cacheKey = cacheKey + &quot;__value_not_nullable&quot;;</span>
+        }
+<span class="fc" id="L295">        Codegen.getEncoder(cacheKey, valueType);</span>
+<span class="fc" id="L296">        CodegenResult generatedSource = Codegen.getGeneratedSource(cacheKey);</span>
+<span class="pc bpc" id="L297" title="1 of 2 branches missed.">        if (generatedSource != null) {</span>
+<span class="nc bnc" id="L298" title="All 2 branches missed.">            if (isNullable) {</span>
+<span class="nc" id="L299">                ctx.appendBuffer();</span>
+<span class="nc" id="L300">                ctx.append(CodegenResult.bufferToWriteOp(generatedSource.prelude));</span>
+<span class="nc" id="L301">                ctx.append(String.format(&quot;%s.encode_((%s)%s, stream);&quot;, cacheKey, getTypeName(valueType), code));</span>
+<span class="nc" id="L302">                ctx.append(CodegenResult.bufferToWriteOp(generatedSource.epilogue));</span>
+            } else {
+<span class="nc" id="L304">                ctx.buffer(generatedSource.prelude);</span>
+<span class="nc" id="L305">                ctx.append(String.format(&quot;%s.encode_((%s)%s, stream);&quot;, cacheKey, getTypeName(valueType), code));</span>
+<span class="nc" id="L306">                ctx.buffer(generatedSource.epilogue);</span>
+            }
+        } else {
+<span class="fc" id="L309">            ctx.append(String.format(&quot;com.jsoniter.output.CodegenAccess.writeVal(\&quot;%s\&quot;, (%s)%s, stream);&quot;, cacheKey, getTypeName(valueType), code));</span>
+        }
+<span class="fc" id="L311">    }</span>
+
+    public static String getTypeName(Type fieldType) {
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">        if (fieldType instanceof Class) {</span>
+<span class="fc" id="L315">            Class clazz = (Class) fieldType;</span>
+<span class="fc" id="L316">            return clazz.getCanonicalName();</span>
+<span class="nc bnc" id="L317" title="All 2 branches missed.">        } else if (fieldType instanceof ParameterizedType) {</span>
+<span class="nc" id="L318">            ParameterizedType pType = (ParameterizedType) fieldType;</span>
+<span class="nc" id="L319">            Class clazz = (Class) pType.getRawType();</span>
+<span class="nc" id="L320">            return clazz.getCanonicalName();</span>
+<span class="nc bnc" id="L321" title="All 2 branches missed.">        } else if (fieldType instanceof WildcardType) {</span>
+<span class="nc" id="L322">            return Object.class.getCanonicalName();</span>
+        } else {
+<span class="nc" id="L324">            throw new JsonException(&quot;unsupported type: &quot; + fieldType);</span>
+        }
+    }
+    public static CodegenResult genEnum(Class clazz) {
+<span class="fc bfc" id="L328" title="All 2 branches covered.">        boolean noIndention = JsoniterSpi.getCurrentConfig().indentionStep() == 0;</span>
+<span class="fc" id="L329">        CodegenResult ctx = new CodegenResult();</span>
+<span class="fc" id="L330">        ctx.append(String.format(&quot;public static void encode_(java.lang.Object obj, com.jsoniter.output.JsonStream stream) throws java.io.IOException {&quot;, clazz.getCanonicalName()));</span>
+<span class="fc" id="L331">        ctx.append(&quot;if (obj == null) { stream.writeNull(); return; }&quot;);</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">        if (noIndention) {</span>
+<span class="fc" id="L333">            ctx.buffer('&quot;');</span>
+        } else {
+<span class="fc" id="L335">            ctx.append(&quot;stream.write('\&quot;');&quot;);</span>
+        }
+<span class="fc" id="L337">        ctx.append(&quot;stream.writeRaw(obj.toString());&quot;);</span>
+<span class="fc bfc" id="L338" title="All 2 branches covered.">        if (noIndention) {</span>
+<span class="fc" id="L339">            ctx.buffer('&quot;');</span>
+        } else {
+<span class="fc" id="L341">            ctx.append(&quot;stream.write('\&quot;');&quot;);</span>
+        }
+<span class="fc" id="L343">        ctx.append(&quot;}&quot;);</span>
+<span class="fc" id="L344">        return ctx;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

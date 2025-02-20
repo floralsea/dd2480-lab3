@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IterImplObject.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">IterImplObject.java</span></div><h1>IterImplObject.java</h1><pre class="source lang-java linenums">package com.jsoniter;
+
+import java.io.IOException;
+
+<span class="nc" id="L5">class IterImplObject {</span>
+
+    public static final String readObject(JsonIterator iter) throws IOException {
+<span class="fc" id="L8">        byte c = IterImpl.nextToken(iter);</span>
+<span class="pc bpc" id="L9" title="2 of 5 branches missed.">        switch (c) {</span>
+            case 'n':
+<span class="nc" id="L11">                IterImpl.skipFixedBytes(iter, 3);</span>
+<span class="nc" id="L12">                return null;</span>
+            case '{':
+<span class="fc" id="L14">                c = IterImpl.nextToken(iter);</span>
+<span class="fc bfc" id="L15" title="All 2 branches covered.">                if (c == '&quot;') {</span>
+<span class="fc" id="L16">                    iter.unreadByte();</span>
+<span class="fc" id="L17">                    String field = iter.readString();</span>
+<span class="pc bpc" id="L18" title="1 of 2 branches missed.">                    if (IterImpl.nextToken(iter) != ':') {</span>
+<span class="nc" id="L19">                        throw iter.reportError(&quot;readObject&quot;, &quot;expect :&quot;);</span>
+                    }
+<span class="fc" id="L21">                    return field;</span>
+                }
+<span class="pc bpc" id="L23" title="1 of 2 branches missed.">                if (c == '}') {</span>
+<span class="fc" id="L24">                    return null; // end of object</span>
+                }
+<span class="nc" id="L26">                throw iter.reportError(&quot;readObject&quot;, &quot;expect \&quot; after {&quot;);</span>
+            case ',':
+<span class="fc" id="L28">                String field = iter.readString();</span>
+<span class="pc bpc" id="L29" title="1 of 2 branches missed.">                if (IterImpl.nextToken(iter) != ':') {</span>
+<span class="nc" id="L30">                    throw iter.reportError(&quot;readObject&quot;, &quot;expect :&quot;);</span>
+                }
+<span class="fc" id="L32">                return field;</span>
+            case '}':
+<span class="fc" id="L34">                return null; // end of object</span>
+            default:
+<span class="nc" id="L36">                throw iter.reportError(&quot;readObject&quot;, &quot;expect { or , or } or n, but found: &quot; + (char)c);</span>
+        }
+    }
+
+    public static final boolean readObjectCB(JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment) throws IOException {
+<span class="fc" id="L41">        byte c = IterImpl.nextToken(iter);</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">        if ('{' == c) {</span>
+<span class="fc" id="L43">            c = IterImpl.nextToken(iter);</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">            if ('&quot;' == c) {</span>
+<span class="fc" id="L45">                iter.unreadByte();</span>
+<span class="fc" id="L46">                String field = iter.readString();</span>
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">                if (IterImpl.nextToken(iter) != ':') {</span>
+<span class="nc" id="L48">                    throw iter.reportError(&quot;readObject&quot;, &quot;expect :&quot;);</span>
+                }
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">                if (!cb.handle(iter, field, attachment)) {</span>
+<span class="nc" id="L51">                    return false;</span>
+                }
+<span class="fc bfc" id="L53" title="All 2 branches covered.">                while (IterImpl.nextToken(iter) == ',') {</span>
+<span class="fc" id="L54">                    field = iter.readString();</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">                    if (IterImpl.nextToken(iter) != ':') {</span>
+<span class="nc" id="L56">                        throw iter.reportError(&quot;readObject&quot;, &quot;expect :&quot;);</span>
+                    }
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">                    if (!cb.handle(iter, field, attachment)) {</span>
+<span class="nc" id="L59">                        return false;</span>
+                    }
+                }
+<span class="fc" id="L62">                return true;</span>
+            }
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">            if ('}' == c) {</span>
+<span class="fc" id="L65">                return true;</span>
+            }
+<span class="nc" id="L67">            throw iter.reportError(&quot;readObjectCB&quot;, &quot;expect \&quot; after {&quot;);</span>
+        }
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        if ('n' == c) {</span>
+<span class="nc" id="L70">            IterImpl.skipFixedBytes(iter, 3);</span>
+<span class="nc" id="L71">            return true;</span>
+        }
+<span class="nc" id="L73">        throw iter.reportError(&quot;readObjectCB&quot;, &quot;expect { or n&quot;);</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

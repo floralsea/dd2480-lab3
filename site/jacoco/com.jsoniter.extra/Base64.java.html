@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Base64.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.extra</a> &gt; <span class="el_source">Base64.java</span></div><h1>Base64.java</h1><pre class="source lang-java linenums">package com.jsoniter.extra;
+
+import com.jsoniter.JsonIterator;
+import com.jsoniter.spi.Slice;
+import com.jsoniter.output.JsonStream;
+
+import java.io.IOException;
+import java.util.Arrays;
+
+/** A very fast and memory efficient class to encode and decode to and from BASE64 in full accordance
+ * with RFC 2045.&lt;br&gt;&lt;br&gt;
+ * On Windows XP sp1 with 1.4.2_04 and later ;), this encoder and decoder is about 10 times faster
+ * on small arrays (10 - 1000 bytes) and 2-3 times as fast on larger arrays (10000 - 1000000 bytes)
+ * compared to &lt;code&gt;sun.misc.Encoder()/Decoder()&lt;/code&gt;.&lt;br&gt;&lt;br&gt;
+ *
+ * On byte arrays the encoder is about 20% faster than Jakarta Commons Base64 Codec for encode and
+ * about 50% faster for decoding large arrays. This implementation is about twice as fast on very small
+ * arrays (&amp;lt 30 bytes). If source/destination is a &lt;code&gt;String&lt;/code&gt; this
+ * version is about three times as fast due to the fact that the Commons Codec result has to be recoded
+ * to a &lt;code&gt;String&lt;/code&gt; from &lt;code&gt;byte[]&lt;/code&gt;, which is very expensive.&lt;br&gt;&lt;br&gt;
+ *
+ * This encode/decode algorithm doesn't create any temporary arrays as many other codecs do, it only
+ * allocates the resulting array. This produces less garbage and it is possible to handle arrays twice
+ * as large as algorithms that create a temporary array. (E.g. Jakarta Commons Codec). It is unknown
+ * whether Sun's &lt;code&gt;sun.misc.Encoder()/Decoder()&lt;/code&gt; produce temporary arrays but since performance
+ * is quite low it probably does.&lt;br&gt;&lt;br&gt;
+ *
+ * The encoder produces the same output as the Sun one except that the Sun's encoder appends
+ * a trailing line separator if the last character isn't a pad. Unclear why but it only adds to the
+ * length and is probably a side effect. Both are in conformance with RFC 2045 though.&lt;br&gt;
+ * Commons codec seem to always att a trailing line separator.&lt;br&gt;&lt;br&gt;
+ *
+ * &lt;b&gt;Note!&lt;/b&gt;
+ * The encode/decode method pairs (types) come in three versions with the &lt;b&gt;exact&lt;/b&gt; same algorithm and
+ * thus a lot of code redundancy. This is to not create any temporary arrays for transcoding to/from different
+ * format types. The methods not used can simply be commented out.&lt;br&gt;&lt;br&gt;
+ *
+ * There is also a &quot;fast&quot; version of all decode methods that works the same way as the normal ones, but
+ * har a few demands on the decoded input. Normally though, these fast verions should be used if the source if
+ * the input is known and it hasn't bee tampered with.&lt;br&gt;&lt;br&gt;
+ *
+ * If you find the code useful or you find a bug, please send me a note at base64 @ miginfocom . com.
+ *
+ * Licence (BSD):
+ * ==============
+ *
+ * Copyright (c) 2004, Mikael Grev, MiG InfoCom AB. (base64 @ miginfocom . com)
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without modification,
+ * are permitted provided that the following conditions are met:
+ * Redistributions of source code must retain the above copyright notice, this list
+ * of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright notice, this
+ * list of conditions and the following disclaimer in the documentation and/or other
+ * materials provided with the distribution.
+ * Neither the name of the MiG InfoCom AB nor the names of its contributors may be
+ * used to endorse or promote products derived from this software without specific
+ * prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ * INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+ * OF SUCH DAMAGE.
+ *
+ * @version 2.2
+ * @author Mikael Grev
+ *         Date: 2004-aug-02
+ *         Time: 11:31:11
+ */
+
+<span class="nc" id="L78">abstract class Base64 {</span>
+<span class="fc" id="L79">    private static final char[] CA = &quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/&quot;.toCharArray();</span>
+    static final byte[] BA;
+<span class="fc" id="L81">    static final int[] IA = new int[256];</span>
+    static {
+<span class="fc" id="L83">        Arrays.fill(IA, -1);</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        for (int i = 0, iS = CA.length; i &lt; iS; i++) {</span>
+<span class="fc" id="L85">            IA[CA[i]] = i;</span>
+        }
+<span class="fc" id="L87">        IA['='] = 0;</span>
+<span class="fc" id="L88">        BA = new byte[CA.length];</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        for (int i = 0; i &lt; CA.length; i++) {</span>
+<span class="fc" id="L90">            BA[i] = (byte)CA[i];</span>
+        }
+    }
+
+    static int encodeToChar(byte[] sArr, char[] dArr, final int start) {
+<span class="nc" id="L95">        final int sLen = sArr.length;</span>
+
+<span class="nc" id="L97">        final int eLen = (sLen / 3) * 3;              // Length of even 24-bits.</span>
+<span class="nc" id="L98">        final int dLen = ((sLen - 1) / 3 + 1) &lt;&lt; 2;   // Returned character count</span>
+
+        // Encode even 24-bits
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        for (int s = 0, d = start; s &lt; eLen;) {</span>
+            // Copy next three bytes into lower 24 bits of int, paying attension to sign.
+<span class="nc" id="L103">            int i = (sArr[s++] &amp; 0xff) &lt;&lt; 16 | (sArr[s++] &amp; 0xff) &lt;&lt; 8 | (sArr[s++] &amp; 0xff);</span>
+
+            // Encode the int into four chars
+<span class="nc" id="L106">            dArr[d++] = CA[(i &gt;&gt;&gt; 18) &amp; 0x3f];</span>
+<span class="nc" id="L107">            dArr[d++] = CA[(i &gt;&gt;&gt; 12) &amp; 0x3f];</span>
+<span class="nc" id="L108">            dArr[d++] = CA[(i &gt;&gt;&gt; 6) &amp; 0x3f];</span>
+<span class="nc" id="L109">            dArr[d++] = CA[i &amp; 0x3f];</span>
+<span class="nc" id="L110">        }</span>
+
+        // Pad and encode last bits if source isn't even 24 bits.
+<span class="nc" id="L113">        int left = sLen - eLen; // 0 - 2.</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        if (left &gt; 0) {</span>
+            // Prepare the int
+<span class="nc bnc" id="L116" title="All 2 branches missed.">            int i = ((sArr[eLen] &amp; 0xff) &lt;&lt; 10) | (left == 2 ? ((sArr[sLen - 1] &amp; 0xff) &lt;&lt; 2) : 0);</span>
+
+            // Set last four chars
+<span class="nc" id="L119">            dArr[start + dLen - 4] = CA[i &gt;&gt; 12];</span>
+<span class="nc" id="L120">            dArr[start + dLen - 3] = CA[(i &gt;&gt;&gt; 6) &amp; 0x3f];</span>
+<span class="nc bnc" id="L121" title="All 2 branches missed.">            dArr[start + dLen - 2] = left == 2 ? CA[i &amp; 0x3f] : '=';</span>
+<span class="nc" id="L122">            dArr[start + dLen - 1] = '=';</span>
+        }
+
+<span class="nc" id="L125">        return dLen;</span>
+    }
+
+    static int encodeToBytes(byte[] sArr, JsonStream stream) throws IOException {
+<span class="fc" id="L129">        final int sLen = sArr.length;</span>
+
+<span class="fc" id="L131">        final int eLen = (sLen / 3) * 3;              // Length of even 24-bits.</span>
+<span class="fc" id="L132">        final int dLen = ((sLen - 1) / 3 + 1) &lt;&lt; 2;   // Returned character count</span>
+
+        // Encode even 24-bits
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        for (int s = 0; s &lt; eLen;) {</span>
+            // Copy next three bytes into lower 24 bits of int, paying attension to sign.
+<span class="fc" id="L137">            int i = (sArr[s++] &amp; 0xff) &lt;&lt; 16 | (sArr[s++] &amp; 0xff) &lt;&lt; 8 | (sArr[s++] &amp; 0xff);</span>
+
+            // Encode the int into four chars
+<span class="fc" id="L140">            stream.write(BA[(i &gt;&gt;&gt; 18) &amp; 0x3f], BA[(i &gt;&gt;&gt; 12) &amp; 0x3f], BA[(i &gt;&gt;&gt; 6) &amp; 0x3f], BA[i &amp; 0x3f]);</span>
+<span class="fc" id="L141">        }</span>
+
+        // Pad and encode last bits if source isn't even 24 bits.
+<span class="fc" id="L144">        int left = sLen - eLen; // 0 - 2.</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        if (left &gt; 0) {</span>
+            // Prepare the int
+<span class="nc bnc" id="L147" title="All 2 branches missed.">            int i = ((sArr[eLen] &amp; 0xff) &lt;&lt; 10) | (left == 2 ? ((sArr[sLen - 1] &amp; 0xff) &lt;&lt; 2) : 0);</span>
+
+            // Set last four chars
+<span class="nc bnc" id="L150" title="All 2 branches missed.">            stream.write(BA[i &gt;&gt; 12], BA[(i &gt;&gt;&gt; 6) &amp; 0x3f], left == 2 ? BA[i &amp; 0x3f] : (byte)'=', (byte)'=');</span>
+        }
+
+<span class="fc" id="L153">        return dLen;</span>
+    }
+
+    static void encodeLongBits(long bits, JsonStream stream) throws IOException {
+<span class="nc" id="L157">        int i = (int) bits;</span>
+<span class="nc" id="L158">        byte b1 = BA[(i &gt;&gt;&gt; 18) &amp; 0x3f];</span>
+<span class="nc" id="L159">        byte b2 = BA[(i &gt;&gt;&gt; 12) &amp; 0x3f];</span>
+<span class="nc" id="L160">        byte b3 = BA[(i &gt;&gt;&gt; 6) &amp; 0x3f];</span>
+<span class="nc" id="L161">        byte b4 = BA[i &amp; 0x3f];</span>
+<span class="nc" id="L162">        stream.write((byte)'&quot;', b1, b2, b3, b4);</span>
+<span class="nc" id="L163">        bits = bits &gt;&gt;&gt; 24;</span>
+<span class="nc" id="L164">        i = (int) bits;</span>
+<span class="nc" id="L165">        b1 = BA[(i &gt;&gt;&gt; 18) &amp; 0x3f];</span>
+<span class="nc" id="L166">        b2 = BA[(i &gt;&gt;&gt; 12) &amp; 0x3f];</span>
+<span class="nc" id="L167">        b3 = BA[(i &gt;&gt;&gt; 6) &amp; 0x3f];</span>
+<span class="nc" id="L168">        b4 = BA[i &amp; 0x3f];</span>
+<span class="nc" id="L169">        stream.write(b1, b2, b3, b4);</span>
+<span class="nc" id="L170">        bits = (bits &gt;&gt;&gt; 24) &lt;&lt; 2;</span>
+<span class="nc" id="L171">        i = (int) bits;</span>
+<span class="nc" id="L172">        b1 = BA[i &gt;&gt; 12];</span>
+<span class="nc" id="L173">        b2 = BA[(i &gt;&gt;&gt; 6) &amp; 0x3f];</span>
+<span class="nc" id="L174">        b3 = BA[i &amp; 0x3f];</span>
+<span class="nc" id="L175">        stream.write(b1, b2, b3, (byte)'&quot;');</span>
+<span class="nc" id="L176">    }</span>
+
+    static long decodeLongBits(JsonIterator iter) throws IOException {
+<span class="nc" id="L179">        Slice slice = iter.readStringAsSlice();</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        if (slice.len() != 11) {</span>
+<span class="nc" id="L181">            throw iter.reportError(&quot;decodeLongBits&quot;, &quot;must be 11 bytes for long bits encoded double&quot;);</span>
+        }
+<span class="nc" id="L183">        byte[] encoded = slice.data();</span>
+<span class="nc" id="L184">        int sIx = slice.head();</span>
+<span class="nc" id="L185">        long i = IA[encoded[sIx++]] &lt;&lt; 18 | IA[encoded[sIx++]] &lt;&lt; 12 | IA[encoded[sIx++]] &lt;&lt; 6 | IA[encoded[sIx++]];</span>
+<span class="nc" id="L186">        long bits = i;</span>
+<span class="nc" id="L187">        i = IA[encoded[sIx++]] &lt;&lt; 18 | IA[encoded[sIx++]] &lt;&lt; 12 | IA[encoded[sIx++]] &lt;&lt; 6 | IA[encoded[sIx++]];</span>
+<span class="nc" id="L188">        bits = i &lt;&lt; 24 | bits;</span>
+<span class="nc" id="L189">        i =  IA[encoded[sIx++]] &lt;&lt; 12 | IA[encoded[sIx++]] &lt;&lt; 6 | IA[encoded[sIx]];</span>
+<span class="nc" id="L190">        bits = i &lt;&lt; 46 | bits;</span>
+<span class="nc" id="L191">        return bits;</span>
+    }
+
+    static int findEnd(final byte[] sArr, final int start) {
+<span class="nc bnc" id="L195" title="All 2 branches missed.">        for (int i = start; i &lt; sArr.length; i++)</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">            if (IA[sArr[i] &amp; 0xff] &lt; 0)</span>
+<span class="nc" id="L197">                return i;</span>
+<span class="nc" id="L198">        return sArr.length;</span>
+    }
+
+<span class="fc" id="L201">    private final static byte[] EMPTY_ARRAY = new byte[0];</span>
+
+    static byte[] decodeFast(final byte[] sArr, final int start, final int end) {
+        // Check special case
+<span class="fc" id="L205">        int sLen = end - start;</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">        if (sLen == 0)</span>
+<span class="nc" id="L207">            return EMPTY_ARRAY;</span>
+
+<span class="fc" id="L209">        int sIx = start, eIx = end - 1;    // Start and end index after trimming.</span>
+
+        // Trim illegal chars from start
+<span class="pc bpc" id="L212" title="2 of 4 branches missed.">        while (sIx &lt; eIx &amp;&amp; IA[sArr[sIx] &amp; 0xff] &lt; 0)</span>
+<span class="nc" id="L213">            sIx++;</span>
+
+        // Trim illegal chars from end
+<span class="pc bpc" id="L216" title="2 of 4 branches missed.">        while (eIx &gt; 0 &amp;&amp; IA[sArr[eIx] &amp; 0xff] &lt; 0)</span>
+<span class="nc" id="L217">            eIx--;</span>
+
+        // get the padding count (=) (0, 1 or 2)
+<span class="pc bpc" id="L220" title="3 of 4 branches missed.">        int pad = sArr[eIx] == '=' ? (sArr[eIx - 1] == '=' ? 2 : 1) : 0;  // Count '=' at end.</span>
+<span class="fc" id="L221">        int cCnt = eIx - sIx + 1;   // Content count including possible separators</span>
+<span class="pc bpc" id="L222" title="3 of 4 branches missed.">        int sepCnt = sLen &gt; 76 ? (sArr[76] == '\r' ? cCnt / 78 : 0) &lt;&lt; 1 : 0;</span>
+
+<span class="fc" id="L224">        int len = ((cCnt - sepCnt) * 6 &gt;&gt; 3) - pad; // The number of decoded bytes</span>
+<span class="fc" id="L225">        byte[] dArr = new byte[len];       // Preallocate byte[] of exact length</span>
+
+        // Decode all but the last 0 - 2 bytes.
+<span class="fc" id="L228">        int d = 0;</span>
+<span class="fc bfc" id="L229" title="All 2 branches covered.">        for (int cc = 0, eLen = (len / 3) * 3; d &lt; eLen;) {</span>
+            // Assemble three bytes into an int from four &quot;valid&quot; characters.
+<span class="fc" id="L231">            int i = IA[sArr[sIx++]] &lt;&lt; 18 | IA[sArr[sIx++]] &lt;&lt; 12 | IA[sArr[sIx++]] &lt;&lt; 6 | IA[sArr[sIx++]];</span>
+
+            // Add the bytes
+<span class="fc" id="L234">            dArr[d++] = (byte) (i &gt;&gt; 16);</span>
+<span class="fc" id="L235">            dArr[d++] = (byte) (i &gt;&gt; 8);</span>
+<span class="fc" id="L236">            dArr[d++] = (byte) i;</span>
+
+            // If line separator, jump over it.
+<span class="pc bpc" id="L239" title="3 of 4 branches missed.">            if (sepCnt &gt; 0 &amp;&amp; ++cc == 19) {</span>
+<span class="nc" id="L240">                sIx += 2;</span>
+<span class="nc" id="L241">                cc = 0;</span>
+            }
+<span class="fc" id="L243">        }</span>
+
+<span class="pc bpc" id="L245" title="1 of 2 branches missed.">        if (d &lt; len) {</span>
+            // Decode last 1-3 bytes (incl '=') into 1-3 bytes
+<span class="nc" id="L247">            int i = 0;</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">            for (int j = 0; sIx &lt;= eIx - pad; j++)</span>
+<span class="nc" id="L249">                i |= IA[sArr[sIx++]] &lt;&lt; (18 - j * 6);</span>
+
+<span class="nc bnc" id="L251" title="All 2 branches missed.">            for (int r = 16; d &lt; len; r -= 8)</span>
+<span class="nc" id="L252">                dArr[d++] = (byte) (i &gt;&gt; r);</span>
+        }
+
+<span class="fc" id="L255">        return dArr;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

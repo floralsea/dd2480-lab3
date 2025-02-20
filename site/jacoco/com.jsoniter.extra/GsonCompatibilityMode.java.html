@@ -1,0 +1,612 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GsonCompatibilityMode.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.extra</a> &gt; <span class="el_source">GsonCompatibilityMode.java</span></div><h1>GsonCompatibilityMode.java</h1><pre class="source lang-java linenums">package com.jsoniter.extra;
+
+import com.google.gson.ExclusionStrategy;
+import com.google.gson.FieldAttributes;
+import com.google.gson.FieldNamingPolicy;
+import com.google.gson.FieldNamingStrategy;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.annotations.Since;
+import com.google.gson.annotations.Until;
+import com.jsoniter.JsonIterator;
+import com.jsoniter.ValueType;
+import com.jsoniter.annotation.JsonIgnore;
+import com.jsoniter.annotation.JsonProperty;
+import com.jsoniter.output.JsonStream;
+import com.jsoniter.spi.*;
+
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
+
+public class GsonCompatibilityMode extends Config {
+
+    private final static int SURR1_FIRST = 0xD800;
+    private final static int SURR1_LAST = 0xDBFF;
+    private final static int SURR2_FIRST = 0xDC00;
+    private final static int SURR2_LAST = 0xDFFF;
+    private static final String[] REPLACEMENT_CHARS;
+    private static final String[] HTML_SAFE_REPLACEMENT_CHARS;
+
+    static {
+<span class="fc" id="L39">        REPLACEMENT_CHARS = new String[128];</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (int i = 0; i &lt;= 0x1f; i++) {</span>
+<span class="fc" id="L41">            REPLACEMENT_CHARS[i] = String.format(&quot;\\u%04x&quot;, (int) i);</span>
+        }
+<span class="fc" id="L43">        REPLACEMENT_CHARS['&quot;'] = &quot;\\\&quot;&quot;;</span>
+<span class="fc" id="L44">        REPLACEMENT_CHARS['\\'] = &quot;\\\\&quot;;</span>
+<span class="fc" id="L45">        REPLACEMENT_CHARS['\t'] = &quot;\\t&quot;;</span>
+<span class="fc" id="L46">        REPLACEMENT_CHARS['\b'] = &quot;\\b&quot;;</span>
+<span class="fc" id="L47">        REPLACEMENT_CHARS['\n'] = &quot;\\n&quot;;</span>
+<span class="fc" id="L48">        REPLACEMENT_CHARS['\r'] = &quot;\\r&quot;;</span>
+<span class="fc" id="L49">        REPLACEMENT_CHARS['\f'] = &quot;\\f&quot;;</span>
+<span class="fc" id="L50">        HTML_SAFE_REPLACEMENT_CHARS = REPLACEMENT_CHARS.clone();</span>
+<span class="fc" id="L51">        HTML_SAFE_REPLACEMENT_CHARS['&lt;'] = &quot;\\u003c&quot;;</span>
+<span class="fc" id="L52">        HTML_SAFE_REPLACEMENT_CHARS['&gt;'] = &quot;\\u003e&quot;;</span>
+<span class="fc" id="L53">        HTML_SAFE_REPLACEMENT_CHARS['&amp;'] = &quot;\\u0026&quot;;</span>
+<span class="fc" id="L54">        HTML_SAFE_REPLACEMENT_CHARS['='] = &quot;\\u003d&quot;;</span>
+<span class="fc" id="L55">        HTML_SAFE_REPLACEMENT_CHARS['\''] = &quot;\\u0027&quot;;</span>
+<span class="fc" id="L56">    }</span>
+
+    private GsonCompatibilityMode(String configName, Builder builder) {
+<span class="fc" id="L59">        super(configName, builder);</span>
+<span class="fc" id="L60">    }</span>
+
+    protected Builder builder() {
+<span class="fc" id="L63">        return (Builder) super.builder();</span>
+    }
+
+    public static class Builder extends Config.Builder {
+<span class="fc" id="L67">        private boolean excludeFieldsWithoutExposeAnnotation = false;</span>
+<span class="fc" id="L68">        private boolean disableHtmlEscaping = false;</span>
+<span class="fc" id="L69">        private ThreadLocal&lt;DateFormat&gt; dateFormat = new ThreadLocal&lt;DateFormat&gt;() {</span>
+            @Override
+            protected DateFormat initialValue() {
+<span class="fc" id="L72">                return DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.US);</span>
+            }
+        };
+        private FieldNamingStrategy fieldNamingStrategy;
+        private Double version;
+<span class="fc" id="L77">        private Set&lt;ExclusionStrategy&gt; serializationExclusionStrategies = new HashSet&lt;ExclusionStrategy&gt;();</span>
+<span class="fc" id="L78">        private Set&lt;ExclusionStrategy&gt; deserializationExclusionStrategies = new HashSet&lt;ExclusionStrategy&gt;();</span>
+
+<span class="fc" id="L80">        public Builder() {</span>
+<span class="fc" id="L81">            omitDefaultValue(true);</span>
+<span class="fc" id="L82">        }</span>
+
+        public Builder excludeFieldsWithoutExposeAnnotation() {
+<span class="fc" id="L85">            excludeFieldsWithoutExposeAnnotation = true;</span>
+<span class="fc" id="L86">            return this;</span>
+        }
+
+        public Builder serializeNulls() {
+<span class="fc" id="L90">            omitDefaultValue(false);</span>
+<span class="fc" id="L91">            return this;</span>
+        }
+
+        public Builder setDateFormat(int dateStyle) {
+            // no op, same as gson
+<span class="nc" id="L96">            return this;</span>
+        }
+
+        public Builder setDateFormat(final int dateStyle, final int timeStyle) {
+<span class="nc" id="L100">            dateFormat = new ThreadLocal&lt;DateFormat&gt;() {</span>
+                @Override
+                protected DateFormat initialValue() {
+<span class="nc" id="L103">                    return DateFormat.getDateTimeInstance(dateStyle, timeStyle, Locale.US);</span>
+                }
+            };
+<span class="nc" id="L106">            return this;</span>
+        }
+
+        public Builder setDateFormat(final String pattern) {
+<span class="fc" id="L110">            dateFormat = new ThreadLocal&lt;DateFormat&gt;() {</span>
+                @Override
+                protected DateFormat initialValue() {
+<span class="fc" id="L113">                    return new SimpleDateFormat(pattern, Locale.US);</span>
+                }
+            };
+<span class="fc" id="L116">            return this;</span>
+        }
+
+        public Builder setFieldNamingStrategy(FieldNamingStrategy fieldNamingStrategy) {
+<span class="fc" id="L120">            this.fieldNamingStrategy = fieldNamingStrategy;</span>
+<span class="fc" id="L121">            return this;</span>
+        }
+
+        public Builder setFieldNamingPolicy(FieldNamingPolicy namingConvention) {
+<span class="fc" id="L125">            this.fieldNamingStrategy = namingConvention;</span>
+<span class="fc" id="L126">            return this;</span>
+        }
+
+        public Builder setPrettyPrinting() {
+<span class="fc" id="L130">            indentionStep(2);</span>
+<span class="fc" id="L131">            return this;</span>
+        }
+
+        public Builder disableHtmlEscaping() {
+<span class="fc" id="L135">            disableHtmlEscaping = true;</span>
+<span class="fc" id="L136">            return this;</span>
+        }
+
+        public Builder setVersion(double version) {
+<span class="fc" id="L140">            this.version = version;</span>
+<span class="fc" id="L141">            return this;</span>
+        }
+
+        public Builder setExclusionStrategies(ExclusionStrategy... strategies) {
+<span class="nc bnc" id="L145" title="All 2 branches missed.">            for (ExclusionStrategy strategy : strategies) {</span>
+<span class="nc" id="L146">                addSerializationExclusionStrategy(strategy);</span>
+            }
+<span class="nc" id="L148">            return this;</span>
+        }
+
+        public Builder addSerializationExclusionStrategy(ExclusionStrategy exclusionStrategy) {
+<span class="fc" id="L152">            serializationExclusionStrategies.add(exclusionStrategy);</span>
+<span class="fc" id="L153">            return this;</span>
+        }
+
+        public Builder addDeserializationExclusionStrategy(ExclusionStrategy exclusionStrategy) {
+<span class="fc" id="L157">            deserializationExclusionStrategies.add(exclusionStrategy);</span>
+<span class="fc" id="L158">            return this;</span>
+        }
+
+        public GsonCompatibilityMode build() {
+<span class="fc" id="L162">            escapeUnicode(false);</span>
+<span class="fc" id="L163">            return (GsonCompatibilityMode) super.build();</span>
+        }
+
+        @Override
+        protected Config doBuild(String configName) {
+<span class="fc" id="L168">            return new GsonCompatibilityMode(configName, this);</span>
+        }
+
+        @Override
+        public boolean equals(Object o) {
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">            if (this == o) return true;</span>
+<span class="pc bpc" id="L174" title="2 of 4 branches missed.">            if (o == null || getClass() != o.getClass()) return false;</span>
+<span class="pc bpc" id="L175" title="1 of 2 branches missed.">            if (!super.equals(o)) return false;</span>
+
+<span class="fc" id="L177">            Builder builder = (Builder) o;</span>
+
+<span class="pc bpc" id="L179" title="2 of 4 branches missed.">            return excludeFieldsWithoutExposeAnnotation == builder.excludeFieldsWithoutExposeAnnotation &amp;&amp;</span>
+                    disableHtmlEscaping == builder.disableHtmlEscaping &amp;&amp;
+<span class="pc bpc" id="L181" title="1 of 4 branches missed.">                    dateFormat.get().equals(builder.dateFormat.get()) &amp;&amp;</span>
+<span class="pc bpc" id="L182" title="2 of 6 branches missed.">                    (fieldNamingStrategy != null ? fieldNamingStrategy.equals(builder.fieldNamingStrategy) :</span>
+                            builder.fieldNamingStrategy == null) &amp;&amp;
+<span class="pc bpc" id="L184" title="3 of 6 branches missed.">                    (version != null ? version.equals(builder.version) : builder.version == null) &amp;&amp;</span>
+                    (serializationExclusionStrategies != null ?
+<span class="pc bpc" id="L186" title="4 of 6 branches missed.">                            serializationExclusionStrategies.equals(builder.serializationExclusionStrategies) :</span>
+                            builder.serializationExclusionStrategies == null) &amp;&amp;
+                    (deserializationExclusionStrategies != null ?
+<span class="pc bpc" id="L189" title="3 of 4 branches missed.">                            deserializationExclusionStrategies.equals(builder.deserializationExclusionStrategies) :</span>
+                            builder.deserializationExclusionStrategies == null);
+        }
+
+        @Override
+        public int hashCode() {
+<span class="fc" id="L195">            int result = super.hashCode();</span>
+<span class="fc bfc" id="L196" title="All 2 branches covered.">            result = 31 * result + (excludeFieldsWithoutExposeAnnotation ? 1 : 0);</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">            result = 31 * result + (disableHtmlEscaping ? 1 : 0);</span>
+<span class="fc" id="L198">            result = 31 * result + dateFormat.get().hashCode();</span>
+<span class="fc bfc" id="L199" title="All 2 branches covered.">            result = 31 * result + (fieldNamingStrategy != null ? fieldNamingStrategy.hashCode() : 0);</span>
+<span class="fc bfc" id="L200" title="All 2 branches covered.">            result = 31 * result + (version != null ? version.hashCode() : 0);</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">            result = 31 * result + (serializationExclusionStrategies != null ? serializationExclusionStrategies.hashCode() : 0);</span>
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">            result = 31 * result + (deserializationExclusionStrategies != null ? deserializationExclusionStrategies.hashCode() : 0);</span>
+<span class="fc" id="L203">            return result;</span>
+        }
+
+        @Override
+        public Config.Builder copy() {
+<span class="nc" id="L208">            Builder copied = (Builder) super.copy();</span>
+<span class="nc" id="L209">            copied.excludeFieldsWithoutExposeAnnotation = excludeFieldsWithoutExposeAnnotation;</span>
+<span class="nc" id="L210">            copied.disableHtmlEscaping = disableHtmlEscaping;</span>
+<span class="nc" id="L211">            copied.dateFormat = dateFormat;</span>
+<span class="nc" id="L212">            copied.fieldNamingStrategy = fieldNamingStrategy;</span>
+<span class="nc" id="L213">            copied.version = version;</span>
+<span class="nc" id="L214">            copied.serializationExclusionStrategies = new HashSet&lt;ExclusionStrategy&gt;(serializationExclusionStrategies);</span>
+<span class="nc" id="L215">            copied.deserializationExclusionStrategies = new HashSet&lt;ExclusionStrategy&gt;(deserializationExclusionStrategies);</span>
+<span class="nc" id="L216">            return copied;</span>
+        }
+
+        @Override
+        public String toString() {
+<span class="fc" id="L221">            return super.toString() + &quot; =&gt; GsonCompatibilityMode{&quot; +</span>
+                    &quot;excludeFieldsWithoutExposeAnnotation=&quot; + excludeFieldsWithoutExposeAnnotation +
+                    &quot;, disableHtmlEscaping=&quot; + disableHtmlEscaping +
+                    &quot;, dateFormat=&quot; + dateFormat +
+                    &quot;, fieldNamingStrategy=&quot; + fieldNamingStrategy +
+                    &quot;, version=&quot; + version +
+                    &quot;, serializationExclusionStrategies=&quot; + serializationExclusionStrategies +
+                    &quot;, deserializationExclusionStrategies=&quot; + deserializationExclusionStrategies +
+                    '}';
+        }
+    }
+
+    @Override
+    protected OmitValue createOmitValue(Type valueType) {
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">        if (valueType instanceof Class) {</span>
+<span class="fc" id="L236">            Class clazz = (Class) valueType;</span>
+<span class="fc bfc" id="L237" title="All 2 branches covered.">            if (clazz.isPrimitive()) {</span>
+<span class="fc" id="L238">                return null; // gson do not omit primitive zero</span>
+            }
+        }
+<span class="fc" id="L241">        return super.createOmitValue(valueType);</span>
+    }
+
+    @Override
+    public Encoder createEncoder(String cacheKey, Type type) {
+<span class="fc bfc" id="L246" title="All 2 branches covered.">        if (Date.class == type) {</span>
+<span class="fc" id="L247">            return new Encoder() {</span>
+                @Override
+                public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L250">                    DateFormat dateFormat = builder().dateFormat.get();</span>
+<span class="fc" id="L251">                    stream.writeVal(dateFormat.format(obj));</span>
+<span class="fc" id="L252">                }</span>
+            };
+<span class="fc bfc" id="L254" title="All 2 branches covered.">        } else if (String.class == type) {</span>
+            final String[] replacements;
+<span class="fc bfc" id="L256" title="All 2 branches covered.">            if (builder().disableHtmlEscaping) {</span>
+<span class="fc" id="L257">                replacements = REPLACEMENT_CHARS;</span>
+            } else {
+<span class="fc" id="L259">                replacements = HTML_SAFE_REPLACEMENT_CHARS;</span>
+            }
+<span class="fc" id="L261">            return new Encoder() {</span>
+                @Override
+                public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L264">                    String value = (String) obj;</span>
+<span class="fc" id="L265">                    stream.write('&quot;');</span>
+                    int _surrogate;
+<span class="fc bfc" id="L267" title="All 2 branches covered.">                    for (int i = 0; i &lt; value.length(); i++) {</span>
+<span class="fc" id="L268">                        int c = value.charAt(i);</span>
+                        String replacement;
+<span class="fc bfc" id="L270" title="All 2 branches covered.">                        if (c &lt; 128) {</span>
+<span class="fc" id="L271">                            replacement = replacements[c];</span>
+<span class="fc bfc" id="L272" title="All 2 branches covered.">                            if (replacement == null) {</span>
+<span class="fc" id="L273">                                stream.write(c);</span>
+                            } else {
+<span class="fc" id="L275">                                stream.writeRaw(replacement);</span>
+                            }
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">                        } else if (c == '\u2028') {</span>
+<span class="nc" id="L278">                            stream.writeRaw(&quot;\\u2028&quot;);</span>
+<span class="pc bpc" id="L279" title="1 of 2 branches missed.">                        } else if (c == '\u2029') {</span>
+<span class="nc" id="L280">                            stream.writeRaw(&quot;\\u2029&quot;);</span>
+                        } else {
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">                            if (c &lt; 0x800) { // 2-byte</span>
+<span class="nc" id="L283">                                stream.write(</span>
+                                        (byte) (0xc0 | (c &gt;&gt; 6)),
+                                        (byte) (0x80 | (c &amp; 0x3f))
+                                );
+                            } else { // 3 or 4 bytes
+                                // Surrogates?
+<span class="pc bpc" id="L289" title="3 of 4 branches missed.">                                if (c &lt; SURR1_FIRST || c &gt; SURR2_LAST) {</span>
+<span class="fc" id="L290">                                    stream.write(</span>
+                                            (byte) (0xe0 | (c &gt;&gt; 12)),
+                                            (byte) (0x80 | ((c &gt;&gt; 6) &amp; 0x3f)),
+                                            (byte) (0x80 | (c &amp; 0x3f))
+                                    );
+<span class="fc" id="L295">                                    continue;</span>
+                                }
+                                // Yup, a surrogate:
+<span class="nc bnc" id="L298" title="All 2 branches missed.">                                if (c &gt; SURR1_LAST) { // must be from first range</span>
+<span class="nc" id="L299">                                    throw new JsonException(&quot;illegalSurrogate&quot;);</span>
+                                }
+<span class="nc" id="L301">                                _surrogate = c;</span>
+                                // and if so, followed by another from next range
+<span class="nc bnc" id="L303" title="All 2 branches missed.">                                if (i &gt;= value.length()) { // unless we hit the end?</span>
+<span class="nc" id="L304">                                    break;</span>
+                                }
+<span class="nc" id="L306">                                i++;</span>
+<span class="nc" id="L307">                                c = value.charAt(i);</span>
+<span class="nc" id="L308">                                int firstPart = _surrogate;</span>
+<span class="nc" id="L309">                                _surrogate = 0;</span>
+                                // Ok, then, is the second part valid?
+<span class="nc bnc" id="L311" title="All 4 branches missed.">                                if (c &lt; SURR2_FIRST || c &gt; SURR2_LAST) {</span>
+<span class="nc" id="L312">                                    throw new JsonException(&quot;Broken surrogate pair: first char 0x&quot; + Integer.toHexString(firstPart) + &quot;, second 0x&quot; + Integer.toHexString(c) + &quot;; illegal combination&quot;);</span>
+                                }
+<span class="nc" id="L314">                                c = 0x10000 + ((firstPart - SURR1_FIRST) &lt;&lt; 10) + (c - SURR2_FIRST);</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">                                if (c &gt; 0x10FFFF) { // illegal in JSON as well as in XML</span>
+<span class="nc" id="L316">                                    throw new JsonException(&quot;illegalSurrogate&quot;);</span>
+                                }
+<span class="nc" id="L318">                                stream.write(</span>
+                                        (byte) (0xf0 | (c &gt;&gt; 18)),
+                                        (byte) (0x80 | ((c &gt;&gt; 12) &amp; 0x3f)),
+                                        (byte) (0x80 | ((c &gt;&gt; 6) &amp; 0x3f)),
+                                        (byte) (0x80 | (c &amp; 0x3f))
+                                );
+                            }
+                        }
+                    }
+<span class="fc" id="L327">                    stream.write('&quot;');</span>
+<span class="fc" id="L328">                }</span>
+            };
+        }
+<span class="fc" id="L331">        return super.createEncoder(cacheKey, type);</span>
+    }
+
+    @Override
+    public Decoder createDecoder(String cacheKey, Type type) {
+<span class="fc bfc" id="L336" title="All 2 branches covered.">        if (Date.class == type) {</span>
+<span class="fc" id="L337">            return new Decoder() {</span>
+                @Override
+                public Object decode(JsonIterator iter) throws IOException {
+<span class="fc" id="L340">                    DateFormat dateFormat = builder().dateFormat.get();</span>
+                    try {
+<span class="fc" id="L342">                        String input = iter.readString();</span>
+<span class="fc" id="L343">                        return dateFormat.parse(input);</span>
+<span class="nc" id="L344">                    } catch (ParseException e) {</span>
+<span class="nc" id="L345">                        throw new JsonException(e);</span>
+                    }
+                }
+            };
+<span class="fc bfc" id="L349" title="All 2 branches covered.">        } else if (String.class == type) {</span>
+<span class="fc" id="L350">            return new Decoder() {</span>
+                @Override
+                public Object decode(JsonIterator iter) throws IOException {
+<span class="fc" id="L353">                    ValueType valueType = iter.whatIsNext();</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">                    if (valueType == ValueType.STRING) {</span>
+<span class="fc" id="L355">                        return iter.readString();</span>
+<span class="fc bfc" id="L356" title="All 2 branches covered.">                    } else if (valueType == ValueType.NUMBER) {</span>
+<span class="fc" id="L357">                        return iter.readNumberAsString();</span>
+<span class="pc bpc" id="L358" title="1 of 2 branches missed.">                    } else if (valueType == ValueType.BOOLEAN) {</span>
+<span class="pc bpc" id="L359" title="1 of 2 branches missed.">                        return iter.readBoolean() ? &quot;true&quot; : &quot;false&quot;;</span>
+<span class="nc bnc" id="L360" title="All 2 branches missed.">                    } else if (valueType == ValueType.NULL) {</span>
+<span class="nc" id="L361">                        iter.skip();</span>
+<span class="nc" id="L362">                        return null;</span>
+                    } else {
+<span class="nc" id="L364">                        throw new JsonException(&quot;expect string, but found &quot; + valueType);</span>
+                    }
+                }
+            };
+<span class="fc bfc" id="L368" title="All 2 branches covered.">        } else if (boolean.class == type) {</span>
+<span class="fc" id="L369">            return new Decoder.BooleanDecoder() {</span>
+                @Override
+                public boolean decodeBoolean(JsonIterator iter) throws IOException {
+<span class="fc" id="L372">                    ValueType valueType = iter.whatIsNext();</span>
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">                    if (valueType == ValueType.BOOLEAN) {</span>
+<span class="nc" id="L374">                        return iter.readBoolean();</span>
+<span class="pc bpc" id="L375" title="1 of 2 branches missed.">                    } else if (valueType == ValueType.NULL) {</span>
+<span class="fc" id="L376">                        iter.skip();</span>
+<span class="fc" id="L377">                        return false;</span>
+                    } else {
+<span class="nc" id="L379">                        throw new JsonException(&quot;expect boolean, but found &quot; + valueType);</span>
+                    }
+                }
+            };
+<span class="fc bfc" id="L383" title="All 2 branches covered.">        } else if (long.class == type) {</span>
+<span class="fc" id="L384">            return new Decoder.LongDecoder() {</span>
+                @Override
+                public long decodeLong(JsonIterator iter) throws IOException {
+<span class="fc" id="L387">                    ValueType valueType = iter.whatIsNext();</span>
+<span class="pc bpc" id="L388" title="1 of 2 branches missed.">                    if (valueType == ValueType.NUMBER) {</span>
+<span class="nc" id="L389">                        return iter.readLong();</span>
+<span class="pc bpc" id="L390" title="1 of 2 branches missed.">                    } else if (valueType == ValueType.NULL) {</span>
+<span class="fc" id="L391">                        iter.skip();</span>
+<span class="fc" id="L392">                        return 0;</span>
+                    } else {
+<span class="nc" id="L394">                        throw new JsonException(&quot;expect long, but found &quot; + valueType);</span>
+                    }
+                }
+            };
+<span class="fc bfc" id="L398" title="All 2 branches covered.">        } else if (int.class == type) {</span>
+<span class="fc" id="L399">            return new Decoder.IntDecoder() {</span>
+                @Override
+                public int decodeInt(JsonIterator iter) throws IOException {
+<span class="fc" id="L402">                    ValueType valueType = iter.whatIsNext();</span>
+<span class="pc bpc" id="L403" title="1 of 2 branches missed.">                    if (valueType == ValueType.NUMBER) {</span>
+<span class="nc" id="L404">                        return iter.readInt();</span>
+<span class="pc bpc" id="L405" title="1 of 2 branches missed.">                    } else if (valueType == ValueType.NULL) {</span>
+<span class="fc" id="L406">                        iter.skip();</span>
+<span class="fc" id="L407">                        return 0;</span>
+                    } else {
+<span class="nc" id="L409">                        throw new JsonException(&quot;expect int, but found &quot; + valueType);</span>
+                    }
+                }
+            };
+<span class="fc bfc" id="L413" title="All 2 branches covered.">        } else if (float.class == type) {</span>
+<span class="fc" id="L414">            return new Decoder.FloatDecoder() {</span>
+                @Override
+                public float decodeFloat(JsonIterator iter) throws IOException {
+<span class="fc" id="L417">                    ValueType valueType = iter.whatIsNext();</span>
+<span class="pc bpc" id="L418" title="1 of 2 branches missed.">                    if (valueType == ValueType.NUMBER) {</span>
+<span class="nc" id="L419">                        return iter.readFloat();</span>
+<span class="pc bpc" id="L420" title="1 of 2 branches missed.">                    } else if (valueType == ValueType.NULL) {</span>
+<span class="fc" id="L421">                        iter.skip();</span>
+<span class="fc" id="L422">                        return 0.0f;</span>
+                    } else {
+<span class="nc" id="L424">                        throw new JsonException(&quot;expect float, but found &quot; + valueType);</span>
+                    }
+                }
+            };
+<span class="fc bfc" id="L428" title="All 2 branches covered.">        } else if (double.class == type) {</span>
+<span class="fc" id="L429">            return new Decoder.DoubleDecoder() {</span>
+                @Override
+                public double decodeDouble(JsonIterator iter) throws IOException {
+<span class="fc" id="L432">                    ValueType valueType = iter.whatIsNext();</span>
+<span class="pc bpc" id="L433" title="1 of 2 branches missed.">                    if (valueType == ValueType.NUMBER) {</span>
+<span class="nc" id="L434">                        return iter.readDouble();</span>
+<span class="pc bpc" id="L435" title="1 of 2 branches missed.">                    } else if (valueType == ValueType.NULL) {</span>
+<span class="fc" id="L436">                        iter.skip();</span>
+<span class="fc" id="L437">                        return 0.0d;</span>
+                    } else {
+<span class="nc" id="L439">                        throw new JsonException(&quot;expect float, but found &quot; + valueType);</span>
+                    }
+                }
+            };
+        }
+<span class="fc" id="L444">        return super.createDecoder(cacheKey, type);</span>
+    }
+
+    @Override
+    public void updateClassDescriptor(ClassDescriptor desc) {
+<span class="fc" id="L449">        FieldNamingStrategy fieldNamingStrategy = builder().fieldNamingStrategy;</span>
+<span class="fc bfc" id="L450" title="All 2 branches covered.">        for (Binding binding : desc.allBindings()) {</span>
+<span class="fc bfc" id="L451" title="All 2 branches covered.">            if (binding.method != null) {</span>
+<span class="fc" id="L452">                binding.toNames = new String[0];</span>
+<span class="fc" id="L453">                binding.fromNames = new String[0];</span>
+            }
+<span class="pc bpc" id="L455" title="1 of 4 branches missed.">            if (fieldNamingStrategy != null &amp;&amp; binding.field != null) {</span>
+<span class="fc" id="L456">                String translated = fieldNamingStrategy.translateName(binding.field);</span>
+<span class="fc" id="L457">                binding.toNames = new String[]{translated};</span>
+<span class="fc" id="L458">                binding.fromNames = new String[]{translated};</span>
+            }
+<span class="fc bfc" id="L460" title="All 2 branches covered.">            if (builder().version != null) {</span>
+<span class="fc" id="L461">                Since since = binding.getAnnotation(Since.class);</span>
+<span class="fc bfc" id="L462" title="All 4 branches covered.">                if (since != null &amp;&amp; builder().version &lt; since.value()) {</span>
+<span class="fc" id="L463">                    binding.toNames = new String[0];</span>
+<span class="fc" id="L464">                    binding.fromNames = new String[0];</span>
+                }
+<span class="fc" id="L466">                Until until = binding.getAnnotation(Until.class);</span>
+<span class="pc bpc" id="L467" title="1 of 4 branches missed.">                if (until != null &amp;&amp; builder().version &gt;= until.value()) {</span>
+<span class="fc" id="L468">                    binding.toNames = new String[0];</span>
+<span class="fc" id="L469">                    binding.fromNames = new String[0];</span>
+                }
+            }
+<span class="fc bfc" id="L472" title="All 2 branches covered.">            for (ExclusionStrategy strategy : builder().serializationExclusionStrategies) {</span>
+<span class="pc bpc" id="L473" title="1 of 2 branches missed.">                if (strategy.shouldSkipClass(binding.clazz)) {</span>
+<span class="nc" id="L474">                    binding.toNames = new String[0];</span>
+<span class="nc" id="L475">                    continue;</span>
+                }
+<span class="fc bfc" id="L477" title="All 2 branches covered.">                if (strategy.shouldSkipField(new FieldAttributes(binding.field))) {</span>
+<span class="fc" id="L478">                    binding.toNames = new String[0];</span>
+                }
+<span class="fc" id="L480">            }</span>
+<span class="fc bfc" id="L481" title="All 2 branches covered.">            for (ExclusionStrategy strategy : builder().deserializationExclusionStrategies) {</span>
+<span class="pc bpc" id="L482" title="1 of 2 branches missed.">                if (strategy.shouldSkipClass(binding.clazz)) {</span>
+<span class="nc" id="L483">                    binding.fromNames = new String[0];</span>
+<span class="nc" id="L484">                    continue;</span>
+                }
+<span class="fc bfc" id="L486" title="All 2 branches covered.">                if (strategy.shouldSkipField(new FieldAttributes(binding.field))) {</span>
+<span class="fc" id="L487">                    binding.fromNames = new String[0];</span>
+                }
+<span class="fc" id="L489">            }</span>
+<span class="fc" id="L490">        }</span>
+<span class="fc" id="L491">        super.updateClassDescriptor(desc);</span>
+<span class="fc" id="L492">    }</span>
+
+    @Override
+    protected JsonProperty getJsonProperty(Annotation[] annotations) {
+<span class="fc" id="L496">        JsonProperty jsoniterObj = super.getJsonProperty(annotations);</span>
+<span class="pc bpc" id="L497" title="1 of 2 branches missed.">        if (jsoniterObj != null) {</span>
+<span class="nc" id="L498">            return jsoniterObj;</span>
+        }
+<span class="fc" id="L500">        final SerializedName gsonObj = getAnnotation(</span>
+                annotations, SerializedName.class);
+<span class="fc bfc" id="L502" title="All 2 branches covered.">        if (gsonObj == null) {</span>
+<span class="fc" id="L503">            return null;</span>
+        }
+<span class="fc" id="L505">        return new JsonProperty() {</span>
+
+            @Override
+            public String value() {
+<span class="fc" id="L509">                return &quot;&quot;;</span>
+            }
+
+            @Override
+            public String[] from() {
+<span class="fc" id="L514">                return new String[]{gsonObj.value()};</span>
+            }
+
+            @Override
+            public String[] to() {
+<span class="fc" id="L519">                return new String[]{gsonObj.value()};</span>
+            }
+
+            @Override
+            public boolean required() {
+<span class="fc" id="L524">                return false;</span>
+            }
+
+            @Override
+            public Class&lt;? extends Decoder&gt; decoder() {
+<span class="fc" id="L529">                return Decoder.class;</span>
+            }
+
+            @Override
+            public Class&lt;?&gt; implementation() {
+<span class="fc" id="L534">                return Object.class;</span>
+            }
+
+            @Override
+            public Class&lt;? extends Encoder&gt; encoder() {
+<span class="fc" id="L539">                return Encoder.class;</span>
+            }
+
+            @Override
+            public boolean nullable() {
+<span class="fc" id="L544">                return true;</span>
+            }
+
+            @Override
+            public boolean collectionValueNullable() {
+<span class="fc" id="L549">                return true;</span>
+            }
+
+            @Override
+            public String defaultValueToOmit() {
+<span class="fc" id="L554">                return &quot;&quot;;</span>
+            }
+
+            @Override
+            public Class&lt;? extends Annotation&gt; annotationType() {
+<span class="nc" id="L559">                return JsonProperty.class;</span>
+            }
+        };
+    }
+
+    @Override
+    protected JsonIgnore getJsonIgnore(Annotation[] annotations) {
+
+<span class="fc" id="L567">        JsonIgnore jsoniterObj = super.getJsonIgnore(annotations);</span>
+<span class="pc bpc" id="L568" title="1 of 2 branches missed.">        if (jsoniterObj != null) {</span>
+<span class="nc" id="L569">            return jsoniterObj;</span>
+        }
+<span class="fc bfc" id="L571" title="All 2 branches covered.">        if (builder().excludeFieldsWithoutExposeAnnotation) {</span>
+<span class="fc" id="L572">            final Expose gsonObj = getAnnotation(</span>
+                    annotations, Expose.class);
+<span class="fc bfc" id="L574" title="All 2 branches covered.">            if (gsonObj != null) {</span>
+<span class="fc" id="L575">                return new JsonIgnore() {</span>
+                    @Override
+                    public boolean ignoreDecoding() {
+<span class="fc bfc" id="L578" title="All 2 branches covered.">                        return !gsonObj.deserialize();</span>
+                    }
+
+                    @Override
+                    public boolean ignoreEncoding() {
+<span class="fc bfc" id="L583" title="All 2 branches covered.">                        return !gsonObj.serialize();</span>
+                    }
+
+                    @Override
+                    public Class&lt;? extends Annotation&gt; annotationType() {
+<span class="nc" id="L588">                        return JsonIgnore.class;</span>
+                    }
+                };
+            }
+<span class="fc" id="L592">            return new JsonIgnore() {</span>
+                @Override
+                public boolean ignoreDecoding() {
+<span class="fc" id="L595">                    return true;</span>
+                }
+
+                @Override
+                public boolean ignoreEncoding() {
+<span class="fc" id="L600">                    return true;</span>
+                }
+
+                @Override
+                public Class&lt;? extends Annotation&gt; annotationType() {
+<span class="nc" id="L605">                    return JsonIgnore.class;</span>
+                }
+            };
+        }
+<span class="fc" id="L609">        return null;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

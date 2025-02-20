@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Encoder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.spi</a> &gt; <span class="el_source">Encoder.java</span></div><h1>Encoder.java</h1><pre class="source lang-java linenums">package com.jsoniter.spi;
+
+import com.jsoniter.any.Any;
+import com.jsoniter.output.JsonStream;
+
+import java.io.IOException;
+
+public interface Encoder {
+
+    void encode(Object obj, JsonStream stream) throws IOException;
+
+
+    interface ReflectionEncoder extends Encoder {
+
+        Any wrap(Object obj);
+    }
+
+<span class="nc" id="L18">    abstract class BooleanEncoder implements Encoder {</span>
+        @Override
+        public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L21">            encodeBoolean((Boolean) obj, stream);</span>
+<span class="nc" id="L22">        }</span>
+
+        public abstract void encodeBoolean(boolean obj, JsonStream stream) throws IOException;
+    }
+
+<span class="nc" id="L27">    abstract class ShortEncoder implements ReflectionEncoder {</span>
+
+        @Override
+        public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L31">            encodeShort((Short) obj, stream);</span>
+<span class="nc" id="L32">        }</span>
+
+        @Override
+        public Any wrap(Object obj) {
+<span class="nc" id="L36">            Short val = (Short) obj;</span>
+<span class="nc" id="L37">            return Any.wrap((int) val);</span>
+        }
+
+        public abstract void encodeShort(short obj, JsonStream stream) throws IOException;
+    }
+
+<span class="nc" id="L43">    class StringShortEncoder extends ShortEncoder {</span>
+
+        @Override
+        public void encodeShort(short obj, JsonStream stream) throws IOException {
+<span class="nc" id="L47">            stream.write('&quot;');</span>
+<span class="nc" id="L48">            stream.writeVal(obj);</span>
+<span class="nc" id="L49">            stream.write('&quot;');</span>
+<span class="nc" id="L50">        }</span>
+    }
+
+<span class="fc" id="L53">    abstract class IntEncoder implements ReflectionEncoder {</span>
+        @Override
+        public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L56">            encodeInt((Integer) obj, stream);</span>
+<span class="fc" id="L57">        }</span>
+
+        @Override
+        public Any wrap(Object obj) {
+<span class="nc" id="L61">            Integer val = (Integer) obj;</span>
+<span class="nc" id="L62">            return Any.wrap((int)val);</span>
+        }
+
+        public abstract void encodeInt(int obj, JsonStream stream) throws IOException;
+    }
+
+<span class="fc" id="L68">    class StringIntEncoder extends IntEncoder {</span>
+
+        @Override
+        public void encodeInt(int obj, JsonStream stream) throws IOException {
+<span class="fc" id="L72">            stream.write('&quot;');</span>
+<span class="fc" id="L73">            stream.writeVal(obj);</span>
+<span class="fc" id="L74">            stream.write('&quot;');</span>
+<span class="fc" id="L75">        }</span>
+    }
+
+<span class="nc" id="L78">    abstract class LongEncoder implements ReflectionEncoder {</span>
+        @Override
+        public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L81">            encodeLong((Long) obj, stream);</span>
+<span class="nc" id="L82">        }</span>
+
+        @Override
+        public Any wrap(Object obj) {
+<span class="nc" id="L86">            Long val = (Long) obj;</span>
+<span class="nc" id="L87">            return Any.wrap((long)val);</span>
+        }
+
+        public abstract void encodeLong(long obj, JsonStream stream) throws IOException;
+    }
+
+<span class="nc" id="L93">    class StringLongEncoder extends LongEncoder {</span>
+
+        @Override
+        public void encodeLong(long obj, JsonStream stream) throws IOException {
+<span class="nc" id="L97">            stream.write('&quot;');</span>
+<span class="nc" id="L98">            stream.writeVal(obj);</span>
+<span class="nc" id="L99">            stream.write('&quot;');</span>
+<span class="nc" id="L100">        }</span>
+    }
+
+<span class="fc" id="L103">    abstract class FloatEncoder implements ReflectionEncoder {</span>
+        @Override
+        public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L106">            encodeFloat((Float) obj, stream);</span>
+<span class="nc" id="L107">        }</span>
+
+        @Override
+        public Any wrap(Object obj) {
+<span class="nc" id="L111">            Float val = (Float) obj;</span>
+<span class="nc" id="L112">            return Any.wrap((float)val);</span>
+        }
+
+        public abstract void encodeFloat(float obj, JsonStream stream) throws IOException;
+    }
+
+<span class="nc" id="L118">    class StringFloatEncoder extends FloatEncoder {</span>
+
+        @Override
+        public void encodeFloat(float obj, JsonStream stream) throws IOException {
+<span class="nc" id="L122">            stream.write('&quot;');</span>
+<span class="nc" id="L123">            stream.writeVal(obj);</span>
+<span class="nc" id="L124">            stream.write('&quot;');</span>
+<span class="nc" id="L125">        }</span>
+    }
+
+<span class="fc" id="L128">    abstract class DoubleEncoder implements ReflectionEncoder {</span>
+        @Override
+        public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L131">            encodeDouble((Double) obj, stream);</span>
+<span class="nc" id="L132">        }</span>
+
+        @Override
+        public Any wrap(Object obj) {
+<span class="nc" id="L136">            Double val = (Double) obj;</span>
+<span class="nc" id="L137">            return Any.wrap((double)val);</span>
+        }
+
+        public abstract void encodeDouble(double obj, JsonStream stream) throws IOException;
+    }
+
+<span class="nc" id="L143">    class StringDoubleEncoder extends DoubleEncoder {</span>
+
+        @Override
+        public void encodeDouble(double obj, JsonStream stream) throws IOException {
+<span class="nc" id="L147">            stream.write('&quot;');</span>
+<span class="nc" id="L148">            stream.writeVal(obj);</span>
+<span class="nc" id="L149">            stream.write('&quot;');</span>
+<span class="nc" id="L150">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

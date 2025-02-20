@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StreamImplString.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.output</a> &gt; <span class="el_source">StreamImplString.java</span></div><h1>StreamImplString.java</h1><pre class="source lang-java linenums">/*
+this implementations contains significant code from https://github.com/ngs-doo/dsl-json/blob/master/LICENSE
+
+Copyright (c) 2015, Nova Generacija Softvera d.o.o.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+    * Neither the name of Nova Generacija Softvera d.o.o. nor the names of its
+      contributors may be used to endorse or promote products derived from this
+      software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package com.jsoniter.output;
+
+import com.jsoniter.spi.JsonException;
+
+import java.io.IOException;
+
+<span class="nc" id="L38">class StreamImplString {</span>
+
+<span class="fc" id="L40">    private static final byte[] ITOA = new byte[]{</span>
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+            'a', 'b', 'c', 'd', 'e', 'f'};
+<span class="fc" id="L43">    private static final boolean[] CAN_DIRECT_WRITE = new boolean[128];</span>
+    private final static int SURR1_FIRST = 0xD800;
+    private final static int SURR1_LAST = 0xDBFF;
+    private final static int SURR2_FIRST = 0xDC00;
+    private final static int SURR2_LAST = 0xDFFF;
+
+    static {
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        for (int i = 0; i &lt; CAN_DIRECT_WRITE.length; i++) {</span>
+<span class="fc bfc" id="L51" title="All 8 branches covered.">            if (i &gt; 31 &amp;&amp; i &lt;= 126 &amp;&amp; i != '&quot;' &amp;&amp; i != '\\') {</span>
+<span class="fc" id="L52">                CAN_DIRECT_WRITE[i] = true;</span>
+            }
+        }
+<span class="fc" id="L55">    }</span>
+
+    public static final void writeString(final JsonStream stream, final String val) throws IOException {
+<span class="fc" id="L58">        int i = 0;</span>
+<span class="fc" id="L59">        int valLen = val.length();</span>
+<span class="fc" id="L60">        int toWriteLen = valLen;</span>
+<span class="fc" id="L61">        int bufLengthMinusTwo = stream.buf.length - 2; // make room for the quotes</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        if (stream.count + toWriteLen &gt; bufLengthMinusTwo) {</span>
+<span class="fc" id="L63">            toWriteLen = bufLengthMinusTwo - stream.count;</span>
+        }
+<span class="fc bfc" id="L65" title="All 2 branches covered.">        if (toWriteLen &lt; 0) {</span>
+<span class="fc" id="L66">            stream.ensure(32);</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">            if (stream.count + toWriteLen &gt; bufLengthMinusTwo) {</span>
+<span class="nc" id="L68">                toWriteLen = bufLengthMinusTwo - stream.count;</span>
+            }
+        }
+<span class="fc" id="L71">        int n = stream.count;</span>
+<span class="fc" id="L72">        stream.buf[n++] = '&quot;';</span>
+        // write string, the fast path, without utf8 and escape support
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        for (; i &lt; toWriteLen; i++) {</span>
+<span class="fc" id="L75">            char c = val.charAt(i);</span>
+            try {
+<span class="fc bfc" id="L77" title="All 2 branches covered.">                if (CAN_DIRECT_WRITE[c]) {</span>
+<span class="fc" id="L78">                    stream.buf[n++] = (byte) c;</span>
+                } else {
+<span class="fc" id="L80">                    break;</span>
+                }
+<span class="fc" id="L82">            } catch (ArrayIndexOutOfBoundsException e) {</span>
+<span class="fc" id="L83">                break;</span>
+<span class="fc" id="L84">            }</span>
+        }
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        if (i == valLen) {</span>
+<span class="fc" id="L87">            stream.buf[n++] = '&quot;';</span>
+<span class="fc" id="L88">            stream.count = n;</span>
+<span class="fc" id="L89">            return;</span>
+        }
+<span class="fc" id="L91">        stream.count = n;</span>
+        // for the remaining parts, we process them char by char
+<span class="fc" id="L93">        writeStringSlowPath(stream, val, i, valLen);</span>
+<span class="fc" id="L94">        stream.write('&quot;');</span>
+<span class="fc" id="L95">    }</span>
+
+    public static final void writeStringWithoutQuote(final JsonStream stream, final String val) throws IOException {
+<span class="nc" id="L98">        int i = 0;</span>
+<span class="nc" id="L99">        int valLen = val.length();</span>
+<span class="nc" id="L100">        int toWriteLen = valLen;</span>
+<span class="nc" id="L101">        int bufLen = stream.buf.length;</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        if (stream.count + toWriteLen &gt; bufLen) {</span>
+<span class="nc" id="L103">            toWriteLen = bufLen - stream.count;</span>
+        }
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (toWriteLen &lt; 0) {</span>
+<span class="nc" id="L106">            stream.ensure(32);</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">            if (stream.count + toWriteLen &gt; bufLen) {</span>
+<span class="nc" id="L108">                toWriteLen = bufLen - stream.count;</span>
+            }
+        }
+<span class="nc" id="L111">        int n = stream.count;</span>
+        // write string, the fast path, without utf8 and escape support
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        for (; i &lt; toWriteLen; i++) {</span>
+<span class="nc" id="L114">            char c = val.charAt(i);</span>
+<span class="nc bnc" id="L115" title="All 8 branches missed.">            if (c &gt; 31 &amp;&amp; c != '&quot;' &amp;&amp; c != '\\' &amp;&amp; c &lt; 126) {</span>
+<span class="nc" id="L116">                stream.buf[n++] = (byte) c;</span>
+            } else {
+                break;
+            }
+        }
+<span class="nc bnc" id="L121" title="All 2 branches missed.">        if (i == valLen) {</span>
+<span class="nc" id="L122">            stream.count = n;</span>
+<span class="nc" id="L123">            return;</span>
+        }
+<span class="nc" id="L125">        stream.count = n;</span>
+        // for the remaining parts, we process them char by char
+<span class="nc" id="L127">        writeStringSlowPath(stream, val, i, valLen);</span>
+<span class="nc" id="L128">    }</span>
+
+    private static void writeStringSlowPath(JsonStream stream, String val, int i, int valLen) throws IOException {
+<span class="fc" id="L131">        boolean escapeUnicode = stream.currentConfig().escapeUnicode();</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        if (escapeUnicode) {</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            for (; i &lt; valLen; i++) {</span>
+<span class="fc" id="L134">                int c = val.charAt(i);</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">                if (c &gt; 127) {</span>
+<span class="fc" id="L136">                    writeAsSlashU(stream, c);</span>
+                } else {
+<span class="fc" id="L138">                    writeAsciiChar(stream, c);</span>
+                }
+            }
+        } else {
+<span class="fc" id="L142">            writeStringSlowPathWithoutEscapeUnicode(stream, val, i, valLen);</span>
+        }
+<span class="fc" id="L144">    }</span>
+
+    private static void writeStringSlowPathWithoutEscapeUnicode(JsonStream stream, String val, int i, int valLen) throws IOException {
+        int _surrogate;
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        for (; i &lt; valLen; i++) {</span>
+<span class="fc" id="L149">            int c = val.charAt(i);</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">            if (c &gt; 127) {</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">                if (c &lt; 0x800) { // 2-byte</span>
+<span class="fc" id="L152">                    stream.write(</span>
+                            (byte) (0xc0 | (c &gt;&gt; 6)),
+                            (byte) (0x80 | (c &amp; 0x3f))
+                    );
+                } else { // 3 or 4 bytes
+                    // Surrogates?
+<span class="pc bpc" id="L158" title="3 of 4 branches missed.">                    if (c &lt; SURR1_FIRST || c &gt; SURR2_LAST) {</span>
+<span class="fc" id="L159">                        stream.write(</span>
+                                (byte) (0xe0 | (c &gt;&gt; 12)),
+                                (byte) (0x80 | ((c &gt;&gt; 6) &amp; 0x3f)),
+                                (byte) (0x80 | (c &amp; 0x3f))
+                        );
+<span class="fc" id="L164">                        continue;</span>
+                    }
+                    // Yup, a surrogate:
+<span class="nc bnc" id="L167" title="All 2 branches missed.">                    if (c &gt; SURR1_LAST) { // must be from first range</span>
+<span class="nc" id="L168">                        throw new JsonException(&quot;illegalSurrogate&quot;);</span>
+                    }
+<span class="nc" id="L170">                    _surrogate = c;</span>
+                    // and if so, followed by another from next range
+<span class="nc bnc" id="L172" title="All 2 branches missed.">                    if (i &gt;= valLen) { // unless we hit the end?</span>
+<span class="nc" id="L173">                        break;</span>
+                    }
+<span class="nc" id="L175">                    int firstPart = _surrogate;</span>
+<span class="nc" id="L176">                    _surrogate = 0;</span>
+                    // Ok, then, is the second part valid?
+<span class="nc bnc" id="L178" title="All 4 branches missed.">                    if (c &lt; SURR2_FIRST || c &gt; SURR2_LAST) {</span>
+<span class="nc" id="L179">                        throw new JsonException(&quot;Broken surrogate pair: first char 0x&quot; + Integer.toHexString(firstPart) + &quot;, second 0x&quot; + Integer.toHexString(c) + &quot;; illegal combination&quot;);</span>
+                    }
+<span class="nc" id="L181">                    c = 0x10000 + ((firstPart - SURR1_FIRST) &lt;&lt; 10) + (c - SURR2_FIRST);</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">                    if (c &gt; 0x10FFFF) { // illegal in JSON as well as in XML</span>
+<span class="nc" id="L183">                        throw new JsonException(&quot;illegalSurrogate&quot;);</span>
+                    }
+<span class="nc" id="L185">                    stream.write(</span>
+                            (byte) (0xf0 | (c &gt;&gt; 18)),
+                            (byte) (0x80 | ((c &gt;&gt; 12) &amp; 0x3f)),
+                            (byte) (0x80 | ((c &gt;&gt; 6) &amp; 0x3f)),
+                            (byte) (0x80 | (c &amp; 0x3f))
+                    );
+<span class="nc" id="L191">                }</span>
+            } else {
+<span class="fc" id="L193">                writeAsciiChar(stream, c);</span>
+            }
+        }
+<span class="fc" id="L196">    }</span>
+
+    private static void writeAsciiChar(JsonStream stream, int c) throws IOException {
+<span class="pc bpc" id="L199" title="5 of 8 branches missed.">        switch (c) {</span>
+            case '&quot;':
+<span class="nc" id="L201">                stream.write((byte) '\\', (byte) '&quot;');</span>
+<span class="nc" id="L202">                break;</span>
+            case '\\':
+<span class="fc" id="L204">                stream.write((byte) '\\', (byte) '\\');</span>
+<span class="fc" id="L205">                break;</span>
+            case '\b':
+<span class="nc" id="L207">                stream.write((byte) '\\', (byte) 'b');</span>
+<span class="nc" id="L208">                break;</span>
+            case '\f':
+<span class="nc" id="L210">                stream.write((byte) '\\', (byte) 'f');</span>
+<span class="nc" id="L211">                break;</span>
+            case '\n':
+<span class="fc" id="L213">                stream.write((byte) '\\', (byte) 'n');</span>
+<span class="fc" id="L214">                break;</span>
+            case '\r':
+<span class="nc" id="L216">                stream.write((byte) '\\', (byte) 'r');</span>
+<span class="nc" id="L217">                break;</span>
+            case '\t':
+<span class="nc" id="L219">                stream.write((byte) '\\', (byte) 't');</span>
+<span class="nc" id="L220">                break;</span>
+            default:
+<span class="fc bfc" id="L222" title="All 2 branches covered.">                if (c &lt; 32) {</span>
+<span class="fc" id="L223">                    writeAsSlashU(stream, c);</span>
+                } else {
+<span class="fc" id="L225">                    stream.write(c);</span>
+                }
+        }
+<span class="fc" id="L228">    }</span>
+
+    private static void writeAsSlashU(JsonStream stream, int c) throws IOException {
+<span class="fc" id="L231">        byte b4 = (byte) (c &amp; 0xf);</span>
+<span class="fc" id="L232">        byte b3 = (byte) (c &gt;&gt; 4 &amp; 0xf);</span>
+<span class="fc" id="L233">        byte b2 = (byte) (c &gt;&gt; 8 &amp; 0xf);</span>
+<span class="fc" id="L234">        byte b1 = (byte) (c &gt;&gt; 12 &amp; 0xf);</span>
+<span class="fc" id="L235">        stream.write((byte) '\\', (byte) 'u', ITOA[b1], ITOA[b2], ITOA[b3], ITOA[b4]);</span>
+<span class="fc" id="L236">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

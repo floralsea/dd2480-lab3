@@ -1,0 +1,263 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+json iterator,com.jsoniter.fuzzy,MaybeStringFloatDecoder,32,0,4,0,10,0,4,0,2,0
+json iterator,com.jsoniter.fuzzy,MaybeEmptyArrayDecoder,5,21,1,3,1,7,1,3,0,2
+json iterator,com.jsoniter.fuzzy,StringDoubleDecoder,34,0,4,0,9,0,4,0,2,0
+json iterator,com.jsoniter.fuzzy,StringFloatDecoder,34,0,4,0,9,0,4,0,2,0
+json iterator,com.jsoniter.fuzzy,StringIntDecoder,14,20,2,2,2,7,2,2,0,2
+json iterator,com.jsoniter.fuzzy,MaybeStringIntDecoder,32,0,4,0,10,0,4,0,2,0
+json iterator,com.jsoniter.fuzzy,StringLongDecoder,34,0,4,0,9,0,4,0,2,0
+json iterator,com.jsoniter.fuzzy,MaybeStringShortDecoder,32,0,4,0,10,0,4,0,2,0
+json iterator,com.jsoniter.fuzzy,StringShortDecoder,34,0,4,0,9,0,4,0,2,0
+json iterator,com.jsoniter.fuzzy,MaybeStringDoubleDecoder,32,0,4,0,10,0,4,0,2,0
+json iterator,com.jsoniter.fuzzy,MaybeStringLongDecoder,32,0,4,0,10,0,4,0,2,0
+json iterator,com.jsoniter.output,CodegenImplArray,54,387,13,43,14,111,14,19,1,4
+json iterator,com.jsoniter.output,CodegenImplObject,12,415,3,63,4,98,4,35,1,5
+json iterator,com.jsoniter.output,StreamImplString,205,346,37,39,47,67,24,25,2,6
+json iterator,com.jsoniter.output,ReflectionMapEncoder,9,98,1,9,4,31,2,7,1,3
+json iterator,com.jsoniter.output,ReflectionCollectionEncoder,25,41,3,5,7,16,4,3,1,2
+json iterator,com.jsoniter.output,MapKeyEncoders.StringKeyEncoder,0,4,0,0,0,2,0,1,0,1
+json iterator,com.jsoniter.output,CodegenAccess,98,17,0,2,34,5,13,2,13,1
+json iterator,com.jsoniter.output,CodegenResult,41,305,6,32,7,68,6,24,0,11
+json iterator,com.jsoniter.output,MapKeyEncoders.NumberKeyEncoder,0,18,0,0,0,7,0,2,0,2
+json iterator,com.jsoniter.output,ReflectionArrayEncoder,3,52,1,5,2,17,1,5,0,3
+json iterator,com.jsoniter.output,StreamImplNumber,242,693,12,56,53,141,12,30,1,7
+json iterator,com.jsoniter.output,CodegenImplNative.new IdentityHashMap() {...},0,163,0,0,0,22,0,1,0,1
+json iterator,com.jsoniter.output,ReflectionEncoderFactory,3,58,0,10,1,13,1,6,1,1
+json iterator,com.jsoniter.output,MapKeyEncoders,14,59,3,11,3,17,4,6,1,2
+json iterator,com.jsoniter.output,CodegenAccess.StaticCodegenTarget,6,0,0,0,3,0,1,0,1,0
+json iterator,com.jsoniter.output,DynamicCodegen,18,53,1,1,5,13,2,2,1,2
+json iterator,com.jsoniter.output,ReflectionListEncoder,3,66,1,7,2,20,1,6,0,3
+json iterator,com.jsoniter.output,JsonStreamPool,16,45,4,4,7,14,4,4,1,3
+json iterator,com.jsoniter.output,ReflectionObjectEncoder,85,235,7,29,23,56,6,17,1,4
+json iterator,com.jsoniter.output,ReflectionEnumEncoder,4,14,0,0,1,6,1,2,1,2
+json iterator,com.jsoniter.output,Codegen,179,298,11,41,39,85,14,26,5,9
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},12,3,0,0,4,1,2,1,2,1
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},0,15,0,0,0,5,0,3,0,3
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},13,3,0,0,4,1,2,1,2,1
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},7,8,0,0,2,3,1,2,1,2
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},7,8,0,0,2,3,1,2,1,2
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},13,3,0,0,4,1,2,1,2,1
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},12,3,0,0,4,1,2,1,2,1
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},12,3,0,0,4,1,2,1,2,1
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},13,3,0,0,4,1,2,1,2,1
+json iterator,com.jsoniter.output,CodegenImplMap,18,193,4,22,5,56,5,11,1,2
+json iterator,com.jsoniter.output,MapKeyEncoders.DynamicKeyEncoder,5,14,1,1,1,5,1,1,0,1
+json iterator,com.jsoniter.output,CodegenImplNative,91,183,8,24,16,40,6,16,1,5
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},12,3,0,0,4,1,2,1,2,1
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},7,8,0,0,2,3,1,2,1,2
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},12,3,0,0,4,1,2,1,2,1
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},7,8,0,0,2,3,1,2,1,2
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},13,3,0,0,4,1,2,1,2,1
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},7,8,0,0,2,3,1,2,1,2
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},0,15,0,0,0,5,0,3,0,3
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},0,14,0,0,0,5,0,3,0,3
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},3,27,3,5,1,8,3,4,0,3
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},4,11,0,0,1,4,1,2,1,2
+json iterator,com.jsoniter.output,Codegen.new Encoder() {...},43,6,8,0,13,1,5,1,1,1
+json iterator,com.jsoniter.output,CodegenImplNative.1.new Encoder.ReflectionEncoder() {...},4,11,0,0,1,4,1,2,1,2
+json iterator,com.jsoniter.output,JsonStream,155,914,22,42,58,230,27,71,9,57
+json iterator,com.jsoniter.output,EncodingMode,0,21,0,0,0,4,0,1,0,1
+json iterator,com.jsoniter.annotation,JsonWrapperType,0,15,0,0,0,3,0,1,0,1
+json iterator,com.jsoniter.spi,EmptyExtension,4,12,0,0,1,6,1,6,1,6
+json iterator,com.jsoniter.spi,JsoniterSpi.TypeProperty,50,31,18,2,5,7,11,2,1,2
+json iterator,com.jsoniter.spi,OmitValue.ZeroShort,0,13,0,2,0,3,0,4,0,3
+json iterator,com.jsoniter.spi,ConstructorDescriptor,13,8,0,0,1,2,1,1,1,1
+json iterator,com.jsoniter.spi,TypeLiteral.new HashMap() {...},0,108,0,0,0,23,0,1,0,1
+json iterator,com.jsoniter.spi,OmitValue.ZeroFloat,0,15,0,2,0,3,0,4,0,3
+json iterator,com.jsoniter.spi,ClassDescriptor,96,1290,19,163,24,296,18,92,0,19
+json iterator,com.jsoniter.spi,Decoder.ShortDecoder,8,0,0,0,2,0,2,0,2,0
+json iterator,com.jsoniter.spi,Encoder.FloatEncoder,14,3,0,0,4,1,2,1,2,1
+json iterator,com.jsoniter.spi,OmitValue.ZeroLong,0,15,0,2,0,3,0,4,0,3
+json iterator,com.jsoniter.spi,Config.new HashMap() {...},0,59,0,0,0,10,0,1,0,1
+json iterator,com.jsoniter.spi,Slice,8,138,1,11,1,27,2,15,1,10
+json iterator,com.jsoniter.spi,Config.Builder,27,233,12,20,3,55,12,16,0,12
+json iterator,com.jsoniter.spi,OmitValue.Null,0,11,0,2,0,3,0,4,0,3
+json iterator,com.jsoniter.spi,Encoder.StringFloatEncoder,13,0,0,0,5,0,2,0,2,0
+json iterator,com.jsoniter.spi,Encoder.BooleanEncoder,10,0,0,0,3,0,2,0,2,0
+json iterator,com.jsoniter.spi,JsonException,3,13,0,0,2,6,1,3,1,3
+json iterator,com.jsoniter.spi,GenericsHelper.GenericArrayTypeImpl,14,42,6,6,1,9,6,5,1,4
+json iterator,com.jsoniter.spi,Encoder.StringLongEncoder,13,0,0,0,5,0,2,0,2,0
+json iterator,com.jsoniter.spi,DecodingMode,0,27,0,0,0,5,0,1,0,1
+json iterator,com.jsoniter.spi,Decoder.LongDecoder,0,8,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter.spi,EncodeTo,0,3,0,0,0,1,0,1,0,1
+json iterator,com.jsoniter.spi,Encoder.StringIntEncoder,0,13,0,0,0,5,0,2,0,2
+json iterator,com.jsoniter.spi,OmitValue.ZeroChar,0,13,0,2,0,3,0,4,0,3
+json iterator,com.jsoniter.spi,OmitValue.ZeroDouble,0,15,0,2,0,3,0,4,0,3
+json iterator,com.jsoniter.spi,GenericsHelper,17,44,5,5,5,10,6,4,1,4
+json iterator,com.jsoniter.spi,GenericsHelper.ParameterizedTypeImpl,24,109,13,11,0,24,11,8,0,7
+json iterator,com.jsoniter.spi,JsoniterSpi,12,619,3,27,4,150,5,54,2,42
+json iterator,com.jsoniter.spi,Encoder.ShortEncoder,17,0,0,0,5,0,3,0,3,0
+json iterator,com.jsoniter.spi,Decoder.FloatDecoder,0,8,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter.spi,Decoder.DoubleDecoder,0,8,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter.spi,Encoder.DoubleEncoder,14,3,0,0,4,1,2,1,2,1
+json iterator,com.jsoniter.spi,WrapperDescriptor,0,8,0,0,0,2,0,1,0,1
+json iterator,com.jsoniter.spi,Encoder.IntEncoder,7,10,0,0,2,3,1,2,1,2
+json iterator,com.jsoniter.spi,TypeLiteral.NativeType,0,81,0,0,0,14,0,1,0,1
+json iterator,com.jsoniter.spi,ClassInfo,8,33,1,3,2,10,1,2,0,1
+json iterator,com.jsoniter.spi,OmitValue.ZeroInt,0,13,0,2,0,3,0,4,0,3
+json iterator,com.jsoniter.spi,Encoder.StringShortEncoder,13,0,0,0,5,0,2,0,2,0
+json iterator,com.jsoniter.spi,JsoniterSpi.new ThreadLocal() {...},0,5,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter.spi,Encoder.LongEncoder,17,0,0,0,5,0,3,0,3,0
+json iterator,com.jsoniter.spi,OmitValue.False,0,13,0,2,0,3,0,4,0,3
+json iterator,com.jsoniter.spi,Encoder.StringDoubleEncoder,13,0,0,0,5,0,2,0,2,0
+json iterator,com.jsoniter.spi,Config,110,1097,16,118,24,248,16,79,0,28
+json iterator,com.jsoniter.spi,Binding,114,159,30,18,13,37,19,14,3,6
+json iterator,com.jsoniter.spi,OmitValue.ZeroByte,0,13,0,2,0,3,0,4,0,3
+json iterator,com.jsoniter.spi,Decoder.BooleanDecoder,0,8,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter.spi,TypeLiteral,55,314,5,25,11,77,7,25,2,15
+json iterator,com.jsoniter.spi,OmitValue.Parsed,6,267,3,37,1,58,3,21,0,4
+json iterator,com.jsoniter.spi,Decoder.IntDecoder,0,8,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter.spi,UnwrapperDescriptor,12,78,6,10,3,21,6,5,0,3
+json iterator,com.jsoniter.static_codegen,StaticCodegen,81,0,6,0,23,0,5,0,2,0
+json iterator,com.jsoniter.any,ObjectLazyAny,65,348,6,40,19,86,13,30,8,12
+json iterator,com.jsoniter.any,TrueAny,6,25,0,0,3,11,3,10,3,10
+json iterator,com.jsoniter.any,StringLazyAny,50,111,3,9,16,35,6,12,3,9
+json iterator,com.jsoniter.any,ArrayLazyAny.new TypeLiteral() {...},0,3,0,0,0,1,0,1,0,1
+json iterator,com.jsoniter.any,IntAny,11,47,1,1,2,15,3,11,2,11
+json iterator,com.jsoniter.any,LazyAny,58,61,0,0,17,14,3,5,3,5
+json iterator,com.jsoniter.any,ObjectLazyAny.LazyIterator,17,140,1,13,5,33,1,10,0,4
+json iterator,com.jsoniter.any,NullAny,10,21,0,0,5,9,5,8,5,8
+json iterator,com.jsoniter.any,LongLazyAny,19,63,1,3,4,21,3,10,2,9
+json iterator,com.jsoniter.any,StringAny,29,62,6,4,7,19,8,10,3,10
+json iterator,com.jsoniter.any,Any,147,289,16,14,33,71,37,37,25,34
+json iterator,com.jsoniter.any,ListWrapperAny.WrapperIterator,4,59,1,5,1,7,2,5,1,3
+json iterator,com.jsoniter.any,ObjectAny,71,115,8,10,15,29,14,10,8,7
+json iterator,com.jsoniter.any,ArrayWrapperAny.WrapperIterator,4,61,1,5,1,9,2,5,1,3
+json iterator,com.jsoniter.any,ArrayAny,91,94,5,9,19,26,14,9,10,6
+json iterator,com.jsoniter.any,FloatAny,15,45,1,1,3,14,4,10,3,10
+json iterator,com.jsoniter.any,LongAny,13,45,1,1,3,14,4,10,3,10
+json iterator,com.jsoniter.any,ArrayLazyAny.LazyIterator,8,53,1,3,2,16,2,4,1,3
+json iterator,com.jsoniter.any,FalseAny,17,14,0,0,9,5,8,5,8,5
+json iterator,com.jsoniter.any,ListWrapperAny,58,200,6,22,14,46,11,21,5,13
+json iterator,com.jsoniter.any,ArrayLazyAny,79,313,5,35,22,79,13,26,8,11
+json iterator,com.jsoniter.any,NotFoundAny,23,80,0,0,11,14,11,6,11,6
+json iterator,com.jsoniter.any,DoubleAny,14,45,1,1,3,14,4,10,3,10
+json iterator,com.jsoniter.any,Any.new Encoder.ReflectionEncoder() {...},3,10,0,0,1,4,1,2,1,2
+json iterator,com.jsoniter.any,Any.new Any.EntryIterator() {...},10,3,0,0,3,1,3,1,3,1
+json iterator,com.jsoniter.any,Any.new Iterator() {...},8,5,0,0,2,2,2,2,2,2
+json iterator,com.jsoniter.any,DoubleLazyAny,43,39,3,1,11,14,8,5,6,5
+json iterator,com.jsoniter.any,ArrayWrapperAny,49,206,6,22,12,49,11,21,5,13
+json iterator,com.jsoniter.any,ObjectLazyAny.new TypeLiteral() {...},0,3,0,0,0,1,0,1,0,1
+json iterator,com.jsoniter.any,MapWrapperAny,280,0,34,0,69,0,35,0,18,0
+json iterator,com.jsoniter.any,MapWrapperAny.WrapperIterator,74,0,6,0,17,0,7,0,4,0
+json iterator,com.jsoniter.any,ObjectAny.IteratorAdapter,30,0,2,0,9,0,5,0,4,0
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.new Encoder() {...},0,19,0,0,0,4,0,2,0,2
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.new Encoder() {...},115,81,16,10,18,18,10,5,0,2
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.new Decoder() {...},6,20,0,0,2,4,0,2,0,2
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.new Decoder.FloatDecoder() {...},10,16,2,2,2,6,2,2,0,2
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.new Decoder.DoubleDecoder() {...},10,16,2,2,2,6,2,2,0,2
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.new Decoder() {...},15,27,4,6,4,8,3,4,0,2
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.new Decoder.BooleanDecoder() {...},10,16,2,2,2,6,2,2,0,2
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.new Decoder.LongDecoder() {...},10,16,2,2,2,6,2,2,0,2
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.new Decoder.IntDecoder() {...},10,16,2,2,2,6,2,2,0,2
+json iterator,com.jsoniter.extra,Base64FloatSupport.new Decoder.FloatDecoder() {...},20,0,2,0,6,0,3,0,2,0
+json iterator,com.jsoniter.extra,Base64FloatSupport.new Decoder() {...},22,0,2,0,6,0,3,0,2,0
+json iterator,com.jsoniter.extra,Base64FloatSupport.new Decoder.DoubleDecoder() {...},18,0,2,0,6,0,3,0,2,0
+json iterator,com.jsoniter.extra,JacksonCompatibilityMode.new JsonCreator() {...},5,0,0,0,2,0,2,0,2,0
+json iterator,com.jsoniter.extra,Base64FloatSupport.new Decoder() {...},20,0,2,0,6,0,3,0,2,0
+json iterator,com.jsoniter.extra,JacksonCompatibilityMode.new JsonProperty() {...},2,42,0,0,1,11,1,11,1,11
+json iterator,com.jsoniter.extra,Base64FloatSupport.new Encoder.FloatEncoder() {...},11,0,0,0,4,0,2,0,2,0
+json iterator,com.jsoniter.extra,JacksonCompatibilityMode.new JsonIgnore() {...},2,14,0,0,1,3,1,3,1,3
+json iterator,com.jsoniter.extra,Base64FloatSupport.new Encoder.ReflectionEncoder() {...},21,0,0,0,7,0,3,0,3,0
+json iterator,com.jsoniter.extra,Base64FloatSupport.new Encoder.DoubleEncoder() {...},10,0,0,0,4,0,2,0,2,0
+json iterator,com.jsoniter.extra,Base64FloatSupport.new Encoder.ReflectionEncoder() {...},21,0,0,0,7,0,3,0,3,0
+json iterator,com.jsoniter.extra,JacksonCompatibilityMode.new JsonWrapper() {...},2,5,0,0,1,2,1,2,1,2
+json iterator,com.jsoniter.extra,JacksonCompatibilityMode.new JsonUnwrapper() {...},2,3,0,0,1,1,1,1,1,1
+json iterator,com.jsoniter.extra,Base64Support,8,15,1,1,2,5,2,1,1,1
+json iterator,com.jsoniter.extra,Base64FloatSupport,547,0,20,0,100,0,16,0,6,0
+json iterator,com.jsoniter.extra,PreciseFloatSupport,8,25,1,1,2,7,2,1,1,1
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.Builder,89,298,23,29,15,51,24,22,4,16
+json iterator,com.jsoniter.extra,Base64Support.new Encoder() {...},0,17,0,0,0,6,0,2,0,2
+json iterator,com.jsoniter.extra,Base64Support.new Decoder() {...},0,14,0,0,0,3,0,2,0,2
+json iterator,com.jsoniter.extra,JacksonCompatibilityMode,15,102,6,14,6,31,6,10,0,6
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.Builder.new ThreadLocal() {...},0,13,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.Builder.new ThreadLocal() {...},0,8,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.Builder.new ThreadLocal() {...},16,0,0,0,2,0,2,0,2,0
+json iterator,com.jsoniter.extra,NamingStrategySupport,8,27,1,1,2,8,2,2,1,2
+json iterator,com.jsoniter.extra,JdkDatetimeSupport,28,0,2,0,8,0,4,0,3,0
+json iterator,com.jsoniter.extra,GsonCompatibilityMode,14,409,7,59,6,93,7,35,0,9
+json iterator,com.jsoniter.extra,Base64,574,279,38,18,67,40,29,7,5,3
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.new JsonIgnore() {...},2,7,0,0,1,3,1,3,1,3
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.new JsonIgnore() {...},2,22,0,4,1,3,1,5,1,3
+json iterator,com.jsoniter.extra,GsonCompatibilityMode.new JsonProperty() {...},2,40,0,0,1,11,1,11,1,11
+json iterator,com.jsoniter.extra,PreciseFloatSupport.new Encoder.ReflectionEncoder() {...},7,8,0,0,2,3,1,2,1,2
+json iterator,com.jsoniter.extra,PreciseFloatSupport.new Encoder.FloatEncoder() {...},5,3,0,0,2,1,1,1,1,1
+json iterator,com.jsoniter.extra,PreciseFloatSupport.new Encoder.DoubleEncoder() {...},5,3,0,0,2,1,1,1,1,1
+json iterator,com.jsoniter.extra,PreciseFloatSupport.new Encoder.ReflectionEncoder() {...},7,8,0,0,2,3,1,2,1,2
+json iterator,com.jsoniter.extra,JdkDatetimeSupport.new ThreadLocal() {...},8,0,0,0,2,0,2,0,2,0
+json iterator,com.jsoniter.extra,JdkDatetimeSupport.new Encoder.ReflectionEncoder() {...},18,0,0,0,4,0,3,0,3,0
+json iterator,com.jsoniter.extra,JdkDatetimeSupport.new Decoder() {...},16,0,0,0,4,0,2,0,2,0
+json iterator,com.jsoniter.extra,NamingStrategySupport.new NamingStrategySupport.NamingStrategy() {...},69,3,14,0,18,1,8,1,1,1
+json iterator,com.jsoniter.extra,NamingStrategySupport.new NamingStrategySupport.NamingStrategy() {...},3,3,0,0,1,1,1,1,1,1
+json iterator,com.jsoniter.extra,NamingStrategySupport.new NamingStrategySupport.NamingStrategy() {...},31,3,6,0,9,1,4,1,1,1
+json iterator,com.jsoniter.extra,NamingStrategySupport.new NamingStrategySupport.NamingStrategy() {...},3,73,6,12,0,19,6,5,0,2
+json iterator,com.jsoniter.extra,NamingStrategySupport.new EmptyExtension() {...},0,41,0,2,0,7,0,3,0,2
+json iterator,com.jsoniter.extra,JacksonCompatibilityMode.Builder,0,17,0,0,0,4,0,4,0,4
+json iterator,com.jsoniter,Codegen.new Decoder() {...},42,6,8,0,11,1,5,1,1,1
+json iterator,com.jsoniter,ReflectionObjectDecoder.WithWrapper,114,153,15,15,19,32,12,6,0,3
+json iterator,com.jsoniter,CodegenImplArray.new HashSet() {...},0,15,0,0,0,5,0,1,0,1
+json iterator,com.jsoniter,ReflectionArrayDecoder,21,166,2,14,5,42,2,8,0,2
+json iterator,com.jsoniter,Codegen,190,403,17,73,43,112,20,38,5,8
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},0,7,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},2,10,1,1,0,2,1,2,0,2
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},4,3,0,0,1,1,1,1,1,1
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},2,10,1,1,0,2,1,2,0,2
+json iterator,com.jsoniter,JsonIterator,320,645,31,36,91,170,40,55,15,44
+json iterator,com.jsoniter,ReflectionMapDecoder,24,83,4,6,9,21,4,5,0,4
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},4,3,0,0,1,1,1,1,1,1
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},5,3,0,0,1,1,1,1,1,1
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},10,3,2,0,1,1,2,1,1,1
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},0,7,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},9,3,2,0,1,1,2,1,1,1
+json iterator,com.jsoniter,IterImplSkip,46,85,12,11,12,30,9,9,1,3
+json iterator,com.jsoniter,ReflectionDecoderFactory,3,48,0,8,1,11,1,5,1,1
+json iterator,com.jsoniter,CodegenImplArray,11,465,1,3,2,147,2,7,1,6
+json iterator,com.jsoniter,JsonIteratorPool,9,54,2,6,4,18,3,5,1,3
+json iterator,com.jsoniter,IterImplForStreaming.numberChars,0,3,0,0,0,1,0,1,0,1
+json iterator,com.jsoniter,CodegenImplObjectHash.new Comparator() {...},2,19,1,3,0,4,1,3,0,2
+json iterator,com.jsoniter,IterImplString,15,191,3,25,3,43,4,16,1,5
+json iterator,com.jsoniter,IterImplArray,30,51,8,11,9,18,8,6,1,2
+json iterator,com.jsoniter,ReflectionEnumDecoder,10,53,0,6,1,12,0,5,0,2
+json iterator,com.jsoniter,JsonIterator.new JsonIterator.ReadObjectCallback() {...},0,14,0,0,0,4,0,2,0,2
+json iterator,com.jsoniter,JsonIterator.new JsonIterator.ReadArrayCallback() {...},0,13,0,0,0,4,0,2,0,2
+json iterator,com.jsoniter,MapKeyDecoders,10,51,2,8,2,14,3,5,1,2
+json iterator,com.jsoniter,CodegenAccess.StaticCodegenTarget,6,0,0,0,3,0,1,0,1,0
+json iterator,com.jsoniter,ReflectionObjectDecoder,37,614,9,81,8,119,9,51,0,15
+json iterator,com.jsoniter,ReflectionCollectionDecoder,17,57,1,5,7,14,1,5,0,3
+json iterator,com.jsoniter,CodegenImplObjectHash,13,608,3,43,4,125,4,28,1,8
+json iterator,com.jsoniter,CodegenImplEnum,71,301,4,16,10,57,4,12,1,5
+json iterator,com.jsoniter,ReflectionObjectDecoder.OnlyField,43,159,4,20,6,33,3,12,0,3
+json iterator,com.jsoniter,CoverageTool,78,0,4,0,17,0,7,0,5,0
+json iterator,com.jsoniter,MapKeyDecoders.NumberKeyDecoder,10,21,2,2,2,7,2,2,0,2
+json iterator,com.jsoniter,CodegenImplMap,3,78,0,2,1,23,1,3,1,2
+json iterator,com.jsoniter,ValueType,0,45,0,0,0,8,0,1,0,1
+json iterator,com.jsoniter,CodegenImplNative.new HashMap() {...},0,171,0,0,0,23,0,1,0,1
+json iterator,com.jsoniter,CodegenImplNative.new HashMap() {...},0,121,0,0,0,23,0,1,0,1
+json iterator,com.jsoniter,DynamicCodegen,14,49,0,0,5,11,1,3,1,3
+json iterator,com.jsoniter,CoverageData,190,0,8,0,33,0,12,0,8,0
+json iterator,com.jsoniter,ReflectionObjectDecoder.WithCtor,99,166,15,17,19,34,13,6,0,3
+json iterator,com.jsoniter,IterImpl,521,985,57,106,94,207,48,61,3,17
+json iterator,com.jsoniter,IterImplNumber,33,189,5,13,9,34,5,10,1,5
+json iterator,com.jsoniter,IterImplForStreaming,1269,234,184,28,307,60,126,15,22,5
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},5,3,0,0,1,1,1,1,1,1
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},2,10,1,1,0,2,1,2,0,2
+json iterator,com.jsoniter,CodegenAccess,166,80,16,8,45,29,32,12,22,10
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},0,7,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},9,3,2,0,1,1,2,1,1,1
+json iterator,com.jsoniter,CodegenImplObjectStrict,143,1068,13,113,26,217,15,63,2,13
+json iterator,com.jsoniter,ReflectionObjectDecoder.new Object() {...},2,3,0,0,1,1,1,1,1,1
+json iterator,com.jsoniter,MapKeyDecoders.EnumKeyDecoder,0,11,0,0,0,4,0,2,0,2
+json iterator,com.jsoniter,ReflectionObjectDecoder.new Decoder() {...},0,14,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter,CodegenImplNative,151,180,24,26,25,42,18,13,1,5
+json iterator,com.jsoniter,CodegenImplObjectStrict.new HashMap() {...},0,43,0,0,0,10,0,1,0,1
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},0,6,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},9,3,2,0,1,1,2,1,1,1
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},0,7,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},10,3,2,0,1,1,2,1,1,1
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},0,6,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},3,3,0,0,1,1,1,1,1,1
+json iterator,com.jsoniter,MapKeyDecoders.StringKeyDecoder,0,3,0,0,0,1,0,1,0,1
+json iterator,com.jsoniter,IterImplObject,62,89,13,18,16,29,13,7,1,2
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},0,6,0,0,0,2,0,2,0,2
+json iterator,com.jsoniter,ExperimentFunctions,440,0,51,0,122,0,32,0,5,0
+json iterator,com.jsoniter,CodegenImplNative.2.new Decoder() {...},0,6,0,0,0,2,0,2,0,2

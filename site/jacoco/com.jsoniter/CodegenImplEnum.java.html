@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CodegenImplEnum.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">CodegenImplEnum.java</span></div><h1>CodegenImplEnum.java</h1><pre class="source lang-java linenums">package com.jsoniter;
+
+import com.jsoniter.spi.ClassInfo;
+
+import java.util.*;
+
+<span class="nc" id="L7">class CodegenImplEnum {</span>
+    public static String genEnum(ClassInfo classInfo) {
+<span class="fc" id="L9">        StringBuilder lines = new StringBuilder();</span>
+<span class="fc" id="L10">        append(lines, &quot;if (iter.readNull()) { return null; }&quot;);</span>
+<span class="fc" id="L11">        append(lines, &quot;com.jsoniter.spi.Slice field = com.jsoniter.CodegenAccess.readSlice(iter);&quot;);</span>
+<span class="fc" id="L12">        append(lines, &quot;switch (field.len()) {&quot;);</span>
+<span class="fc" id="L13">        append(lines, renderTriTree(buildTriTree(Arrays.asList(classInfo.clazz.getEnumConstants()))));</span>
+<span class="fc" id="L14">        append(lines, &quot;}&quot;); // end of switch</span>
+<span class="fc" id="L15">        append(lines, String.format(&quot;throw iter.reportError(\&quot;decode enum\&quot;, field + \&quot; is not valid enum for %s\&quot;);&quot;, classInfo.clazz.getName()));</span>
+<span class="fc" id="L16">        return lines.toString();</span>
+    }
+
+    private static Map&lt;Integer, Object&gt; buildTriTree(List&lt;Object&gt; allConsts) {
+<span class="fc" id="L20">        Map&lt;Integer, Object&gt; trieTree = new HashMap&lt;Integer, Object&gt;();</span>
+<span class="fc bfc" id="L21" title="All 2 branches covered.">        for (Object e : allConsts) {</span>
+<span class="fc" id="L22">                byte[] fromNameBytes = e.toString().getBytes();</span>
+<span class="fc" id="L23">                Map&lt;Byte, Object&gt; current = (Map&lt;Byte, Object&gt;) trieTree.get(fromNameBytes.length);</span>
+<span class="fc bfc" id="L24" title="All 2 branches covered.">                if (current == null) {</span>
+<span class="fc" id="L25">                    current = new HashMap&lt;Byte, Object&gt;();</span>
+<span class="fc" id="L26">                    trieTree.put(fromNameBytes.length, current);</span>
+                }
+<span class="fc bfc" id="L28" title="All 2 branches covered.">                for (int i = 0; i &lt; fromNameBytes.length - 1; i++) {</span>
+<span class="fc" id="L29">                    byte b = fromNameBytes[i];</span>
+<span class="fc" id="L30">                    Map&lt;Byte, Object&gt; next = (Map&lt;Byte, Object&gt;) current.get(b);</span>
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">                    if (next == null) {</span>
+<span class="fc" id="L32">                        next = new HashMap&lt;Byte, Object&gt;();</span>
+<span class="fc" id="L33">                        current.put(b, next);</span>
+                    }
+<span class="fc" id="L35">                    current = next;</span>
+                }
+<span class="fc" id="L37">                current.put(fromNameBytes[fromNameBytes.length - 1], e);</span>
+<span class="fc" id="L38">        }</span>
+<span class="fc" id="L39">        return trieTree;</span>
+    }
+
+    private static String renderTriTree(Map&lt;Integer, Object&gt; trieTree) {
+<span class="fc" id="L43">        StringBuilder switchBody = new StringBuilder();</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Object&gt; entry : trieTree.entrySet()) {</span>
+<span class="fc" id="L45">            Integer len = entry.getKey();</span>
+<span class="fc" id="L46">            append(switchBody, &quot;case &quot; + len + &quot;: &quot;);</span>
+<span class="fc" id="L47">            Map&lt;Byte, Object&gt; current = (Map&lt;Byte, Object&gt;) entry.getValue();</span>
+<span class="fc" id="L48">            addFieldDispatch(switchBody, len, 0, current, new ArrayList&lt;Byte&gt;());</span>
+<span class="fc" id="L49">            append(switchBody, &quot;break;&quot;);</span>
+<span class="fc" id="L50">        }</span>
+<span class="fc" id="L51">        return switchBody.toString();</span>
+    }
+
+    private static void addFieldDispatch(
+            StringBuilder lines, int len, int i, Map&lt;Byte, Object&gt; current, List&lt;Byte&gt; bytesToCompare) {
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        for (Map.Entry&lt;Byte, Object&gt; entry : current.entrySet()) {</span>
+<span class="fc" id="L57">            Byte b = entry.getKey();</span>
+<span class="fc bfc" id="L58" title="All 2 branches covered.">            if (i == len - 1) {</span>
+<span class="fc" id="L59">                append(lines, &quot;if (&quot;);</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">                for (int j = 0; j &lt; bytesToCompare.size(); j++) {</span>
+<span class="fc" id="L61">                    Byte a = bytesToCompare.get(j);</span>
+<span class="fc" id="L62">                    append(lines, String.format(&quot;field.at(%d)==%s &amp;&amp; &quot;, i - bytesToCompare.size() + j, a));</span>
+                }
+<span class="fc" id="L64">                append(lines, String.format(&quot;field.at(%d)==%s&quot;, i, b));</span>
+<span class="fc" id="L65">                append(lines, &quot;) {&quot;);</span>
+<span class="fc" id="L66">                Object e = entry.getValue();</span>
+<span class="fc" id="L67">                append(lines, String.format(&quot;return %s.%s;&quot;, e.getClass().getName(), e.toString()));</span>
+<span class="fc" id="L68">                append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L69">                continue;</span>
+            }
+<span class="fc" id="L71">            Map&lt;Byte, Object&gt; next = (Map&lt;Byte, Object&gt;) entry.getValue();</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">            if (next.size() == 1) {</span>
+<span class="fc" id="L73">                ArrayList&lt;Byte&gt; nextBytesToCompare = new ArrayList&lt;Byte&gt;(bytesToCompare);</span>
+<span class="fc" id="L74">                nextBytesToCompare.add(b);</span>
+<span class="fc" id="L75">                addFieldDispatch(lines, len, i + 1, next, nextBytesToCompare);</span>
+<span class="fc" id="L76">                continue;</span>
+            }
+<span class="nc" id="L78">            append(lines, &quot;if (&quot;);</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">            for (int j = 0; j &lt; bytesToCompare.size(); j++) {</span>
+<span class="nc" id="L80">                Byte a = bytesToCompare.get(j);</span>
+<span class="nc" id="L81">                append(lines, String.format(&quot;field.at(%d)==%s &amp;&amp; &quot;, i - bytesToCompare.size() + j, a));</span>
+            }
+<span class="nc" id="L83">            append(lines, String.format(&quot;field.at(%d)==%s&quot;, i, b));</span>
+<span class="nc" id="L84">            append(lines, &quot;) {&quot;);</span>
+<span class="nc" id="L85">            addFieldDispatch(lines, len, i + 1, next, new ArrayList&lt;Byte&gt;());</span>
+<span class="nc" id="L86">            append(lines, &quot;}&quot;);</span>
+<span class="nc" id="L87">        }</span>
+<span class="fc" id="L88">    }</span>
+
+    private static void append(StringBuilder lines, String str) {
+<span class="fc" id="L91">        lines.append(str);</span>
+<span class="fc" id="L92">        lines.append(&quot;\n&quot;);</span>
+<span class="fc" id="L93">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

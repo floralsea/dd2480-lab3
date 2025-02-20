@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Base64FloatSupport.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.extra</a> &gt; <span class="el_source">Base64FloatSupport.java</span></div><h1>Base64FloatSupport.java</h1><pre class="source lang-java linenums">package com.jsoniter.extra;
+
+import com.jsoniter.CodegenAccess;
+import com.jsoniter.JsonIterator;
+import com.jsoniter.spi.Slice;
+import com.jsoniter.any.Any;
+import com.jsoniter.output.JsonStream;
+import com.jsoniter.spi.Decoder;
+import com.jsoniter.spi.Encoder;
+import com.jsoniter.spi.JsonException;
+import com.jsoniter.spi.JsoniterSpi;
+
+import java.io.IOException;
+
+/**
+ * encode float/double as base64, faster than PreciseFloatSupport
+ */
+<span class="nc" id="L18">public class Base64FloatSupport {</span>
+
+<span class="nc" id="L20">    final static int[] DIGITS = new int[256];</span>
+<span class="nc" id="L21">    final static int[] HEX = new int[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};</span>
+<span class="nc" id="L22">    final static int[] DEC = new int[127];</span>
+
+    static {
+<span class="nc bnc" id="L25" title="All 2 branches missed.">        for (int i = 0; i &lt; 256; i++) {</span>
+<span class="nc" id="L26">            DIGITS[i] = HEX[i &gt;&gt; 4] &lt;&lt; 8 | HEX[i &amp; 0xf];</span>
+        }
+<span class="nc" id="L28">        DEC['0'] = 0;</span>
+<span class="nc" id="L29">        DEC['1'] = 1;</span>
+<span class="nc" id="L30">        DEC['2'] = 2;</span>
+<span class="nc" id="L31">        DEC['3'] = 3;</span>
+<span class="nc" id="L32">        DEC['4'] = 4;</span>
+<span class="nc" id="L33">        DEC['5'] = 5;</span>
+<span class="nc" id="L34">        DEC['6'] = 6;</span>
+<span class="nc" id="L35">        DEC['7'] = 7;</span>
+<span class="nc" id="L36">        DEC['8'] = 8;</span>
+<span class="nc" id="L37">        DEC['9'] = 9;</span>
+<span class="nc" id="L38">        DEC['a'] = 10;</span>
+<span class="nc" id="L39">        DEC['b'] = 11;</span>
+<span class="nc" id="L40">        DEC['c'] = 12;</span>
+<span class="nc" id="L41">        DEC['d'] = 13;</span>
+<span class="nc" id="L42">        DEC['e'] = 14;</span>
+<span class="nc" id="L43">        DEC['f'] = 15;</span>
+<span class="nc" id="L44">    }</span>
+
+    private static boolean enabled;
+
+    public static synchronized void enableEncodersAndDecoders() {
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        if (enabled) {</span>
+<span class="nc" id="L50">            throw new JsonException(&quot;BinaryFloatSupport.enable can only be called once&quot;);</span>
+        }
+<span class="nc" id="L52">        enabled = true;</span>
+<span class="nc" id="L53">        enableDecoders();</span>
+<span class="nc" id="L54">        JsoniterSpi.registerTypeEncoder(Double.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L57">                Double number = (Double) obj;</span>
+<span class="nc" id="L58">                long bits = Double.doubleToRawLongBits(number.doubleValue());</span>
+<span class="nc" id="L59">                Base64.encodeLongBits(bits, stream);</span>
+<span class="nc" id="L60">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L64">                Double number = (Double) obj;</span>
+<span class="nc" id="L65">                return Any.wrap(number.doubleValue());</span>
+            }
+        });
+<span class="nc" id="L68">        JsoniterSpi.registerTypeEncoder(double.class, new Encoder.DoubleEncoder() {</span>
+            @Override
+            public void encodeDouble(double obj, JsonStream stream) throws IOException {
+<span class="nc" id="L71">                long bits = Double.doubleToRawLongBits(obj);</span>
+<span class="nc" id="L72">                Base64.encodeLongBits(bits, stream);</span>
+<span class="nc" id="L73">            }</span>
+        });
+<span class="nc" id="L75">        JsoniterSpi.registerTypeEncoder(Float.class, new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="nc" id="L78">                Float number = (Float) obj;</span>
+<span class="nc" id="L79">                long bits = Double.doubleToRawLongBits(number.doubleValue());</span>
+<span class="nc" id="L80">                Base64.encodeLongBits(bits, stream);</span>
+<span class="nc" id="L81">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L85">                Float number = (Float) obj;</span>
+<span class="nc" id="L86">                return Any.wrap(number.floatValue());</span>
+            }
+        });
+<span class="nc" id="L89">        JsoniterSpi.registerTypeEncoder(float.class, new Encoder.FloatEncoder() {</span>
+            @Override
+            public void encodeFloat(float obj, JsonStream stream) throws IOException {
+<span class="nc" id="L92">                long bits = Double.doubleToRawLongBits(obj);</span>
+<span class="nc" id="L93">                Base64.encodeLongBits(bits, stream);</span>
+<span class="nc" id="L94">            }</span>
+        });
+<span class="nc" id="L96">    }</span>
+
+    public static void enableDecoders() {
+<span class="nc" id="L99">        JsoniterSpi.registerTypeDecoder(Double.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="nc" id="L102">                byte token = CodegenAccess.nextToken(iter);</span>
+<span class="nc" id="L103">                CodegenAccess.unreadByte(iter);</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">                if (token == '&quot;') {</span>
+<span class="nc" id="L105">                    return Double.longBitsToDouble(Base64.decodeLongBits(iter));</span>
+                } else {
+<span class="nc" id="L107">                    return iter.readDouble();</span>
+                }
+            }
+        });
+<span class="nc" id="L111">        JsoniterSpi.registerTypeDecoder(double.class, new Decoder.DoubleDecoder() {</span>
+            @Override
+            public double decodeDouble(JsonIterator iter) throws IOException {
+<span class="nc" id="L114">                byte token = CodegenAccess.nextToken(iter);</span>
+<span class="nc" id="L115">                CodegenAccess.unreadByte(iter);</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">                if (token == '&quot;') {</span>
+<span class="nc" id="L117">                    return Double.longBitsToDouble(Base64.decodeLongBits(iter));</span>
+                }else {
+<span class="nc" id="L119">                    return iter.readDouble();</span>
+                }
+            }
+        });
+<span class="nc" id="L123">        JsoniterSpi.registerTypeDecoder(Float.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="nc" id="L126">                byte token = CodegenAccess.nextToken(iter);</span>
+<span class="nc" id="L127">                CodegenAccess.unreadByte(iter);</span>
+<span class="nc bnc" id="L128" title="All 2 branches missed.">                if (token == '&quot;') {</span>
+<span class="nc" id="L129">                    return (float)Double.longBitsToDouble(Base64.decodeLongBits(iter));</span>
+                }else {
+<span class="nc" id="L131">                    return (float)iter.readDouble();</span>
+                }
+            }
+        });
+<span class="nc" id="L135">        JsoniterSpi.registerTypeDecoder(float.class, new Decoder.FloatDecoder() {</span>
+            @Override
+            public float decodeFloat(JsonIterator iter) throws IOException {
+<span class="nc" id="L138">                byte token = CodegenAccess.nextToken(iter);</span>
+<span class="nc" id="L139">                CodegenAccess.unreadByte(iter);</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">                if (token == '&quot;') {</span>
+<span class="nc" id="L141">                    return (float)Double.longBitsToDouble(Base64.decodeLongBits(iter));</span>
+                }else {
+<span class="nc" id="L143">                    return (float)iter.readDouble();</span>
+                }
+            }
+        });
+<span class="nc" id="L147">    }</span>
+
+    private static long readLongBits(JsonIterator iter) throws IOException {
+<span class="nc" id="L150">        Slice slice = iter.readStringAsSlice();</span>
+<span class="nc" id="L151">        byte[] data = slice.data();</span>
+<span class="nc" id="L152">        long val = 0;</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        for (int i = slice.head(); i &lt; slice.tail(); i++) {</span>
+<span class="nc" id="L154">            byte b = data[i];</span>
+<span class="nc" id="L155">            val = val &lt;&lt; 4 | DEC[b];</span>
+        }
+<span class="nc" id="L157">        return val;</span>
+    }
+
+    private static void writeLongBits(long bits, JsonStream stream) throws IOException {
+<span class="nc" id="L161">        int digit = DIGITS[(int) (bits &amp; 0xff)];</span>
+<span class="nc" id="L162">        byte b2 = (byte) (digit &gt;&gt; 8);</span>
+<span class="nc" id="L163">        byte b1 = (byte) digit;</span>
+<span class="nc" id="L164">        bits = bits &gt;&gt; 8;</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">        if (bits == 0) {</span>
+<span class="nc" id="L166">            stream.write((byte) '&quot;', b2, b1, (byte) '&quot;');</span>
+        }
+<span class="nc" id="L168">        digit = DIGITS[(int) (bits &amp; 0xff)];</span>
+<span class="nc" id="L169">        byte b4 = (byte) (digit &gt;&gt; 8);</span>
+<span class="nc" id="L170">        byte b3 = (byte) digit;</span>
+<span class="nc" id="L171">        bits = bits &gt;&gt; 8;</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        if (bits == 0) {</span>
+<span class="nc" id="L173">            stream.write((byte) '&quot;', b4, b3, b2, b1, (byte) '&quot;');</span>
+        }
+<span class="nc" id="L175">        digit = DIGITS[(int) (bits &amp; 0xff)];</span>
+<span class="nc" id="L176">        byte b6 = (byte) (digit &gt;&gt; 8);</span>
+<span class="nc" id="L177">        byte b5 = (byte) digit;</span>
+<span class="nc" id="L178">        bits = bits &gt;&gt; 8;</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">        if (bits == 0) {</span>
+<span class="nc" id="L180">            stream.write((byte) '&quot;', b6, b5, b4, b3);</span>
+<span class="nc" id="L181">            stream.write(b2, b1, (byte) '&quot;');</span>
+        }
+<span class="nc" id="L183">        digit = DIGITS[(int) (bits &amp; 0xff)];</span>
+<span class="nc" id="L184">        byte b8 = (byte) (digit &gt;&gt; 8);</span>
+<span class="nc" id="L185">        byte b7 = (byte) digit;</span>
+<span class="nc" id="L186">        bits = bits &gt;&gt; 8;</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">        if (bits == 0) {</span>
+<span class="nc" id="L188">            stream.write((byte) '&quot;', b8, b7, b6, b5, b4);</span>
+<span class="nc" id="L189">            stream.write(b3, b2, b1, (byte) '&quot;');</span>
+        }
+<span class="nc" id="L191">        digit = DIGITS[(int) (bits &amp; 0xff)];</span>
+<span class="nc" id="L192">        byte b10 = (byte) (digit &gt;&gt; 8);</span>
+<span class="nc" id="L193">        byte b9 = (byte) digit;</span>
+<span class="nc" id="L194">        bits = bits &gt;&gt; 8;</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">        if (bits == 0) {</span>
+<span class="nc" id="L196">            stream.write((byte) '&quot;', b10, b9, b8, b7, b6);</span>
+<span class="nc" id="L197">            stream.write(b5, b4, b3, b2, b1, (byte) '&quot;');</span>
+        }
+<span class="nc" id="L199">        digit = DIGITS[(int) (bits &amp; 0xff)];</span>
+<span class="nc" id="L200">        byte b12 = (byte) (digit &gt;&gt; 8);</span>
+<span class="nc" id="L201">        byte b11 = (byte) digit;</span>
+<span class="nc" id="L202">        bits = bits &gt;&gt; 8;</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">        if (bits == 0) {</span>
+<span class="nc" id="L204">            stream.write((byte) '&quot;', b12, b11, b10, b9, b8);</span>
+<span class="nc" id="L205">            stream.write(b7, b6, b5, b4, b3, b2);</span>
+<span class="nc" id="L206">            stream.write(b1, (byte) '&quot;');</span>
+        }
+<span class="nc" id="L208">        digit = DIGITS[(int) (bits &amp; 0xff)];</span>
+<span class="nc" id="L209">        byte b14 = (byte) (digit &gt;&gt; 8);</span>
+<span class="nc" id="L210">        byte b13 = (byte) digit;</span>
+<span class="nc" id="L211">        bits = bits &gt;&gt; 8;</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">        if (bits == 0) {</span>
+<span class="nc" id="L213">            stream.write((byte) '&quot;', b14, b13, b12, b11, b10);</span>
+<span class="nc" id="L214">            stream.write(b9, b8, b7, b6, b5, b4);</span>
+<span class="nc" id="L215">            stream.write(b3, b2, b1, (byte) '&quot;');</span>
+        }
+<span class="nc" id="L217">        digit = DIGITS[(int) (bits &amp; 0xff)];</span>
+<span class="nc" id="L218">        byte b16 = (byte) (digit &gt;&gt; 8);</span>
+<span class="nc" id="L219">        byte b15 = (byte) digit;</span>
+<span class="nc" id="L220">        stream.write((byte) '&quot;', b16, b15, b14, b13, b12);</span>
+<span class="nc" id="L221">        stream.write(b11, b10, b9, b8, b7, b6);</span>
+<span class="nc" id="L222">        stream.write(b5, b4, b3, b2, b1, (byte) '&quot;');</span>
+<span class="nc" id="L223">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

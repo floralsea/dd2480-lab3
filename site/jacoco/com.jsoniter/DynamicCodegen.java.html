@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DynamicCodegen.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">DynamicCodegen.java</span></div><h1>DynamicCodegen.java</h1><pre class="source lang-java linenums">package com.jsoniter;
+
+import com.jsoniter.spi.Decoder;
+import javassist.*;
+
+<span class="nc" id="L6">class DynamicCodegen {</span>
+
+<span class="fc" id="L8">    static ClassPool pool = ClassPool.getDefault();</span>
+
+    static {
+<span class="fc" id="L11">        pool.insertClassPath(new ClassClassPath(Decoder.class));</span>
+<span class="fc" id="L12">    }</span>
+
+    public static Decoder gen(String cacheKey, String source) throws Exception {
+        Decoder decoder;
+<span class="fc" id="L16">        CtClass ctClass = pool.makeClass(cacheKey);</span>
+<span class="fc" id="L17">        ctClass.setInterfaces(new CtClass[]{pool.get(Decoder.class.getName())});</span>
+<span class="fc" id="L18">        CtMethod staticMethod = CtNewMethod.make(source, ctClass);</span>
+<span class="fc" id="L19">        ctClass.addMethod(staticMethod);</span>
+<span class="fc" id="L20">        CtMethod interfaceMethod = CtNewMethod.make(&quot;&quot; +</span>
+                &quot;public Object decode(com.jsoniter.JsonIterator iter) {&quot; +
+                &quot;return decode_(iter);&quot; +
+                &quot;}&quot;, ctClass);
+<span class="fc" id="L24">        ctClass.addMethod(interfaceMethod);</span>
+<span class="nc" id="L25">        decoder = (Decoder) ctClass.toClass().newInstance();</span>
+<span class="nc" id="L26">        return decoder;</span>
+    }
+
+    public static void enableStreamingSupport() throws Exception {
+<span class="fc" id="L30">        CtClass ctClass = pool.makeClass(&quot;com.jsoniter.IterImpl&quot;);</span>
+<span class="fc" id="L31">        ctClass.setSuperclass(pool.get(IterImplForStreaming.class.getName()));</span>
+<span class="nc" id="L32">        ctClass.toClass();</span>
+<span class="nc" id="L33">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IterImplSkip.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">IterImplSkip.java</span></div><h1>IterImplSkip.java</h1><pre class="source lang-java linenums">package com.jsoniter;
+
+import java.io.IOException;
+
+<span class="nc" id="L5">class IterImplSkip {</span>
+
+<span class="fc" id="L7">    static final boolean[] breaks = new boolean[127];</span>
+
+    static {
+<span class="fc" id="L10">        breaks[' '] = true;</span>
+<span class="fc" id="L11">        breaks['\t'] = true;</span>
+<span class="fc" id="L12">        breaks['\n'] = true;</span>
+<span class="fc" id="L13">        breaks['\r'] = true;</span>
+<span class="fc" id="L14">        breaks[','] = true;</span>
+<span class="fc" id="L15">        breaks['}'] = true;</span>
+<span class="fc" id="L16">        breaks[']'] = true;</span>
+<span class="fc" id="L17">    }</span>
+
+    public static final void skip(JsonIterator iter) throws IOException {
+<span class="fc" id="L20">        byte c = IterImpl.nextToken(iter);</span>
+<span class="pc bpc" id="L21" title="1 of 7 branches missed.">        switch (c) {</span>
+            case '&quot;':
+<span class="fc" id="L23">                IterImpl.skipString(iter);</span>
+<span class="fc" id="L24">                return;</span>
+            case '-':
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+<span class="fc" id="L36">                IterImpl.skipUntilBreak(iter);</span>
+<span class="fc" id="L37">                return;</span>
+            case 't':
+            case 'n':
+<span class="fc" id="L40">                IterImpl.skipFixedBytes(iter, 3); // true or null</span>
+<span class="fc" id="L41">                return;</span>
+            case 'f':
+<span class="fc" id="L43">                IterImpl.skipFixedBytes(iter, 4); // false</span>
+<span class="fc" id="L44">                return;</span>
+            case '[':
+<span class="fc" id="L46">                IterImpl.skipArray(iter);</span>
+<span class="fc" id="L47">                return;</span>
+            case '{':
+<span class="fc" id="L49">                IterImpl.skipObject(iter);</span>
+<span class="fc" id="L50">                return;</span>
+            default:
+<span class="nc" id="L52">                throw iter.reportError(&quot;IterImplSkip&quot;, &quot;do not know how to skip: &quot; + c);</span>
+        }
+    }
+
+    // adapted from: https://github.com/buger/jsonparser/blob/master/parser.go
+    // Tries to find the end of string
+    // Support if string contains escaped quote symbols.
+    final static int findStringEnd(JsonIterator iter) {
+<span class="fc" id="L60">        boolean escaped = false;</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        for (int i = iter.head; i &lt; iter.tail; i++) {</span>
+<span class="fc" id="L62">            byte c = iter.buf[i];</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">            if (c == '&quot;') {</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">                if (!escaped) {</span>
+<span class="fc" id="L65">                    return i + 1;</span>
+                } else {
+<span class="nc" id="L67">                    int j = i - 1;</span>
+                    for (; ; ) {
+<span class="nc bnc" id="L69" title="All 4 branches missed.">                        if (j &lt; iter.head || iter.buf[j] != '\\') {</span>
+                            // even number of backslashes
+                            // either end of buffer, or &quot; found
+<span class="nc" id="L72">                            return i + 1;</span>
+                        }
+<span class="nc" id="L74">                        j--;</span>
+<span class="nc bnc" id="L75" title="All 4 branches missed.">                        if (j &lt; iter.head || iter.buf[j] != '\\') {</span>
+                            // odd number of backslashes
+                            // it is \&quot; or \\\&quot;
+<span class="nc" id="L78">                            break;</span>
+                        }
+<span class="nc" id="L80">                        j--;</span>
+                    }
+<span class="nc" id="L82">                }</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">            } else if (c == '\\') {</span>
+<span class="nc" id="L84">                escaped = true;</span>
+            }
+        }
+<span class="nc" id="L87">        return -1;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

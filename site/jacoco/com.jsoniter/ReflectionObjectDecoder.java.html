@@ -1,0 +1,455 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReflectionObjectDecoder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">ReflectionObjectDecoder.java</span></div><h1>ReflectionObjectDecoder.java</h1><pre class="source lang-java linenums">package com.jsoniter;
+
+import com.jsoniter.any.Any;
+import com.jsoniter.spi.*;
+
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.*;
+
+class ReflectionObjectDecoder {
+
+<span class="fc" id="L12">    private static Object NOT_SET = new Object() {</span>
+        @Override
+        public String toString() {
+<span class="nc" id="L15">            return &quot;NOT_SET&quot;;</span>
+        }
+    };
+<span class="fc" id="L18">    private Map&lt;Slice, Binding&gt; allBindings = new HashMap&lt;Slice, Binding&gt;();</span>
+    private String tempCacheKey;
+    private String ctorArgsCacheKey;
+    private int tempCount;
+    private long expectedTracker;
+    private int requiredIdx;
+    private int tempIdx;
+    private ClassDescriptor desc;
+
+<span class="fc" id="L27">    public ReflectionObjectDecoder(ClassInfo classInfo) {</span>
+        try {
+<span class="fc" id="L29">            init(classInfo);</span>
+<span class="nc" id="L30">        } catch (JsonException e) {</span>
+<span class="nc" id="L31">            throw e;</span>
+<span class="nc" id="L32">        } catch (Exception e) {</span>
+<span class="nc" id="L33">            throw new JsonException(e);</span>
+<span class="fc" id="L34">        }</span>
+<span class="fc" id="L35">    }</span>
+
+    private final void init(ClassInfo classInfo) throws Exception {
+<span class="fc" id="L38">        Class clazz = classInfo.clazz;</span>
+<span class="fc" id="L39">        ClassDescriptor desc = ClassDescriptor.getDecodingClassDescriptor(classInfo, true);</span>
+<span class="fc bfc" id="L40" title="All 2 branches covered.">        for (Binding param : desc.ctor.parameters) {</span>
+<span class="fc" id="L41">            addBinding(classInfo, param);</span>
+<span class="fc" id="L42">        }</span>
+<span class="fc" id="L43">        this.desc = desc;</span>
+<span class="pc bpc" id="L44" title="1 of 6 branches missed.">        if (desc.ctor.objectFactory == null &amp;&amp; desc.ctor.ctor == null &amp;&amp; desc.ctor.staticFactory == null) {</span>
+<span class="nc" id="L45">            throw new JsonException(&quot;no constructor for: &quot; + desc.clazz);</span>
+        }
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (Binding field : desc.fields) {</span>
+<span class="fc" id="L48">            addBinding(classInfo, field);</span>
+<span class="fc" id="L49">        }</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        for (Binding setter : desc.setters) {</span>
+<span class="fc" id="L51">            addBinding(classInfo, setter);</span>
+<span class="fc" id="L52">        }</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (WrapperDescriptor setter : desc.bindingTypeWrappers) {</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">            for (Binding param : setter.parameters) {</span>
+<span class="fc" id="L55">                addBinding(classInfo, param);</span>
+<span class="fc" id="L56">            }</span>
+<span class="fc" id="L57">        }</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        if (requiredIdx &gt; 63) {</span>
+<span class="nc" id="L59">            throw new JsonException(&quot;too many required properties to track&quot;);</span>
+        }
+<span class="fc" id="L61">        expectedTracker = Long.MAX_VALUE &gt;&gt; (63 - requiredIdx);</span>
+<span class="fc bfc" id="L62" title="All 4 branches covered.">        if (!desc.ctor.parameters.isEmpty() || !desc.bindingTypeWrappers.isEmpty()) {</span>
+<span class="fc" id="L63">            tempCount = tempIdx;</span>
+<span class="fc" id="L64">            tempCacheKey = &quot;temp@&quot; + clazz.getCanonicalName();</span>
+<span class="fc" id="L65">            ctorArgsCacheKey = &quot;ctor@&quot; + clazz.getCanonicalName();</span>
+        }
+<span class="fc" id="L67">    }</span>
+
+    private void addBinding(ClassInfo classInfo, final Binding binding) {
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        if (binding.fromNames.length == 0) {</span>
+<span class="fc" id="L71">            return;</span>
+        }
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (binding.asMissingWhenNotPresent) {</span>
+<span class="fc" id="L74">            binding.mask = 1L &lt;&lt; requiredIdx;</span>
+<span class="fc" id="L75">            requiredIdx++;</span>
+        }
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (binding.asExtraWhenPresent) {</span>
+<span class="fc" id="L78">            binding.decoder = new Decoder() {</span>
+                @Override
+                public Object decode(JsonIterator iter) throws IOException {
+<span class="fc" id="L81">                    throw new JsonException(&quot;found should not present property: &quot; + binding.name);</span>
+                }
+            };
+        }
+<span class="fc bfc" id="L85" title="All 2 branches covered.">        if (binding.decoder == null) {</span>
+            // field decoder might be special customized
+<span class="fc" id="L87">            binding.decoder = JsoniterSpi.getDecoder(binding.decoderCacheKey());</span>
+        }
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (binding.decoder == null) {</span>
+<span class="fc" id="L90">            binding.decoder = Codegen.getDecoder(binding.valueTypeLiteral.getDecoderCacheKey(), binding.valueType);</span>
+        }
+<span class="fc" id="L92">        binding.idx = tempIdx;</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">        for (String fromName : binding.fromNames) {</span>
+<span class="fc" id="L94">            Slice slice = Slice.make(fromName);</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">            if (allBindings.containsKey(slice)) {</span>
+<span class="nc" id="L96">                throw new JsonException(&quot;name conflict found in &quot; + classInfo.clazz + &quot;: &quot; + fromName);</span>
+            }
+<span class="fc" id="L98">            allBindings.put(slice, binding);</span>
+        }
+<span class="fc" id="L100">        tempIdx++;</span>
+<span class="fc" id="L101">    }</span>
+
+    public Decoder create() {
+<span class="fc bfc" id="L104" title="All 2 branches covered.">        if (desc.ctor.parameters.isEmpty()) {</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">            if (desc.bindingTypeWrappers.isEmpty()) {</span>
+<span class="fc" id="L106">                return new OnlyField();</span>
+            } else {
+<span class="fc" id="L108">                return new WithWrapper();</span>
+            }
+        } else {
+<span class="fc" id="L111">            return new WithCtor();</span>
+        }
+    }
+
+<span class="fc" id="L115">    public class OnlyField implements Decoder {</span>
+
+        public Object decode(JsonIterator iter) throws IOException {
+            try {
+<span class="fc" id="L119">                return decode_(iter);</span>
+<span class="fc" id="L120">            } catch (RuntimeException e) {</span>
+<span class="fc" id="L121">                throw e;</span>
+<span class="nc" id="L122">            } catch (Exception e) {</span>
+<span class="nc" id="L123">                throw new JsonException(e);</span>
+            }
+        }
+
+        private Object decode_(JsonIterator iter) throws Exception {
+<span class="fc bfc" id="L128" title="All 2 branches covered.">            if (iter.readNull()) {</span>
+<span class="fc" id="L129">                CodegenAccess.resetExistingObject(iter);</span>
+<span class="fc" id="L130">                return null;</span>
+            }
+<span class="fc bfc" id="L132" title="All 2 branches covered.">            Object obj = CodegenAccess.existingObject(iter) == null ? createNewObject() : CodegenAccess.resetExistingObject(iter);</span>
+<span class="fc bfc" id="L133" title="All 2 branches covered.">            if (!CodegenAccess.readObjectStart(iter)) {</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">                if (requiredIdx &gt; 0) {</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">                    if (desc.onMissingProperties == null) {</span>
+<span class="nc" id="L136">                        throw new JsonException(&quot;missing required properties: &quot; + collectMissingFields(0));</span>
+                    } else {
+<span class="fc" id="L138">                        setToBinding(obj, desc.onMissingProperties, collectMissingFields(0));</span>
+                    }
+                }
+<span class="fc" id="L141">                return obj;</span>
+            }
+<span class="fc" id="L143">            Map&lt;String, Object&gt; extra = null;</span>
+<span class="fc" id="L144">            long tracker = 0L;</span>
+<span class="fc" id="L145">            Slice fieldName = CodegenAccess.readObjectFieldAsSlice(iter);</span>
+<span class="fc" id="L146">            Binding binding = allBindings.get(fieldName);</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">            if (binding == null) {</span>
+<span class="fc" id="L148">                extra = onUnknownProperty(iter, fieldName, extra);</span>
+            } else {
+<span class="fc bfc" id="L150" title="All 2 branches covered.">                if (binding.asMissingWhenNotPresent) {</span>
+<span class="fc" id="L151">                    tracker |= binding.mask;</span>
+                }
+<span class="fc" id="L153">                setToBinding(obj, binding, decodeBinding(iter, obj, binding));</span>
+            }
+<span class="fc bfc" id="L155" title="All 2 branches covered.">            while (CodegenAccess.nextToken(iter) == ',') {</span>
+<span class="fc" id="L156">                fieldName = CodegenAccess.readObjectFieldAsSlice(iter);</span>
+<span class="fc" id="L157">                binding = allBindings.get(fieldName);</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">                if (binding == null) {</span>
+<span class="fc" id="L159">                    extra = onUnknownProperty(iter, fieldName, extra);</span>
+                } else {
+<span class="fc bfc" id="L161" title="All 2 branches covered.">                    if (binding.asMissingWhenNotPresent) {</span>
+<span class="fc" id="L162">                        tracker |= binding.mask;</span>
+                    }
+<span class="fc" id="L164">                    setToBinding(obj, binding, decodeBinding(iter, obj, binding));</span>
+                }
+            }
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">            if (tracker != expectedTracker) {</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">                if (desc.onMissingProperties == null) {</span>
+<span class="nc" id="L169">                    throw new JsonException(&quot;missing required properties: &quot; + collectMissingFields(tracker));</span>
+                } else {
+<span class="nc" id="L171">                    setToBinding(obj, desc.onMissingProperties, collectMissingFields(tracker));</span>
+                }
+            }
+<span class="fc" id="L174">            setExtra(obj, extra);</span>
+<span class="fc" id="L175">            return obj;</span>
+        }
+    }
+
+<span class="fc" id="L179">    public class WithCtor implements Decoder {</span>
+
+        @Override
+        public Object decode(JsonIterator iter) throws IOException {
+            try {
+<span class="fc" id="L184">                return decode_(iter);</span>
+<span class="nc" id="L185">            } catch (RuntimeException e) {</span>
+<span class="nc" id="L186">                throw e;</span>
+<span class="nc" id="L187">            } catch (Exception e) {</span>
+<span class="nc" id="L188">                throw new JsonException(e);</span>
+            }
+        }
+
+        private Object decode_(JsonIterator iter) throws Exception {
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">            if (iter.readNull()) {</span>
+<span class="nc" id="L194">                CodegenAccess.resetExistingObject(iter);</span>
+<span class="nc" id="L195">                return null;</span>
+            }
+<span class="pc bpc" id="L197" title="1 of 2 branches missed.">            if (iter.tempObjects == null) {</span>
+<span class="fc" id="L198">                iter.tempObjects = new HashMap&lt;String, Object&gt;();</span>
+            }
+<span class="fc" id="L200">            Object[] temp = (Object[]) iter.tempObjects.get(tempCacheKey);</span>
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">            if (temp == null) {</span>
+<span class="fc" id="L202">                temp = new Object[tempCount];</span>
+<span class="fc" id="L203">                iter.tempObjects.put(tempCacheKey, temp);</span>
+            }
+<span class="fc" id="L205">            Arrays.fill(temp, NOT_SET);</span>
+<span class="pc bpc" id="L206" title="1 of 2 branches missed.">            if (!CodegenAccess.readObjectStart(iter)) {</span>
+<span class="nc bnc" id="L207" title="All 2 branches missed.">                if (requiredIdx &gt; 0) {</span>
+<span class="nc" id="L208">                    throw new JsonException(&quot;missing required properties: &quot; + collectMissingFields(0));</span>
+                }
+<span class="nc" id="L210">                return createNewObject(iter, temp);</span>
+            }
+<span class="fc" id="L212">            Map&lt;String, Object&gt; extra = null;</span>
+<span class="fc" id="L213">            long tracker = 0L;</span>
+<span class="fc" id="L214">            Slice fieldName = CodegenAccess.readObjectFieldAsSlice(iter);</span>
+<span class="fc" id="L215">            Binding binding = allBindings.get(fieldName);</span>
+<span class="pc bpc" id="L216" title="1 of 2 branches missed.">            if (binding == null) {</span>
+<span class="nc" id="L217">                extra = onUnknownProperty(iter, fieldName, extra);</span>
+            } else {
+<span class="pc bpc" id="L219" title="1 of 2 branches missed.">                if (binding.asMissingWhenNotPresent) {</span>
+<span class="nc" id="L220">                    tracker |= binding.mask;</span>
+                }
+<span class="fc" id="L222">                temp[binding.idx] = decodeBinding(iter, binding);</span>
+            }
+<span class="fc bfc" id="L224" title="All 2 branches covered.">            while (CodegenAccess.nextToken(iter) == ',') {</span>
+<span class="fc" id="L225">                fieldName = CodegenAccess.readObjectFieldAsSlice(iter);</span>
+<span class="fc" id="L226">                binding = allBindings.get(fieldName);</span>
+<span class="pc bpc" id="L227" title="1 of 2 branches missed.">                if (binding == null) {</span>
+<span class="nc" id="L228">                    extra = onUnknownProperty(iter, fieldName, extra);</span>
+                } else {
+<span class="pc bpc" id="L230" title="1 of 2 branches missed.">                    if (binding.asMissingWhenNotPresent) {</span>
+<span class="nc" id="L231">                        tracker |= binding.mask;</span>
+                    }
+<span class="fc" id="L233">                    temp[binding.idx] = decodeBinding(iter, binding);</span>
+                }
+            }
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">            if (tracker != expectedTracker) {</span>
+<span class="nc" id="L237">                throw new JsonException(&quot;missing required properties: &quot; + collectMissingFields(tracker));</span>
+            }
+<span class="fc" id="L239">            Object obj = createNewObject(iter, temp);</span>
+<span class="fc" id="L240">            setExtra(obj, extra);</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">            for (Binding field : desc.fields) {</span>
+<span class="fc" id="L242">                Object val = temp[field.idx];</span>
+<span class="pc bpc" id="L243" title="1 of 4 branches missed.">                if (val != NOT_SET &amp;&amp; field.fromNames.length &gt; 0) {</span>
+<span class="nc" id="L244">                    field.field.set(obj, val);</span>
+                }
+<span class="fc" id="L246">            }</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">            for (Binding setter : desc.setters) {</span>
+<span class="nc" id="L248">                Object val = temp[setter.idx];</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">                if (val != NOT_SET) {</span>
+<span class="nc" id="L250">                    setter.method.invoke(obj, val);</span>
+                }
+<span class="nc" id="L252">            }</span>
+<span class="fc" id="L253">            applyWrappers(temp, obj);</span>
+<span class="fc" id="L254">            return obj;</span>
+        }
+    }
+
+<span class="fc" id="L258">    public class WithWrapper implements Decoder {</span>
+
+        @Override
+        public Object decode(JsonIterator iter) throws IOException {
+            try {
+<span class="fc" id="L263">                return decode_(iter);</span>
+<span class="nc" id="L264">            } catch (RuntimeException e) {</span>
+<span class="nc" id="L265">                throw e;</span>
+<span class="nc" id="L266">            } catch (Exception e) {</span>
+<span class="nc" id="L267">                throw new JsonException(e);</span>
+            }
+        }
+
+        private Object decode_(JsonIterator iter) throws Exception {
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">            if (iter.readNull()) {</span>
+<span class="nc" id="L273">                CodegenAccess.resetExistingObject(iter);</span>
+<span class="nc" id="L274">                return null;</span>
+            }
+<span class="fc" id="L276">            Object obj = createNewObject();</span>
+<span class="pc bpc" id="L277" title="1 of 2 branches missed.">            if (!CodegenAccess.readObjectStart(iter)) {</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">                if (requiredIdx &gt; 0) {</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">                    if (desc.onMissingProperties == null) {</span>
+<span class="nc" id="L280">                        throw new JsonException(&quot;missing required properties: &quot; + collectMissingFields(0));</span>
+                    } else {
+<span class="nc" id="L282">                        setToBinding(obj, desc.onMissingProperties, collectMissingFields(0));</span>
+                    }
+                }
+<span class="nc" id="L285">                return obj;</span>
+            }
+<span class="fc" id="L287">            Map&lt;String, Object&gt; extra = null;</span>
+<span class="fc" id="L288">            long tracker = 0L;</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">            if (iter.tempObjects == null) {</span>
+<span class="fc" id="L290">                iter.tempObjects = new HashMap&lt;String, Object&gt;();</span>
+            }
+<span class="fc" id="L292">            Object[] temp = (Object[]) iter.tempObjects.get(tempCacheKey);</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">            if (temp == null) {</span>
+<span class="fc" id="L294">                temp = new Object[tempCount];</span>
+<span class="fc" id="L295">                iter.tempObjects.put(tempCacheKey, temp);</span>
+            }
+<span class="fc" id="L297">            Arrays.fill(temp, NOT_SET);</span>
+<span class="fc" id="L298">            Slice fieldName = CodegenAccess.readObjectFieldAsSlice(iter);</span>
+<span class="fc" id="L299">            Binding binding = allBindings.get(fieldName);</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">            if (binding == null) {</span>
+<span class="fc" id="L301">                extra = onUnknownProperty(iter, fieldName, extra);</span>
+            } else {
+<span class="pc bpc" id="L303" title="1 of 2 branches missed.">                if (binding.asMissingWhenNotPresent) {</span>
+<span class="nc" id="L304">                    tracker |= binding.mask;</span>
+                }
+<span class="pc bpc" id="L306" title="1 of 2 branches missed.">                if (canNotSetDirectly(binding)) {</span>
+<span class="fc" id="L307">                    temp[binding.idx] = decodeBinding(iter, obj, binding);</span>
+                } else {
+<span class="nc" id="L309">                    setToBinding(obj, binding, decodeBinding(iter, obj, binding));</span>
+                }
+            }
+<span class="fc bfc" id="L312" title="All 2 branches covered.">            while (CodegenAccess.nextToken(iter) == ',') {</span>
+<span class="fc" id="L313">                fieldName = CodegenAccess.readObjectFieldAsSlice(iter);</span>
+<span class="fc" id="L314">                binding = allBindings.get(fieldName);</span>
+<span class="pc bpc" id="L315" title="1 of 2 branches missed.">                if (binding == null) {</span>
+<span class="nc" id="L316">                    extra = onUnknownProperty(iter, fieldName, extra);</span>
+                } else {
+<span class="pc bpc" id="L318" title="1 of 2 branches missed.">                    if (binding.asMissingWhenNotPresent) {</span>
+<span class="nc" id="L319">                        tracker |= binding.mask;</span>
+                    }
+<span class="pc bpc" id="L321" title="1 of 2 branches missed.">                    if (canNotSetDirectly(binding)) {</span>
+<span class="nc" id="L322">                        temp[binding.idx] = decodeBinding(iter, obj, binding);</span>
+                    } else {
+<span class="fc" id="L324">                        setToBinding(obj, binding, decodeBinding(iter, obj, binding));</span>
+                    }
+                }
+            }
+<span class="pc bpc" id="L328" title="1 of 2 branches missed.">            if (tracker != expectedTracker) {</span>
+<span class="nc bnc" id="L329" title="All 2 branches missed.">                if (desc.onMissingProperties == null) {</span>
+<span class="nc" id="L330">                    throw new JsonException(&quot;missing required properties: &quot; + collectMissingFields(tracker));</span>
+                } else {
+<span class="nc" id="L332">                    setToBinding(obj, desc.onMissingProperties, collectMissingFields(tracker));</span>
+                }
+            }
+<span class="fc" id="L335">            setExtra(obj, extra);</span>
+<span class="fc" id="L336">            applyWrappers(temp, obj);</span>
+<span class="fc" id="L337">            return obj;</span>
+        }
+    }
+
+    private void setToBinding(Object obj, Binding binding, Object value) throws Exception {
+<span class="fc bfc" id="L342" title="All 2 branches covered.">        if (binding.field != null) {</span>
+<span class="fc" id="L343">            binding.field.set(obj, value);</span>
+        } else {
+<span class="fc" id="L345">            binding.method.invoke(obj, value);</span>
+        }
+<span class="fc" id="L347">    }</span>
+
+    private void setExtra(Object obj, Map&lt;String, Object&gt; extra) throws Exception {
+<span class="fc bfc" id="L350" title="All 2 branches covered.">        if (extra == null) {</span>
+<span class="fc" id="L351">            return;</span>
+        }
+<span class="fc bfc" id="L353" title="All 2 branches covered.">        if (desc.asExtraForUnknownProperties) {</span>
+<span class="fc bfc" id="L354" title="All 2 branches covered.">            if (desc.onExtraProperties == null) {</span>
+<span class="pc bpc" id="L355" title="1 of 2 branches missed.">                for (String fieldName : extra.keySet()) {</span>
+<span class="pc" id="L356">                    throw new JsonException(&quot;unknown property: &quot; + fieldName);</span>
+                }
+            } else {
+<span class="fc" id="L359">                setToBinding(obj, desc.onExtraProperties, extra);</span>
+            }
+        }
+<span class="fc bfc" id="L362" title="All 2 branches covered.">        for (Method wrapper : desc.keyValueTypeWrappers) {</span>
+<span class="fc bfc" id="L363" title="All 2 branches covered.">            for (Map.Entry&lt;String, Object&gt; entry : extra.entrySet()) {</span>
+<span class="fc" id="L364">                Any value = (Any) entry.getValue();</span>
+<span class="fc" id="L365">                wrapper.invoke(obj, entry.getKey(), value.object());</span>
+<span class="fc" id="L366">            }</span>
+<span class="fc" id="L367">        }</span>
+<span class="fc" id="L368">    }</span>
+
+    private boolean canNotSetDirectly(Binding binding) {
+<span class="pc bpc" id="L371" title="1 of 4 branches missed.">        return binding.field == null &amp;&amp; binding.method == null;</span>
+    }
+
+    private Object decodeBinding(JsonIterator iter, Binding binding) throws Exception {
+        Object value;
+<span class="fc" id="L376">        value = binding.decoder.decode(iter);</span>
+<span class="fc" id="L377">        return value;</span>
+    }
+
+    private Object decodeBinding(JsonIterator iter, Object obj, Binding binding) throws Exception {
+<span class="fc bfc" id="L381" title="All 2 branches covered.">        if (binding.valueCanReuse) {</span>
+<span class="fc" id="L382">            CodegenAccess.setExistingObject(iter, binding.field.get(obj));</span>
+        }
+<span class="fc" id="L384">        return decodeBinding(iter, binding);</span>
+    }
+
+    private Map&lt;String, Object&gt; onUnknownProperty(JsonIterator iter, Slice fieldName, Map&lt;String, Object&gt; extra) throws IOException {
+<span class="fc bfc" id="L388" title="All 4 branches covered.">        boolean shouldReadValue = desc.asExtraForUnknownProperties || !desc.keyValueTypeWrappers.isEmpty();</span>
+<span class="fc bfc" id="L389" title="All 2 branches covered.">        if (shouldReadValue) {</span>
+<span class="fc" id="L390">            Any value = iter.readAny();</span>
+<span class="fc bfc" id="L391" title="All 2 branches covered.">            if (extra == null) {</span>
+<span class="fc" id="L392">                extra = new HashMap&lt;String, Object&gt;();</span>
+            }
+<span class="fc" id="L394">            extra.put(fieldName.toString(), value);</span>
+<span class="fc" id="L395">        } else {</span>
+<span class="fc" id="L396">            iter.skip();</span>
+        }
+<span class="fc" id="L398">        return extra;</span>
+    }
+
+    private List&lt;String&gt; collectMissingFields(long tracker) {
+<span class="fc" id="L402">        List&lt;String&gt; missingFields = new ArrayList&lt;String&gt;();</span>
+<span class="fc bfc" id="L403" title="All 2 branches covered.">        for (Binding binding : allBindings.values()) {</span>
+<span class="pc bpc" id="L404" title="1 of 2 branches missed.">            if (binding.asMissingWhenNotPresent) {</span>
+<span class="fc" id="L405">                long mask = binding.mask;</span>
+<span class="fc" id="L406">                CodegenAccess.addMissingField(missingFields, tracker, mask, binding.name);</span>
+            }
+<span class="fc" id="L408">        }</span>
+<span class="fc" id="L409">        return missingFields;</span>
+    }
+
+    private void applyWrappers(Object[] temp, Object obj) throws Exception {
+<span class="fc bfc" id="L413" title="All 2 branches covered.">        for (WrapperDescriptor wrapper : desc.bindingTypeWrappers) {</span>
+<span class="fc" id="L414">            Object[] args = new Object[wrapper.parameters.size()];</span>
+<span class="fc bfc" id="L415" title="All 2 branches covered.">            for (int i = 0; i &lt; wrapper.parameters.size(); i++) {</span>
+<span class="fc" id="L416">                Object arg = temp[wrapper.parameters.get(i).idx];</span>
+<span class="fc bfc" id="L417" title="All 2 branches covered.">                if (arg != NOT_SET) {</span>
+<span class="fc" id="L418">                    args[i] = arg;</span>
+                }
+            }
+<span class="fc" id="L421">            wrapper.method.invoke(obj, args);</span>
+<span class="fc" id="L422">        }</span>
+<span class="fc" id="L423">    }</span>
+
+    private Object createNewObject(JsonIterator iter, Object[] temp) throws Exception {
+<span class="pc bpc" id="L426" title="1 of 2 branches missed.">        if (iter.tempObjects == null) {</span>
+<span class="nc" id="L427">            iter.tempObjects = new HashMap&lt;String, Object&gt;();</span>
+        }
+<span class="fc" id="L429">        Object[] ctorArgs = (Object[]) iter.tempObjects.get(ctorArgsCacheKey);</span>
+<span class="pc bpc" id="L430" title="1 of 2 branches missed.">        if (ctorArgs == null) {</span>
+<span class="fc" id="L431">            ctorArgs = new Object[desc.ctor.parameters.size()];</span>
+<span class="fc" id="L432">            iter.tempObjects.put(ctorArgsCacheKey, ctorArgs);</span>
+        }
+<span class="fc" id="L434">        Arrays.fill(ctorArgs, null);</span>
+<span class="fc bfc" id="L435" title="All 2 branches covered.">        for (int i = 0; i &lt; desc.ctor.parameters.size(); i++) {</span>
+<span class="fc" id="L436">            Object arg = temp[desc.ctor.parameters.get(i).idx];</span>
+<span class="pc bpc" id="L437" title="1 of 2 branches missed.">            if (arg != NOT_SET) {</span>
+<span class="fc" id="L438">                ctorArgs[i] = arg;</span>
+            }
+        }
+<span class="fc" id="L441">        return createNewObject(ctorArgs);</span>
+    }
+
+    private Object createNewObject(Object... args) throws Exception {
+<span class="fc bfc" id="L445" title="All 2 branches covered.">        if (desc.ctor.objectFactory != null) {</span>
+<span class="fc" id="L446">            return desc.ctor.objectFactory.create(desc.clazz);</span>
+        }
+<span class="fc bfc" id="L448" title="All 2 branches covered.">        if (desc.ctor.staticFactory != null) {</span>
+<span class="fc" id="L449">            return desc.ctor.staticFactory.invoke(null, args);</span>
+        } else {
+<span class="fc" id="L451">            return desc.ctor.ctor.newInstance(args);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

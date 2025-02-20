@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>JsonStream.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.output</a> &gt; <span class="el_source">JsonStream.java</span></div><h1>JsonStream.java</h1><pre class="source lang-java linenums">package com.jsoniter.output;
+
+import com.jsoniter.any.Any;
+import com.jsoniter.spi.*;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.reflect.Type;
+
+public class JsonStream extends OutputStream {
+
+    public Config configCache;
+<span class="fc" id="L13">    int indention = 0;</span>
+    private OutputStream out;
+    byte buf[];
+    int count;
+
+<span class="fc" id="L18">    public JsonStream(OutputStream out, int bufSize) {</span>
+<span class="pc bpc" id="L19" title="1 of 2 branches missed.">        if (bufSize &lt; 32) {</span>
+<span class="nc" id="L20">            throw new JsonException(&quot;buffer size must be larger than 32: &quot; + bufSize);</span>
+        }
+<span class="fc" id="L22">        this.out = out;</span>
+<span class="fc" id="L23">        this.buf = new byte[bufSize];</span>
+<span class="fc" id="L24">    }</span>
+
+    public void reset(OutputStream out) {
+<span class="fc" id="L27">        this.out = out;</span>
+<span class="fc" id="L28">        this.count = 0;</span>
+<span class="fc" id="L29">    }</span>
+
+    final void ensure(int minimal) throws IOException {
+<span class="fc" id="L32">        int available = buf.length - count;</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (available &lt; minimal) {</span>
+<span class="pc bpc" id="L34" title="1 of 2 branches missed.">            if (count &gt; 1024) {</span>
+<span class="nc" id="L35">                flushBuffer();</span>
+            }
+<span class="fc" id="L37">            growAtLeast(minimal);</span>
+        }
+<span class="fc" id="L39">    }</span>
+
+    private final void growAtLeast(int minimal) {
+<span class="fc" id="L42">        int toGrow = buf.length;</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">        if (toGrow &lt; minimal) {</span>
+<span class="nc" id="L44">            toGrow = minimal;</span>
+        }
+<span class="fc" id="L46">        byte[] newBuf = new byte[buf.length + toGrow];</span>
+<span class="fc" id="L47">        System.arraycopy(buf, 0, newBuf, 0, buf.length);</span>
+<span class="fc" id="L48">        buf = newBuf;</span>
+<span class="fc" id="L49">    }</span>
+
+    public final void write(int b) throws IOException {
+<span class="fc" id="L52">        ensure(1);</span>
+<span class="fc" id="L53">        buf[count++] = (byte) b;</span>
+<span class="fc" id="L54">    }</span>
+
+    public final void write(byte b1, byte b2) throws IOException {
+<span class="fc" id="L57">        ensure(2);</span>
+<span class="fc" id="L58">        buf[count++] = b1;</span>
+<span class="fc" id="L59">        buf[count++] = b2;</span>
+<span class="fc" id="L60">    }</span>
+
+    public final void write(byte b1, byte b2, byte b3) throws IOException {
+<span class="fc" id="L63">        ensure(3);</span>
+<span class="fc" id="L64">        buf[count++] = b1;</span>
+<span class="fc" id="L65">        buf[count++] = b2;</span>
+<span class="fc" id="L66">        buf[count++] = b3;</span>
+<span class="fc" id="L67">    }</span>
+
+    public final void write(byte b1, byte b2, byte b3, byte b4) throws IOException {
+<span class="fc" id="L70">        ensure(4);</span>
+<span class="fc" id="L71">        buf[count++] = b1;</span>
+<span class="fc" id="L72">        buf[count++] = b2;</span>
+<span class="fc" id="L73">        buf[count++] = b3;</span>
+<span class="fc" id="L74">        buf[count++] = b4;</span>
+<span class="fc" id="L75">    }</span>
+
+    public final void write(byte b1, byte b2, byte b3, byte b4, byte b5) throws IOException {
+<span class="fc" id="L78">        ensure(5);</span>
+<span class="fc" id="L79">        buf[count++] = b1;</span>
+<span class="fc" id="L80">        buf[count++] = b2;</span>
+<span class="fc" id="L81">        buf[count++] = b3;</span>
+<span class="fc" id="L82">        buf[count++] = b4;</span>
+<span class="fc" id="L83">        buf[count++] = b5;</span>
+<span class="fc" id="L84">    }</span>
+
+    public final void write(byte b1, byte b2, byte b3, byte b4, byte b5, byte b6) throws IOException {
+<span class="fc" id="L87">        ensure(6);</span>
+<span class="fc" id="L88">        buf[count++] = b1;</span>
+<span class="fc" id="L89">        buf[count++] = b2;</span>
+<span class="fc" id="L90">        buf[count++] = b3;</span>
+<span class="fc" id="L91">        buf[count++] = b4;</span>
+<span class="fc" id="L92">        buf[count++] = b5;</span>
+<span class="fc" id="L93">        buf[count++] = b6;</span>
+<span class="fc" id="L94">    }</span>
+
+    public final void write(byte b[], int off, int len) throws IOException {
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (out == null) {</span>
+<span class="fc" id="L98">            ensure(len);</span>
+        } else {
+<span class="nc bnc" id="L100" title="All 2 branches missed.">            if (len &gt;= buf.length - count) {</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">                if (len &gt;= buf.length) {</span>
+            /* If the request length exceeds the size of the output buffer,
+               flush the output buffer and then write the data directly.
+               In this way buffered streams will cascade harmlessly. */
+<span class="nc" id="L105">                    flushBuffer();</span>
+<span class="nc" id="L106">                    out.write(b, off, len);</span>
+<span class="nc" id="L107">                    return;</span>
+                }
+<span class="nc" id="L109">                flushBuffer();</span>
+            }
+        }
+<span class="fc" id="L112">        System.arraycopy(b, off, buf, count, len);</span>
+<span class="fc" id="L113">        count += len;</span>
+<span class="fc" id="L114">    }</span>
+
+    public void flush() throws IOException {
+<span class="nc" id="L117">        flushBuffer();</span>
+<span class="nc" id="L118">        out.flush();</span>
+<span class="nc" id="L119">    }</span>
+
+    @Override
+    public void close() throws IOException {
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (out == null) {</span>
+<span class="fc" id="L124">            return;</span>
+        }
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (count &gt; 0) {</span>
+<span class="fc" id="L127">            flushBuffer();</span>
+        }
+<span class="fc" id="L129">        out.close();</span>
+<span class="fc" id="L130">        this.out = null;</span>
+<span class="fc" id="L131">        count = 0;</span>
+<span class="fc" id="L132">    }</span>
+
+    final void flushBuffer() throws IOException {
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">        if (out == null) {</span>
+<span class="nc" id="L136">            return;</span>
+        }
+<span class="fc" id="L138">        out.write(buf, 0, count);</span>
+<span class="fc" id="L139">        count = 0;</span>
+<span class="fc" id="L140">    }</span>
+
+    public final void writeVal(String val) throws IOException {
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        if (val == null) {</span>
+<span class="nc" id="L144">            writeNull();</span>
+        } else {
+<span class="fc" id="L146">            StreamImplString.writeString(this, val);</span>
+        }
+<span class="fc" id="L148">    }</span>
+
+    public final void writeRaw(String val) throws IOException {
+<span class="fc" id="L151">        writeRaw(val, val.length());</span>
+<span class="fc" id="L152">    }</span>
+
+    public final void writeRaw(String val, int remaining) throws IOException {
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        if (out == null) {</span>
+<span class="fc" id="L156">            ensure(remaining);</span>
+<span class="fc" id="L157">            val.getBytes(0, remaining, buf, count);</span>
+<span class="fc" id="L158">            count += remaining;</span>
+<span class="fc" id="L159">            return;</span>
+        }
+<span class="fc" id="L161">        int i = 0;</span>
+        for (; ; ) {
+<span class="fc" id="L163">            int available = buf.length - count;</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">            if (available &lt; remaining) {</span>
+<span class="fc" id="L165">                remaining -= available;</span>
+<span class="fc" id="L166">                int j = i + available;</span>
+<span class="fc" id="L167">                val.getBytes(i, j, buf, count);</span>
+<span class="fc" id="L168">                count = buf.length;</span>
+<span class="fc" id="L169">                flushBuffer();</span>
+<span class="fc" id="L170">                i = j;</span>
+<span class="fc" id="L171">            } else {</span>
+<span class="fc" id="L172">                int j = i + remaining;</span>
+<span class="fc" id="L173">                val.getBytes(i, j, buf, count);</span>
+<span class="fc" id="L174">                count += remaining;</span>
+<span class="fc" id="L175">                return;</span>
+            }
+<span class="fc" id="L177">        }</span>
+    }
+
+    public final void writeVal(Boolean val) throws IOException {
+<span class="nc bnc" id="L181" title="All 2 branches missed.">        if (val == null) {</span>
+<span class="nc" id="L182">            writeNull();</span>
+        } else {
+<span class="nc bnc" id="L184" title="All 2 branches missed.">            if (val) {</span>
+<span class="nc" id="L185">                writeTrue();</span>
+            } else {
+<span class="nc" id="L187">                writeFalse();</span>
+            }
+        }
+<span class="nc" id="L190">    }</span>
+
+    public final void writeVal(boolean val) throws IOException {
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        if (val) {</span>
+<span class="fc" id="L194">            writeTrue();</span>
+        } else {
+<span class="fc" id="L196">            writeFalse();</span>
+        }
+<span class="fc" id="L198">    }</span>
+
+    public final void writeTrue() throws IOException {
+<span class="fc" id="L201">        write((byte) 't', (byte) 'r', (byte) 'u', (byte) 'e');</span>
+<span class="fc" id="L202">    }</span>
+
+    public final void writeFalse() throws IOException {
+<span class="fc" id="L205">        write((byte) 'f', (byte) 'a', (byte) 'l', (byte) 's', (byte) 'e');</span>
+<span class="fc" id="L206">    }</span>
+
+    public final void writeVal(Short val) throws IOException {
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">        if (val == null) {</span>
+<span class="nc" id="L210">            writeNull();</span>
+        } else {
+<span class="fc" id="L212">            writeVal(val.intValue());</span>
+        }
+<span class="fc" id="L214">    }</span>
+
+    public final void writeVal(short val) throws IOException {
+<span class="fc" id="L217">        writeVal((int) val);</span>
+<span class="fc" id="L218">    }</span>
+
+    public final void writeVal(Integer val) throws IOException {
+<span class="pc bpc" id="L221" title="1 of 2 branches missed.">        if (val == null) {</span>
+<span class="nc" id="L222">            writeNull();</span>
+        } else {
+<span class="fc" id="L224">            writeVal(val.intValue());</span>
+        }
+<span class="fc" id="L226">    }</span>
+
+    public final void writeVal(int val) throws IOException {
+<span class="fc" id="L229">        StreamImplNumber.writeInt(this, val);</span>
+<span class="fc" id="L230">    }</span>
+
+
+    public final void writeVal(Long val) throws IOException {
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">        if (val == null) {</span>
+<span class="nc" id="L235">            writeNull();</span>
+        } else {
+<span class="fc" id="L237">            writeVal(val.longValue());</span>
+        }
+<span class="fc" id="L239">    }</span>
+
+    public final void writeVal(long val) throws IOException {
+<span class="fc" id="L242">        StreamImplNumber.writeLong(this, val);</span>
+<span class="fc" id="L243">    }</span>
+
+
+    public final void writeVal(Float val) throws IOException {
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">        if (val == null) {</span>
+<span class="nc" id="L248">            writeNull();</span>
+        } else {
+<span class="fc" id="L250">            writeVal(val.floatValue());</span>
+        }
+<span class="fc" id="L252">    }</span>
+
+    public final void writeVal(float val) throws IOException {
+<span class="fc" id="L255">        StreamImplNumber.writeFloat(this, val);</span>
+<span class="fc" id="L256">    }</span>
+
+    public final void writeVal(Double val) throws IOException {
+<span class="pc bpc" id="L259" title="1 of 2 branches missed.">        if (val == null) {</span>
+<span class="nc" id="L260">            writeNull();</span>
+        } else {
+<span class="fc" id="L262">            writeVal(val.doubleValue());</span>
+        }
+<span class="fc" id="L264">    }</span>
+
+    public final void writeVal(double val) throws IOException {
+<span class="fc" id="L267">        StreamImplNumber.writeDouble(this, val);</span>
+<span class="fc" id="L268">    }</span>
+
+    public final void writeVal(Any val) throws IOException {
+<span class="nc" id="L271">        val.writeTo(this);</span>
+<span class="nc" id="L272">    }</span>
+
+    public final void writeNull() throws IOException {
+<span class="fc" id="L275">        write((byte) 'n', (byte) 'u', (byte) 'l', (byte) 'l');</span>
+<span class="fc" id="L276">    }</span>
+
+    public final void writeEmptyObject() throws IOException {
+<span class="fc" id="L279">        write((byte) '{', (byte) '}');</span>
+<span class="fc" id="L280">    }</span>
+
+    public final void writeEmptyArray() throws IOException {
+<span class="fc" id="L283">        write((byte) '[', (byte) ']');</span>
+<span class="fc" id="L284">    }</span>
+
+    public final void writeArrayStart() throws IOException {
+<span class="fc" id="L287">        indention += currentConfig().indentionStep();</span>
+<span class="fc" id="L288">        write('[');</span>
+<span class="fc" id="L289">    }</span>
+
+    public final void writeMore() throws IOException {
+<span class="fc" id="L292">        write(',');</span>
+<span class="fc" id="L293">        writeIndention();</span>
+<span class="fc" id="L294">    }</span>
+
+    public void writeIndention() throws IOException {
+<span class="fc" id="L297">        writeIndention(0);</span>
+<span class="fc" id="L298">    }</span>
+
+    private void writeIndention(int delta) throws IOException {
+<span class="fc bfc" id="L301" title="All 2 branches covered.">        if (indention == 0) {</span>
+<span class="fc" id="L302">            return;</span>
+        }
+<span class="fc" id="L304">        write('\n');</span>
+<span class="fc" id="L305">        int toWrite = indention - delta;</span>
+<span class="fc" id="L306">        ensure(toWrite);</span>
+<span class="pc bpc" id="L307" title="1 of 4 branches missed.">        for (int i = 0; i &lt; toWrite &amp;&amp; count &lt; buf.length; i++) {</span>
+<span class="fc" id="L308">            buf[count++] = ' ';</span>
+        }
+<span class="fc" id="L310">    }</span>
+
+    public final void writeArrayEnd() throws IOException {
+<span class="fc" id="L313">        int indentionStep = currentConfig().indentionStep();</span>
+<span class="fc" id="L314">        writeIndention(indentionStep);</span>
+<span class="fc" id="L315">        indention -= indentionStep;</span>
+<span class="fc" id="L316">        write(']');</span>
+<span class="fc" id="L317">    }</span>
+
+    public final void writeObjectStart() throws IOException {
+<span class="fc" id="L320">        int indentionStep = currentConfig().indentionStep();</span>
+<span class="fc" id="L321">        indention += indentionStep;</span>
+<span class="fc" id="L322">        write('{');</span>
+<span class="fc" id="L323">    }</span>
+
+    public final void writeObjectField(String field) throws IOException {
+<span class="fc" id="L326">        writeVal(field);</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">        if (indention &gt; 0) {</span>
+<span class="fc" id="L328">            write((byte) ':', (byte) ' ');</span>
+        } else {
+<span class="fc" id="L330">            write(':');</span>
+        }
+<span class="fc" id="L332">    }</span>
+
+    public final void writeObjectField(Object key) throws IOException {
+<span class="nc" id="L335">        Encoder encoder = MapKeyEncoders.registerOrGetExisting(key.getClass());</span>
+<span class="nc" id="L336">        writeObjectField(key, encoder);</span>
+<span class="nc" id="L337">    }</span>
+
+    public final void writeObjectField(Object key, Encoder keyEncoder) throws IOException {
+<span class="fc" id="L340">        keyEncoder.encode(key, this);</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">        if (indention &gt; 0) {</span>
+<span class="fc" id="L342">            write((byte) ':', (byte) ' ');</span>
+        } else {
+<span class="fc" id="L344">            write(':');</span>
+        }
+<span class="fc" id="L346">    }</span>
+
+    public final void writeObjectEnd() throws IOException {
+<span class="fc" id="L349">        int indentionStep = currentConfig().indentionStep();</span>
+<span class="fc" id="L350">        writeIndention(indentionStep);</span>
+<span class="fc" id="L351">        indention -= indentionStep;</span>
+<span class="fc" id="L352">        write('}');</span>
+<span class="fc" id="L353">    }</span>
+
+    public final void writeVal(Object obj) throws IOException {
+<span class="fc bfc" id="L356" title="All 2 branches covered.">        if (obj == null) {</span>
+<span class="fc" id="L357">            writeNull();</span>
+<span class="fc" id="L358">            return;</span>
+        }
+<span class="fc" id="L360">        Class&lt;?&gt; clazz = obj.getClass();</span>
+<span class="fc" id="L361">        String cacheKey = currentConfig().getEncoderCacheKey(clazz);</span>
+<span class="fc" id="L362">        Codegen.getEncoder(cacheKey, clazz).encode(obj, this);</span>
+<span class="fc" id="L363">    }</span>
+
+    public final &lt;T&gt; void writeVal(TypeLiteral&lt;T&gt; typeLiteral, T obj) throws IOException {
+<span class="fc bfc" id="L366" title="All 2 branches covered.">        if (null == obj) {</span>
+<span class="fc" id="L367">            writeNull();</span>
+        } else {
+<span class="fc" id="L369">            Config config = currentConfig();</span>
+<span class="fc" id="L370">            String cacheKey = config.getEncoderCacheKey(typeLiteral.getType());</span>
+<span class="fc" id="L371">            Codegen.getEncoder(cacheKey, typeLiteral.getType()).encode(obj, this);</span>
+        }
+<span class="fc" id="L373">    }</span>
+
+    public final &lt;T&gt; void writeVal(Type type, T obj) throws IOException {
+<span class="pc bpc" id="L376" title="1 of 2 branches missed.">        if (null == obj) {</span>
+<span class="nc" id="L377">            writeNull();</span>
+        } else {
+<span class="fc" id="L379">            Config config = currentConfig();</span>
+<span class="fc" id="L380">            String cacheKey = config.getEncoderCacheKey(type);</span>
+<span class="fc" id="L381">            Codegen.getEncoder(cacheKey, type).encode(obj, this);</span>
+        }
+<span class="fc" id="L383">    }</span>
+
+    public Config currentConfig() {
+<span class="fc bfc" id="L386" title="All 2 branches covered.">        if (configCache != null) {</span>
+<span class="fc" id="L387">            return configCache;</span>
+        }
+<span class="fc" id="L389">        configCache = JsoniterSpi.getCurrentConfig();</span>
+<span class="fc" id="L390">        return configCache;</span>
+    }
+
+    public static void serialize(Config config, Object obj, OutputStream out) {
+<span class="nc" id="L394">        JsoniterSpi.setCurrentConfig(config);</span>
+        try {
+<span class="nc" id="L396">            serialize(obj, out);</span>
+        } finally {
+<span class="nc" id="L398">            JsoniterSpi.clearCurrentConfig();</span>
+        }
+
+<span class="nc" id="L401">    }</span>
+
+    public static void serialize(Object obj, OutputStream out) {
+<span class="nc" id="L404">        JsonStream stream = JsonStreamPool.borrowJsonStream();</span>
+        try {
+            try {
+<span class="nc" id="L407">                stream.reset(out);</span>
+<span class="nc" id="L408">                stream.writeVal(obj);</span>
+            } finally {
+<span class="nc" id="L410">                stream.close();</span>
+            }
+<span class="nc" id="L412">        } catch (IOException e) {</span>
+<span class="nc" id="L413">            throw new JsonException(e);</span>
+        } finally {
+<span class="nc" id="L415">            JsonStreamPool.returnJsonStream(stream);</span>
+        }
+<span class="nc" id="L417">    }</span>
+
+    public static void serialize(Config config, TypeLiteral typeLiteral, Object obj, OutputStream out) {
+<span class="nc" id="L420">        JsoniterSpi.setCurrentConfig(config);</span>
+        try {
+<span class="nc" id="L422">            serialize(typeLiteral, obj, out);</span>
+        } finally {
+<span class="nc" id="L424">            JsoniterSpi.clearCurrentConfig();</span>
+        }
+<span class="nc" id="L426">    }</span>
+
+    public static void serialize(TypeLiteral typeLiteral, Object obj, OutputStream out) {
+<span class="nc" id="L429">        JsonStream stream = JsonStreamPool.borrowJsonStream();</span>
+        try {
+            try {
+<span class="nc" id="L432">                stream.reset(out);</span>
+<span class="nc" id="L433">                stream.writeVal(typeLiteral, obj);</span>
+            } finally {
+<span class="nc" id="L435">                stream.close();</span>
+            }
+<span class="nc" id="L437">        } catch (IOException e) {</span>
+<span class="nc" id="L438">            throw new JsonException(e);</span>
+        } finally {
+<span class="nc" id="L440">            JsonStreamPool.returnJsonStream(stream);</span>
+        }
+<span class="nc" id="L442">    }</span>
+
+    public static void serialize(Type type, Object obj, OutputStream out) {
+<span class="fc" id="L445">        serialize(type, obj, out, false);</span>
+<span class="fc" id="L446">    }</span>
+
+    public static String serialize(Config config, Object obj) {
+<span class="fc" id="L449">        return serialize(config, obj.getClass(), obj);</span>
+    }
+
+    public static String serialize(Object obj) {
+<span class="fc" id="L453">        return serialize(obj.getClass(), obj);</span>
+    }
+
+    public static String serialize(Config config, TypeLiteral typeLiteral, Object obj) {
+<span class="nc" id="L457">        return serialize(config, typeLiteral.getType(), obj);</span>
+    }
+
+    private static String serialize(Config config, Type type, Object obj) {
+<span class="fc" id="L461">        final Config configBackup = JsoniterSpi.getCurrentConfig();</span>
+        // Set temporary config
+<span class="fc" id="L463">        JsoniterSpi.setCurrentConfig(config);</span>
+        try {
+<span class="fc" id="L465">            return serialize(type, obj);</span>
+        } finally {
+            // Revert old config
+<span class="fc" id="L468">            JsoniterSpi.setCurrentConfig(configBackup);</span>
+        }
+    }
+
+    public static String serialize(TypeLiteral typeLiteral, Object obj) {
+<span class="fc" id="L473">        return serialize(typeLiteral.getType(), obj);</span>
+    }
+
+    public static String serialize(boolean escapeUnicode, Type type, Object obj) {
+<span class="fc" id="L477">        final Config currentConfig = JsoniterSpi.getCurrentConfig();</span>
+<span class="fc" id="L478">        return serialize(currentConfig.copyBuilder().escapeUnicode(escapeUnicode).build(), type, obj);</span>
+    }
+
+    private static String serialize(Type type, Object obj) {
+<span class="fc" id="L482">        return serialize(type, obj, null, true);</span>
+    }
+
+    private static String serialize(Type type, Object obj, OutputStream out, boolean returnObjAsString) {
+<span class="fc" id="L486">        final JsonStream stream = JsonStreamPool.borrowJsonStream();</span>
+<span class="fc" id="L487">        final boolean escapeUnicode = JsoniterSpi.getCurrentConfig().escapeUnicode();</span>
+        try {
+            try {
+<span class="fc" id="L490">                stream.reset(out);</span>
+<span class="fc" id="L491">                stream.writeVal(type, obj);</span>
+            } finally {
+<span class="fc" id="L493">                stream.close();</span>
+            }
+<span class="fc bfc" id="L495" title="All 2 branches covered.">            if (!returnObjAsString) {</span>
+<span class="fc" id="L496">                return &quot;&quot;;</span>
+            }
+<span class="fc bfc" id="L498" title="All 2 branches covered.">            if (escapeUnicode) {</span>
+<span class="fc" id="L499">                return new String(stream.buf, 0, stream.count);</span>
+            } else {
+<span class="fc" id="L501">                return new String(stream.buf, 0, stream.count, &quot;UTF8&quot;);</span>
+            }
+<span class="nc" id="L503">        } catch (IOException e) {</span>
+<span class="nc" id="L504">            throw new JsonException(e);</span>
+        } finally {
+<span class="fc" id="L506">            JsonStreamPool.returnJsonStream(stream);</span>
+        }
+    }
+
+    public static void setMode(EncodingMode mode) {
+<span class="fc" id="L511">        Config newConfig = JsoniterSpi.getDefaultConfig().copyBuilder().encodingMode(mode).build();</span>
+<span class="fc" id="L512">        JsoniterSpi.setDefaultConfig(newConfig);</span>
+<span class="fc" id="L513">        JsoniterSpi.setCurrentConfig(newConfig);</span>
+
+<span class="fc" id="L515">    }</span>
+
+    public static void setIndentionStep(int indentionStep) {
+<span class="fc" id="L518">        Config newConfig = JsoniterSpi.getDefaultConfig().copyBuilder().indentionStep(indentionStep).build();</span>
+<span class="fc" id="L519">        JsoniterSpi.setDefaultConfig(newConfig);</span>
+<span class="fc" id="L520">        JsoniterSpi.setCurrentConfig(newConfig);</span>
+<span class="fc" id="L521">    }</span>
+
+    public static void registerNativeEncoder(Class clazz, Encoder.ReflectionEncoder encoder) {
+<span class="fc" id="L524">        CodegenImplNative.NATIVE_ENCODERS.put(clazz, encoder);</span>
+<span class="fc" id="L525">    }</span>
+
+    public Slice buffer() {
+<span class="fc" id="L528">        return new Slice(buf, 0, count);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ArrayWrapperAny.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.any</a> &gt; <span class="el_source">ArrayWrapperAny.java</span></div><h1>ArrayWrapperAny.java</h1><pre class="source lang-java linenums">package com.jsoniter.any;
+
+import com.jsoniter.ValueType;
+import com.jsoniter.output.JsonStream;
+
+import java.io.IOException;
+import java.lang.reflect.Array;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+class ArrayWrapperAny extends Any {
+
+    private final Object val;
+    private List&lt;Any&gt; cache;
+
+<span class="fc" id="L19">    public ArrayWrapperAny(Object val) {</span>
+<span class="fc" id="L20">        this.val = val;</span>
+<span class="fc" id="L21">    }</span>
+
+    @Override
+    public ValueType valueType() {
+<span class="fc" id="L25">        return ValueType.ARRAY;</span>
+    }
+
+    @Override
+    public Object object() {
+<span class="fc" id="L30">        fillCache();</span>
+<span class="fc" id="L31">        return cache;</span>
+    }
+
+    @Override
+    public boolean toBoolean() {
+<span class="fc bfc" id="L36" title="All 2 branches covered.">        return size() != 0;</span>
+    }
+
+    @Override
+    public int toInt() {
+<span class="fc" id="L41">        return size();</span>
+    }
+
+    @Override
+    public long toLong() {
+<span class="nc" id="L46">        return size();</span>
+    }
+
+    @Override
+    public float toFloat() {
+<span class="nc" id="L51">        return size();</span>
+    }
+
+    @Override
+    public double toDouble() {
+<span class="nc" id="L56">        return size();</span>
+    }
+
+    @Override
+    public BigInteger toBigInteger() {
+<span class="nc" id="L61">        return BigInteger.valueOf(size());</span>
+    }
+
+    @Override
+    public BigDecimal toBigDecimal() {
+<span class="nc" id="L66">        return BigDecimal.valueOf(size());</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (cache == null) {</span>
+<span class="fc" id="L72">            return JsonStream.serialize(val);</span>
+        } else {
+<span class="fc" id="L74">            fillCache();</span>
+<span class="fc" id="L75">            return JsonStream.serialize(cache);</span>
+        }
+    }
+
+    @Override
+    public void writeTo(JsonStream stream) throws IOException {
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">        if (cache == null) {</span>
+<span class="fc" id="L82">            stream.writeVal(val);</span>
+        } else {
+<span class="nc" id="L84">            fillCache();</span>
+<span class="nc" id="L85">            stream.writeVal(cache);</span>
+        }
+<span class="fc" id="L87">    }</span>
+
+    @Override
+    public int size() {
+<span class="fc" id="L91">        return Array.getLength(val);</span>
+    }
+
+    @Override
+    public Any get(int index) {
+<span class="fc" id="L96">        return fillCacheUntil(index);</span>
+    }
+
+    @Override
+    public Any get(Object[] keys, int idx) {
+<span class="pc bpc" id="L101" title="1 of 2 branches missed.">        if (idx == keys.length) {</span>
+<span class="nc" id="L102">            return this;</span>
+        }
+<span class="fc" id="L104">        Object key = keys[idx];</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">        if (isWildcard(key)) {</span>
+<span class="fc" id="L106">            fillCache();</span>
+<span class="fc" id="L107">            ArrayList&lt;Any&gt; result = new ArrayList&lt;Any&gt;();</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            for (Any element : cache) {</span>
+<span class="fc" id="L109">                Any mapped = element.get(keys, idx + 1);</span>
+<span class="pc bpc" id="L110" title="1 of 2 branches missed.">                if (mapped.valueType() != ValueType.INVALID) {</span>
+<span class="fc" id="L111">                    result.add(mapped);</span>
+                }
+<span class="fc" id="L113">            }</span>
+<span class="fc" id="L114">            return Any.rewrap(result);</span>
+        }
+        try {
+<span class="fc" id="L117">            return fillCacheUntil((Integer) key).get(keys, idx + 1);</span>
+<span class="nc" id="L118">        } catch (IndexOutOfBoundsException e) {</span>
+<span class="nc" id="L119">            return new NotFoundAny(keys, idx, object());</span>
+<span class="fc" id="L120">        } catch (ClassCastException e) {</span>
+<span class="fc" id="L121">            return new NotFoundAny(keys, idx, object());</span>
+        }
+    }
+
+    @Override
+    public Iterator&lt;Any&gt; iterator() {
+<span class="fc" id="L127">        return new WrapperIterator();</span>
+    }
+
+    private Any fillCacheUntil(int index) {
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (cache == null) {</span>
+<span class="fc" id="L132">            cache = new ArrayList&lt;Any&gt;();</span>
+        }
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (index &lt; cache.size()) {</span>
+<span class="fc" id="L135">            return cache.get(index);</span>
+        }
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">        for (int i = cache.size(); i &lt; size(); i++) {</span>
+<span class="fc" id="L138">            Any element = Any.wrap(Array.get(val, i));</span>
+<span class="fc" id="L139">            cache.add(element);</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">            if (index == i) {</span>
+<span class="fc" id="L141">                return element;</span>
+            }
+        }
+<span class="nc" id="L144">        return new NotFoundAny(index, val);</span>
+    }
+
+    private void fillCache() {
+<span class="fc bfc" id="L148" title="All 2 branches covered.">        if (cache == null) {</span>
+<span class="fc" id="L149">            cache = new ArrayList&lt;Any&gt;();</span>
+        }
+<span class="fc" id="L151">        int size = size();</span>
+<span class="pc bpc" id="L152" title="1 of 2 branches missed.">        if (cache.size() == size) {</span>
+<span class="nc" id="L153">            return;</span>
+        }
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        for (int i = cache.size(); i &lt; size; i++) {</span>
+<span class="fc" id="L156">            Any element = Any.wrap(Array.get(val, i));</span>
+<span class="fc" id="L157">            cache.add(element);</span>
+        }
+<span class="fc" id="L159">    }</span>
+
+    private class WrapperIterator implements Iterator&lt;Any&gt; {
+
+        private int index;
+        private final int size;
+
+<span class="fc" id="L166">        private WrapperIterator() {</span>
+<span class="fc" id="L167">            size = size();</span>
+<span class="fc" id="L168">        }</span>
+
+        @Override
+        public boolean hasNext() {
+<span class="fc bfc" id="L172" title="All 2 branches covered.">            return index &lt; size;</span>
+        }
+
+        @Override
+        public Any next() {
+<span class="fc bfc" id="L177" title="All 2 branches covered.">            if (cache == null) {</span>
+<span class="fc" id="L178">                cache = new ArrayList&lt;Any&gt;();</span>
+            }
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">            if (index == cache.size()) {</span>
+<span class="fc" id="L181">                cache.add(Any.wrap(Array.get(val, index)));</span>
+            }
+<span class="fc" id="L183">            return cache.get(index++);</span>
+        }
+
+        @Override
+        public void remove() {
+<span class="nc" id="L188">            throw new UnsupportedOperationException();</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

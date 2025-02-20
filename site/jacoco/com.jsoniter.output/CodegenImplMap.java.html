@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CodegenImplMap.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.output</a> &gt; <span class="el_source">CodegenImplMap.java</span></div><h1>CodegenImplMap.java</h1><pre class="source lang-java linenums">package com.jsoniter.output;
+
+import com.jsoniter.spi.ClassInfo;
+import com.jsoniter.spi.JsoniterSpi;
+
+import java.lang.reflect.Type;
+
+<span class="nc" id="L8">class CodegenImplMap {</span>
+    public static CodegenResult genMap(String cacheKey, ClassInfo classInfo) {
+<span class="fc bfc" id="L10" title="All 2 branches covered.">        boolean noIndention = JsoniterSpi.getCurrentConfig().indentionStep() == 0;</span>
+<span class="fc" id="L11">        Type[] typeArgs = classInfo.typeArgs;</span>
+<span class="fc" id="L12">        boolean isCollectionValueNullable = true;</span>
+<span class="pc bpc" id="L13" title="1 of 2 branches missed.">        if (cacheKey.endsWith(&quot;__value_not_nullable&quot;)) {</span>
+<span class="nc" id="L14">            isCollectionValueNullable = false;</span>
+        }
+<span class="fc" id="L16">        Type keyType = Object.class;</span>
+<span class="fc" id="L17">        Type valueType = Object.class;</span>
+<span class="fc bfc" id="L18" title="All 2 branches covered.">        if (typeArgs.length == 2) {</span>
+<span class="fc" id="L19">            keyType = typeArgs[0];</span>
+<span class="fc" id="L20">            valueType = typeArgs[1];</span>
+        }
+<span class="fc" id="L22">        CodegenResult ctx = new CodegenResult();</span>
+<span class="fc" id="L23">        ctx.append(&quot;public static void encode_(java.lang.Object obj, com.jsoniter.output.JsonStream stream) throws java.io.IOException {&quot;);</span>
+<span class="fc" id="L24">        ctx.append(&quot;if (obj == null) { stream.writeNull(); return; }&quot;);</span>
+<span class="fc" id="L25">        ctx.append(&quot;java.util.Map map = (java.util.Map)obj;&quot;);</span>
+<span class="fc" id="L26">        ctx.append(&quot;java.util.Iterator iter = map.entrySet().iterator();&quot;);</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        if (noIndention) {</span>
+<span class="fc" id="L28">            ctx.append(&quot;if(!iter.hasNext()) { return; }&quot;);</span>
+        } else {
+<span class="fc" id="L30">            ctx.append(&quot;if(!iter.hasNext()) { stream.write((byte)'{', (byte)'}'); return; }&quot;);</span>
+        }
+<span class="fc" id="L32">        ctx.append(&quot;java.util.Map.Entry entry = (java.util.Map.Entry)iter.next();&quot;);</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        if (noIndention) {</span>
+<span class="fc" id="L34">            ctx.buffer('{');</span>
+        } else {
+<span class="fc" id="L36">            ctx.append(&quot;stream.writeObjectStart(); stream.writeIndention();&quot;);</span>
+        }
+<span class="fc" id="L38">        genWriteMapKey(ctx, keyType, noIndention);</span>
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        if (isCollectionValueNullable) {</span>
+<span class="fc" id="L40">            ctx.append(&quot;if (entry.getValue() == null) { stream.writeNull(); } else {&quot;);</span>
+<span class="fc" id="L41">            CodegenImplNative.genWriteOp(ctx, &quot;entry.getValue()&quot;, valueType, true);</span>
+<span class="fc" id="L42">            ctx.append(&quot;}&quot;);</span>
+        } else {
+<span class="nc" id="L44">            CodegenImplNative.genWriteOp(ctx, &quot;entry.getValue()&quot;, valueType, false);</span>
+        }
+<span class="fc" id="L46">        ctx.append(&quot;while(iter.hasNext()) {&quot;);</span>
+<span class="fc" id="L47">        ctx.append(&quot;entry = (java.util.Map.Entry)iter.next();&quot;);</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (noIndention) {</span>
+<span class="fc" id="L49">            ctx.append(&quot;stream.write(',');&quot;);</span>
+        } else {
+<span class="fc" id="L51">            ctx.append(&quot;stream.writeMore();&quot;);</span>
+        }
+<span class="fc" id="L53">        genWriteMapKey(ctx, keyType, noIndention);</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        if (isCollectionValueNullable) {</span>
+<span class="fc" id="L55">            ctx.append(&quot;if (entry.getValue() == null) { stream.writeNull(); } else {&quot;);</span>
+<span class="fc" id="L56">            CodegenImplNative.genWriteOp(ctx, &quot;entry.getValue()&quot;, valueType, true);</span>
+<span class="fc" id="L57">            ctx.append(&quot;}&quot;);</span>
+        } else {
+<span class="nc" id="L59">            CodegenImplNative.genWriteOp(ctx, &quot;entry.getValue()&quot;, valueType, false);</span>
+        }
+<span class="fc" id="L61">        ctx.append(&quot;}&quot;);</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        if (noIndention) {</span>
+<span class="fc" id="L63">            ctx.buffer('}');</span>
+        } else {
+<span class="fc" id="L65">            ctx.append(&quot;stream.writeObjectEnd();&quot;);</span>
+        }
+<span class="fc" id="L67">        ctx.append(&quot;}&quot;);</span>
+<span class="fc" id="L68">        return ctx;</span>
+    }
+
+    private static void genWriteMapKey(CodegenResult ctx, Type keyType, boolean noIndention) {
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        if (keyType == Object.class) {</span>
+<span class="fc" id="L73">            ctx.append(&quot;stream.writeObjectField(entry.getKey());&quot;);</span>
+<span class="fc" id="L74">            return;</span>
+        }
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (keyType == String.class) {</span>
+<span class="fc" id="L77">            ctx.append(&quot;stream.writeVal((java.lang.String)entry.getKey());&quot;);</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        } else if (CodegenImplNative.NATIVE_ENCODERS.containsKey(keyType)) {</span>
+<span class="fc" id="L79">            ctx.append(&quot;stream.write('\&quot;');&quot;);</span>
+<span class="fc" id="L80">            ctx.append(String.format(&quot;stream.writeVal((%s)entry.getKey());&quot;, CodegenImplNative.getTypeName(keyType)));</span>
+<span class="fc" id="L81">            ctx.append(&quot;stream.write('\&quot;');&quot;);</span>
+        } else {
+<span class="fc" id="L83">            String mapCacheKey = JsoniterSpi.getMapKeyEncoderCacheKey(keyType);</span>
+<span class="fc" id="L84">            ctx.append(String.format(&quot;com.jsoniter.output.CodegenAccess.writeMapKey(\&quot;%s\&quot;, entry.getKey(), stream);&quot;, mapCacheKey));</span>
+        }
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">        if (noIndention) {</span>
+<span class="fc" id="L87">            ctx.append(&quot;stream.write(':');&quot;);</span>
+        } else {
+<span class="nc" id="L89">            ctx.append(&quot;stream.write((byte)':', (byte)' ');&quot;);</span>
+        }
+<span class="fc" id="L91">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

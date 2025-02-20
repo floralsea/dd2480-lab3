@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ObjectLazyAny.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.any</a> &gt; <span class="el_source">ObjectLazyAny.java</span></div><h1>ObjectLazyAny.java</h1><pre class="source lang-java linenums">package com.jsoniter.any;
+
+import com.jsoniter.*;
+import com.jsoniter.output.JsonStream;
+import com.jsoniter.spi.JsonException;
+import com.jsoniter.spi.TypeLiteral;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
+class ObjectLazyAny extends LazyAny {
+
+<span class="fc" id="L18">    private final static TypeLiteral&lt;Map&lt;String, Any&gt;&gt; typeLiteral = new TypeLiteral&lt;Map&lt;String, Any&gt;&gt;(){};</span>
+    private Map&lt;String, Any&gt; cache;
+    private int lastParsedPos;
+
+    public ObjectLazyAny(byte[] data, int head, int tail) {
+<span class="fc" id="L23">        super(data, head, tail);</span>
+<span class="fc" id="L24">        lastParsedPos = head;</span>
+<span class="fc" id="L25">    }</span>
+
+    @Override
+    public ValueType valueType() {
+<span class="nc" id="L29">        return ValueType.OBJECT;</span>
+    }
+
+    @Override
+    public Object object() {
+<span class="fc" id="L34">        fillCache();</span>
+<span class="fc" id="L35">        return cache;</span>
+    }
+
+    @Override
+    public boolean toBoolean() {
+        try {
+<span class="fc" id="L41">            JsonIterator iter = parse();</span>
+            try {
+<span class="fc" id="L43">                return CodegenAccess.readObjectStart(iter);</span>
+            } finally {
+<span class="fc" id="L45">                JsonIteratorPool.returnJsonIterator(iter);</span>
+            }
+<span class="nc" id="L47">        } catch (IOException e) {</span>
+<span class="nc" id="L48">            throw new JsonException(e);</span>
+        }
+    }
+
+    @Override
+    public int toInt() {
+<span class="nc" id="L54">        return size();</span>
+    }
+
+    @Override
+    public long toLong() {
+<span class="nc" id="L59">        return size();</span>
+    }
+
+    @Override
+    public float toFloat() {
+<span class="nc" id="L64">        return size();</span>
+    }
+
+    @Override
+    public double toDouble() {
+<span class="nc" id="L69">        return size();</span>
+    }
+
+    @Override
+    public BigInteger toBigInteger() {
+<span class="nc" id="L74">        return BigInteger.valueOf(size());</span>
+    }
+
+    @Override
+    public BigDecimal toBigDecimal() {
+<span class="nc" id="L79">        return BigDecimal.valueOf(size());</span>
+    }
+
+    @Override
+    public int size() {
+<span class="fc" id="L84">        fillCache();</span>
+<span class="fc" id="L85">        return cache.size();</span>
+    }
+
+    @Override
+    public Set&lt;String&gt; keys() {
+<span class="fc" id="L90">        fillCache();</span>
+<span class="fc" id="L91">        return (Set) cache.keySet();</span>
+    }
+
+    @Override
+    public Any get(Object key) {
+<span class="fc" id="L96">        Any element = fillCacheUntil(key);</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">        if (element == null) {</span>
+<span class="fc" id="L98">            return new NotFoundAny(key, object());</span>
+        }
+<span class="fc" id="L100">        return element;</span>
+    }
+
+    @Override
+    public Any get(Object[] keys, int idx) {
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (idx == keys.length) {</span>
+<span class="nc" id="L106">            return this;</span>
+        }
+<span class="fc" id="L108">        Object key = keys[idx];</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        if (isWildcard(key)) {</span>
+<span class="fc" id="L110">            fillCache();</span>
+<span class="fc" id="L111">            HashMap&lt;String, Any&gt; result = new HashMap&lt;String, Any&gt;();</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">            for (Map.Entry&lt;String, Any&gt; entry : cache.entrySet()) {</span>
+<span class="fc" id="L113">                Any mapped = entry.getValue().get(keys, idx + 1);</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">                if (mapped.valueType() != ValueType.INVALID) {</span>
+<span class="fc" id="L115">                    result.put(entry.getKey(), mapped);</span>
+                }
+<span class="fc" id="L117">            }</span>
+<span class="fc" id="L118">            return Any.rewrap(result);</span>
+        }
+<span class="fc" id="L120">        Any child = fillCacheUntil(key);</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">        if (child == null) {</span>
+<span class="fc" id="L122">            return new NotFoundAny(keys, idx, object());</span>
+        }
+<span class="fc" id="L124">        return child.get(keys, idx+1);</span>
+    }
+
+    private Any fillCacheUntil(Object target) {
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        if (lastParsedPos == tail) {</span>
+<span class="fc" id="L129">            return cache.get(target);</span>
+        }
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (cache == null) {</span>
+<span class="fc" id="L132">            cache = new HashMap&lt;String, Any&gt;(4);</span>
+        }
+<span class="fc" id="L134">        Any value = cache.get(target);</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        if (value != null) {</span>
+<span class="fc" id="L136">            return value;</span>
+        }
+<span class="fc" id="L138">        JsonIterator iter = JsonIteratorPool.borrowJsonIterator();</span>
+        try {
+<span class="fc" id="L140">            iter.reset(data, lastParsedPos, tail);</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">            if (lastParsedPos == head) {</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">                if (!CodegenAccess.readObjectStart(iter)) {</span>
+<span class="fc" id="L143">                    lastParsedPos = tail;</span>
+<span class="fc" id="L144">                    return null;</span>
+                }
+<span class="fc" id="L146">                String field = CodegenAccess.readObjectFieldAsString(iter);</span>
+<span class="fc" id="L147">                value = iter.readAny();</span>
+<span class="fc" id="L148">                cache.put(field, value);</span>
+<span class="pc bpc" id="L149" title="1 of 4 branches missed.">                if (field.hashCode() == target.hashCode() &amp;&amp; field.equals(target)) {</span>
+<span class="fc" id="L150">                    lastParsedPos = CodegenAccess.head(iter);</span>
+<span class="fc" id="L151">                    return value;</span>
+                }
+            }
+<span class="fc bfc" id="L154" title="All 2 branches covered.">            while (CodegenAccess.nextToken(iter) == ',') {</span>
+<span class="fc" id="L155">                String field = CodegenAccess.readObjectFieldAsString(iter);</span>
+<span class="fc" id="L156">                value = iter.readAny();</span>
+<span class="fc" id="L157">                cache.put(field, value);</span>
+<span class="pc bpc" id="L158" title="1 of 4 branches missed.">                if (field.hashCode() == target.hashCode() &amp;&amp; field.equals(target)) {</span>
+<span class="fc" id="L159">                    lastParsedPos = CodegenAccess.head(iter);</span>
+<span class="fc" id="L160">                    return value;</span>
+                }
+<span class="fc" id="L162">            }</span>
+<span class="fc" id="L163">            lastParsedPos = tail;</span>
+<span class="fc" id="L164">            return null;</span>
+<span class="nc" id="L165">        } catch (IOException e) {</span>
+<span class="nc" id="L166">            throw new JsonException(e);</span>
+        } finally {
+<span class="fc" id="L168">            JsonIteratorPool.returnJsonIterator(iter);</span>
+        }
+    }
+
+    private void fillCache() {
+<span class="fc bfc" id="L173" title="All 2 branches covered.">        if (lastParsedPos == tail) {</span>
+<span class="fc" id="L174">            return;</span>
+        }
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        if (cache == null) {</span>
+<span class="fc" id="L177">            cache = new HashMap&lt;String, Any&gt;(4);</span>
+        }
+<span class="fc" id="L179">        JsonIterator iter = JsonIteratorPool.borrowJsonIterator();</span>
+        try {
+<span class="fc" id="L181">            iter.reset(data, lastParsedPos, tail);</span>
+<span class="fc bfc" id="L182" title="All 2 branches covered.">            if (lastParsedPos == head) {</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">                if (!CodegenAccess.readObjectStart(iter)) {</span>
+<span class="fc" id="L184">                    lastParsedPos = tail;</span>
+<span class="fc" id="L185">                    return;</span>
+                }
+<span class="fc" id="L187">                String field = CodegenAccess.readObjectFieldAsString(iter);</span>
+<span class="fc" id="L188">                cache.put(field, iter.readAny());</span>
+            }
+<span class="fc bfc" id="L190" title="All 2 branches covered.">            while (CodegenAccess.nextToken(iter) == ',') {</span>
+<span class="fc" id="L191">                String field = CodegenAccess.readObjectFieldAsString(iter);</span>
+<span class="fc" id="L192">                cache.put(field, iter.readAny());</span>
+<span class="fc" id="L193">            }</span>
+<span class="fc" id="L194">            lastParsedPos = tail;</span>
+<span class="nc" id="L195">        } catch (IOException e) {</span>
+<span class="nc" id="L196">            throw new JsonException(e);</span>
+        } finally {
+<span class="fc" id="L198">            JsonIteratorPool.returnJsonIterator(iter);</span>
+        }
+<span class="fc" id="L200">    }</span>
+
+    @Override
+    public EntryIterator entries() {
+<span class="fc" id="L204">        return new LazyIterator();</span>
+    }
+
+
+    private class LazyIterator implements EntryIterator {
+
+        private Iterator&lt;Map.Entry&lt;String, Any&gt;&gt; mapIter;
+        private String key;
+        private Any value;
+
+<span class="fc" id="L214">        public LazyIterator() {</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">            if (cache == null) {</span>
+<span class="fc" id="L216">                cache = new HashMap&lt;String, Any&gt;();</span>
+            }
+<span class="fc" id="L218">            mapIter = new HashMap&lt;String, Any&gt;(cache).entrySet().iterator();</span>
+            try {
+<span class="fc bfc" id="L220" title="All 2 branches covered.">                if (lastParsedPos == head) {</span>
+<span class="fc" id="L221">                    JsonIterator iter = JsonIteratorPool.borrowJsonIterator();</span>
+                    try {
+<span class="fc" id="L223">                        iter.reset(data, lastParsedPos, tail);</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">                        if (!CodegenAccess.readObjectStart(iter)) {</span>
+<span class="nc" id="L225">                            lastParsedPos = tail;</span>
+                        } else {
+<span class="fc" id="L227">                            lastParsedPos = CodegenAccess.head(iter);</span>
+                        }
+                    } finally {
+<span class="fc" id="L230">                        JsonIteratorPool.returnJsonIterator(iter);</span>
+                    }
+                }
+<span class="nc" id="L233">            } catch (IOException e) {</span>
+<span class="nc" id="L234">                throw new JsonException(e);</span>
+<span class="fc" id="L235">            }</span>
+<span class="fc" id="L236">        }</span>
+
+        @Override
+        public boolean next() {
+<span class="fc bfc" id="L240" title="All 2 branches covered.">            if (lastParsedPos == tail) {</span>
+<span class="fc" id="L241">                return false;</span>
+            }
+<span class="fc bfc" id="L243" title="All 2 branches covered.">            if (mapIter != null) {</span>
+<span class="fc bfc" id="L244" title="All 2 branches covered.">                if (mapIter.hasNext()) {</span>
+<span class="fc" id="L245">                    Map.Entry&lt;String, Any&gt; entry = mapIter.next();</span>
+<span class="fc" id="L246">                    key = entry.getKey();</span>
+<span class="fc" id="L247">                    value = entry.getValue();</span>
+<span class="fc" id="L248">                    return true;</span>
+                } else {
+<span class="fc" id="L250">                    mapIter = null;</span>
+                }
+            }
+<span class="fc" id="L253">            JsonIterator iter = JsonIteratorPool.borrowJsonIterator();</span>
+            try {
+<span class="fc" id="L255">                iter.reset(data, lastParsedPos, tail);</span>
+<span class="fc" id="L256">                key = CodegenAccess.readObjectFieldAsString(iter);</span>
+<span class="fc" id="L257">                value = iter.readAny();</span>
+<span class="fc" id="L258">                cache.put(key, value);</span>
+<span class="fc bfc" id="L259" title="All 2 branches covered.">                if (CodegenAccess.nextToken(iter) == ',') {</span>
+<span class="fc" id="L260">                    lastParsedPos = CodegenAccess.head(iter);</span>
+                } else {
+<span class="fc" id="L262">                    lastParsedPos = tail;</span>
+                }
+<span class="nc" id="L264">            } catch (IOException e) {</span>
+<span class="nc" id="L265">                throw new JsonException(e);</span>
+            } finally {
+<span class="fc" id="L267">                JsonIteratorPool.returnJsonIterator(iter);</span>
+            }
+<span class="fc" id="L269">            return true;</span>
+        }
+
+        @Override
+        public String key() {
+<span class="fc" id="L274">            return key;</span>
+        }
+
+        @Override
+        public Any value() {
+<span class="fc" id="L279">            return value;</span>
+        }
+    }
+
+    @Override
+    public void writeTo(JsonStream stream) throws IOException {
+<span class="pc bpc" id="L285" title="1 of 2 branches missed.">        if (lastParsedPos == head) {</span>
+<span class="nc" id="L286">            super.writeTo(stream);</span>
+        } else {
+            // there might be modification
+<span class="fc" id="L289">            fillCache();</span>
+<span class="fc" id="L290">            stream.writeVal(typeLiteral, (Map) cache);</span>
+        }
+<span class="fc" id="L292">    }</span>
+
+    @Override
+    public String toString() {
+<span class="nc bnc" id="L296" title="All 2 branches missed.">        if (lastParsedPos == head) {</span>
+<span class="nc" id="L297">            return super.toString();</span>
+        } else {
+<span class="nc" id="L299">            fillCache();</span>
+<span class="nc" id="L300">            return JsonStream.serialize(cache);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

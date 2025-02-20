@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CodegenImplNative.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">CodegenImplNative.java</span></div><h1>CodegenImplNative.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">package com.jsoniter;</span>
+
+import com.jsoniter.any.Any;
+import com.jsoniter.spi.*;
+
+import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
+
+<span class="nc" id="L15">class CodegenImplNative {</span>
+<span class="fc" id="L16">    final static Map&lt;String, String&gt; NATIVE_READS = new HashMap&lt;String, String&gt;() {{</span>
+<span class="fc" id="L17">        put(&quot;float&quot;, &quot;iter.readFloat()&quot;);</span>
+<span class="fc" id="L18">        put(&quot;double&quot;, &quot;iter.readDouble()&quot;);</span>
+<span class="fc" id="L19">        put(&quot;boolean&quot;, &quot;iter.readBoolean()&quot;);</span>
+<span class="fc" id="L20">        put(&quot;byte&quot;, &quot;iter.readShort()&quot;);</span>
+<span class="fc" id="L21">        put(&quot;short&quot;, &quot;iter.readShort()&quot;);</span>
+<span class="fc" id="L22">        put(&quot;int&quot;, &quot;iter.readInt()&quot;);</span>
+<span class="fc" id="L23">        put(&quot;char&quot;, &quot;iter.readInt()&quot;);</span>
+<span class="fc" id="L24">        put(&quot;long&quot;, &quot;iter.readLong()&quot;);</span>
+<span class="fc" id="L25">        put(Float.class.getName(), &quot;(iter.readNull() ? null : java.lang.Float.valueOf(iter.readFloat()))&quot;);</span>
+<span class="fc" id="L26">        put(Double.class.getName(), &quot;(iter.readNull() ? null : java.lang.Double.valueOf(iter.readDouble()))&quot;);</span>
+<span class="fc" id="L27">        put(Boolean.class.getName(), &quot;(iter.readNull() ? null : java.lang.Boolean.valueOf(iter.readBoolean()))&quot;);</span>
+<span class="fc" id="L28">        put(Byte.class.getName(), &quot;(iter.readNull() ? null : java.lang.Byte.valueOf((byte)iter.readShort()))&quot;);</span>
+<span class="fc" id="L29">        put(Character.class.getName(), &quot;(iter.readNull() ? null : java.lang.Character.valueOf((char)iter.readShort()))&quot;);</span>
+<span class="fc" id="L30">        put(Short.class.getName(), &quot;(iter.readNull() ? null : java.lang.Short.valueOf(iter.readShort()))&quot;);</span>
+<span class="fc" id="L31">        put(Integer.class.getName(), &quot;(iter.readNull() ? null : java.lang.Integer.valueOf(iter.readInt()))&quot;);</span>
+<span class="fc" id="L32">        put(Long.class.getName(), &quot;(iter.readNull() ? null : java.lang.Long.valueOf(iter.readLong()))&quot;);</span>
+<span class="fc" id="L33">        put(BigDecimal.class.getName(), &quot;iter.readBigDecimal()&quot;);</span>
+<span class="fc" id="L34">        put(BigInteger.class.getName(), &quot;iter.readBigInteger()&quot;);</span>
+<span class="fc" id="L35">        put(String.class.getName(), &quot;iter.readString()&quot;);</span>
+<span class="fc" id="L36">        put(Object.class.getName(), &quot;iter.read()&quot;);</span>
+<span class="fc" id="L37">        put(Any.class.getName(), &quot;iter.readAny()&quot;);</span>
+    }};
+<span class="fc" id="L39">    final static Map&lt;Class, Decoder&gt; NATIVE_DECODERS = new HashMap&lt;Class, Decoder&gt;() {{</span>
+<span class="fc" id="L40">        put(float.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="nc" id="L43">                return iter.readFloat();</span>
+            }
+        });
+<span class="fc" id="L46">        put(Float.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">                return iter.readNull() ? null : iter.readFloat();</span>
+            }
+        });
+<span class="fc" id="L52">        put(double.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="fc" id="L55">                return iter.readDouble();</span>
+            }
+        });
+<span class="fc" id="L58">        put(Double.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">                return iter.readNull() ? null : iter.readDouble();</span>
+            }
+        });
+<span class="fc" id="L64">        put(boolean.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="fc" id="L67">                return iter.readBoolean();</span>
+            }
+        });
+<span class="fc" id="L70">        put(Boolean.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="nc bnc" id="L73" title="All 2 branches missed.">                return iter.readNull() ? null : iter.readBoolean();</span>
+            }
+        });
+<span class="fc" id="L76">        put(byte.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="nc" id="L79">                return Byte.valueOf((byte) iter.readShort());</span>
+            }
+        });
+<span class="fc" id="L82">        put(Byte.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="nc bnc" id="L85" title="All 2 branches missed.">                return iter.readNull() ? null : (byte)iter.readShort();</span>
+            }
+        });
+<span class="fc" id="L88">        put(short.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="nc" id="L91">                return iter.readShort();</span>
+            }
+        });
+<span class="fc" id="L94">        put(Short.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="nc bnc" id="L97" title="All 2 branches missed.">                return iter.readNull() ? null : iter.readShort();</span>
+            }
+        });
+<span class="fc" id="L100">        put(int.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="fc" id="L103">                return iter.readInt();</span>
+            }
+        });
+<span class="fc" id="L106">        put(Integer.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">                return iter.readNull() ? null : iter.readInt();</span>
+            }
+        });
+<span class="fc" id="L112">        put(char.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="nc" id="L115">                return (char)iter.readInt();</span>
+            }
+        });
+<span class="fc" id="L118">        put(Character.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="nc bnc" id="L121" title="All 2 branches missed.">                return iter.readNull() ? null : (char)iter.readInt();</span>
+            }
+        });
+<span class="fc" id="L124">        put(long.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="fc" id="L127">                return iter.readLong();</span>
+            }
+        });
+<span class="fc" id="L130">        put(Long.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="nc bnc" id="L133" title="All 2 branches missed.">                return iter.readNull() ? null : iter.readLong();</span>
+            }
+        });
+<span class="fc" id="L136">        put(BigDecimal.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="fc" id="L139">                return iter.readBigDecimal();</span>
+            }
+        });
+<span class="fc" id="L142">        put(BigInteger.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="nc" id="L145">                return iter.readBigInteger();</span>
+            }
+        });
+<span class="fc" id="L148">        put(String.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="fc" id="L151">                return iter.readString();</span>
+            }
+        });
+<span class="fc" id="L154">        put(Object.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="fc" id="L157">                return iter.read();</span>
+            }
+        });
+<span class="fc" id="L160">        put(Any.class, new Decoder() {</span>
+            @Override
+            public Object decode(JsonIterator iter) throws IOException {
+<span class="fc" id="L163">                return iter.readAny();</span>
+            }
+        });
+    }};
+
+    public static String genReadOp(Type type) {
+<span class="fc" id="L169">        String cacheKey = TypeLiteral.create(type).getDecoderCacheKey();</span>
+<span class="fc" id="L170">        return String.format(&quot;(%s)%s&quot;, getTypeName(type), genReadOp(cacheKey, type));</span>
+    }
+
+    public static String getTypeName(Type fieldType) {
+<span class="fc bfc" id="L174" title="All 2 branches covered.">        if (fieldType instanceof Class) {</span>
+<span class="fc" id="L175">            Class clazz = (Class) fieldType;</span>
+<span class="fc" id="L176">            return clazz.getCanonicalName();</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">        } else if (fieldType instanceof ParameterizedType) {</span>
+<span class="fc" id="L178">            ParameterizedType pType = (ParameterizedType) fieldType;</span>
+<span class="fc" id="L179">            Class clazz = (Class) pType.getRawType();</span>
+<span class="fc" id="L180">            return clazz.getCanonicalName();</span>
+<span class="pc bpc" id="L181" title="1 of 2 branches missed.">        } else if (fieldType instanceof WildcardType) {</span>
+<span class="fc" id="L182">            return Object.class.getCanonicalName();</span>
+        } else {
+<span class="nc" id="L184">            throw new JsonException(&quot;unsupported type: &quot; + fieldType);</span>
+        }
+    }
+
+    static String genField(Binding field) {
+<span class="fc" id="L189">        String fieldCacheKey = field.decoderCacheKey();</span>
+<span class="fc" id="L190">        Type fieldType = field.valueType;</span>
+<span class="fc" id="L191">        return String.format(&quot;(%s)%s&quot;, getTypeName(fieldType), genReadOp(fieldCacheKey, fieldType));</span>
+
+    }
+
+    private static String genReadOp(String cacheKey, Type valueType) {
+        // the field decoder might be registered directly
+<span class="fc" id="L197">        Decoder decoder = JsoniterSpi.getDecoder(cacheKey);</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">        if (decoder == null) {</span>
+            // if cache key is for field, and there is no field decoder specified
+            // update cache key for normal type
+<span class="fc" id="L201">            cacheKey = TypeLiteral.create(valueType).getDecoderCacheKey();</span>
+<span class="fc" id="L202">            decoder = JsoniterSpi.getDecoder(cacheKey);</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">            if (decoder == null) {</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">                if (valueType instanceof Class) {</span>
+<span class="fc" id="L205">                    Class clazz = (Class) valueType;</span>
+<span class="fc" id="L206">                    String nativeRead = NATIVE_READS.get(clazz.getCanonicalName());</span>
+<span class="fc bfc" id="L207" title="All 2 branches covered.">                    if (nativeRead != null) {</span>
+<span class="fc" id="L208">                        return nativeRead;</span>
+                    }
+<span class="fc bfc" id="L210" title="All 2 branches covered.">                } else if (valueType instanceof WildcardType) {</span>
+<span class="fc" id="L211">                    return NATIVE_READS.get(Object.class.getCanonicalName());</span>
+                }
+<span class="fc" id="L213">                Codegen.getDecoder(cacheKey, valueType);</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">                if (Codegen.canStaticAccess(cacheKey)) {</span>
+<span class="nc" id="L215">                    return String.format(&quot;%s.decode_(iter)&quot;, cacheKey);</span>
+                } else {
+                    // can not use static &quot;decode_&quot; method to access, go through codegen cache
+<span class="fc" id="L218">                    return String.format(&quot;com.jsoniter.CodegenAccess.read(\&quot;%s\&quot;, iter)&quot;, cacheKey);</span>
+                }
+            }
+        }
+<span class="pc bpc" id="L222" title="1 of 2 branches missed.">        if (valueType == boolean.class) {</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">            if (!(decoder instanceof Decoder.BooleanDecoder)) {</span>
+<span class="nc" id="L224">                throw new JsonException(&quot;decoder for &quot; + cacheKey + &quot;must implement Decoder.BooleanDecoder&quot;);</span>
+            }
+<span class="nc" id="L226">            return String.format(&quot;com.jsoniter.CodegenAccess.readBoolean(\&quot;%s\&quot;, iter)&quot;, cacheKey);</span>
+        }
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">        if (valueType == byte.class) {</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">            if (!(decoder instanceof Decoder.ShortDecoder)) {</span>
+<span class="nc" id="L230">                throw new JsonException(&quot;decoder for &quot; + cacheKey + &quot;must implement Decoder.ShortDecoder&quot;);</span>
+            }
+<span class="nc" id="L232">            return String.format(&quot;com.jsoniter.CodegenAccess.readShort(\&quot;%s\&quot;, iter)&quot;, cacheKey);</span>
+        }
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">        if (valueType == short.class) {</span>
+<span class="nc bnc" id="L235" title="All 2 branches missed.">            if (!(decoder instanceof Decoder.ShortDecoder)) {</span>
+<span class="nc" id="L236">                throw new JsonException(&quot;decoder for &quot; + cacheKey + &quot;must implement Decoder.ShortDecoder&quot;);</span>
+            }
+<span class="nc" id="L238">            return String.format(&quot;com.jsoniter.CodegenAccess.readShort(\&quot;%s\&quot;, iter)&quot;, cacheKey);</span>
+        }
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">        if (valueType == char.class) {</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">            if (!(decoder instanceof Decoder.IntDecoder)) {</span>
+<span class="nc" id="L242">                throw new JsonException(&quot;decoder for &quot; + cacheKey + &quot;must implement Decoder.IntDecoder&quot;);</span>
+            }
+<span class="nc" id="L244">            return String.format(&quot;com.jsoniter.CodegenAccess.readInt(\&quot;%s\&quot;, iter)&quot;, cacheKey);</span>
+        }
+<span class="fc bfc" id="L246" title="All 2 branches covered.">        if (valueType == int.class) {</span>
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">            if (!(decoder instanceof Decoder.IntDecoder)) {</span>
+<span class="nc" id="L248">                throw new JsonException(&quot;decoder for &quot; + cacheKey + &quot;must implement Decoder.IntDecoder&quot;);</span>
+            }
+<span class="fc" id="L250">            return String.format(&quot;com.jsoniter.CodegenAccess.readInt(\&quot;%s\&quot;, iter)&quot;, cacheKey);</span>
+        }
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">        if (valueType == long.class) {</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">            if (!(decoder instanceof Decoder.LongDecoder)) {</span>
+<span class="nc" id="L254">                throw new JsonException(&quot;decoder for &quot; + cacheKey + &quot;must implement Decoder.LongDecoder&quot;);</span>
+            }
+<span class="nc" id="L256">            return String.format(&quot;com.jsoniter.CodegenAccess.readLong(\&quot;%s\&quot;, iter)&quot;, cacheKey);</span>
+        }
+<span class="pc bpc" id="L258" title="1 of 2 branches missed.">        if (valueType == float.class) {</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">            if (!(decoder instanceof Decoder.FloatDecoder)) {</span>
+<span class="nc" id="L260">                throw new JsonException(&quot;decoder for &quot; + cacheKey + &quot;must implement Decoder.FloatDecoder&quot;);</span>
+            }
+<span class="nc" id="L262">            return String.format(&quot;com.jsoniter.CodegenAccess.readFloat(\&quot;%s\&quot;, iter)&quot;, cacheKey);</span>
+        }
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">        if (valueType == double.class) {</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">            if (!(decoder instanceof Decoder.DoubleDecoder)) {</span>
+<span class="nc" id="L266">                throw new JsonException(&quot;decoder for &quot; + cacheKey + &quot;must implement Decoder.DoubleDecoder&quot;);</span>
+            }
+<span class="nc" id="L268">            return String.format(&quot;com.jsoniter.CodegenAccess.readDouble(\&quot;%s\&quot;, iter)&quot;, cacheKey);</span>
+        }
+<span class="fc" id="L270">        return String.format(&quot;com.jsoniter.CodegenAccess.read(\&quot;%s\&quot;, iter)&quot;, cacheKey);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

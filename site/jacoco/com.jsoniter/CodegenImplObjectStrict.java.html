@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CodegenImplObjectStrict.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">CodegenImplObjectStrict.java</span></div><h1>CodegenImplObjectStrict.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">package com.jsoniter;</span>
+
+import com.jsoniter.spi.*;
+
+import java.lang.reflect.Method;
+import java.util.*;
+
+import static com.jsoniter.CodegenImplObjectHash.appendVarDef;
+import static com.jsoniter.CodegenImplObjectHash.appendWrappers;
+
+<span class="nc" id="L11">class CodegenImplObjectStrict {</span>
+
+<span class="fc" id="L13">    final static Map&lt;String, String&gt; DEFAULT_VALUES = new HashMap&lt;String, String&gt;() {{</span>
+<span class="fc" id="L14">        put(&quot;float&quot;, &quot;0.0f&quot;);</span>
+<span class="fc" id="L15">        put(&quot;double&quot;, &quot;0.0d&quot;);</span>
+<span class="fc" id="L16">        put(&quot;boolean&quot;, &quot;false&quot;);</span>
+<span class="fc" id="L17">        put(&quot;byte&quot;, &quot;0&quot;);</span>
+<span class="fc" id="L18">        put(&quot;short&quot;, &quot;0&quot;);</span>
+<span class="fc" id="L19">        put(&quot;int&quot;, &quot;0&quot;);</span>
+<span class="fc" id="L20">        put(&quot;char&quot;, &quot;0&quot;);</span>
+<span class="fc" id="L21">        put(&quot;long&quot;, &quot;0&quot;);</span>
+    }};
+
+    public static String genObjectUsingStrict(ClassDescriptor desc) {
+<span class="fc" id="L25">        List&lt;Binding&gt; allBindings = desc.allDecoderBindings();</span>
+<span class="fc" id="L26">        int lastRequiredIdx = assignMaskForRequiredProperties(allBindings);</span>
+<span class="fc bfc" id="L27" title="All 2 branches covered.">        boolean hasRequiredBinding = lastRequiredIdx &gt; 0;</span>
+<span class="fc" id="L28">        long expectedTracker = Long.MAX_VALUE &gt;&gt; (63 - lastRequiredIdx);</span>
+<span class="fc" id="L29">        Map&lt;Integer, Object&gt; trieTree = buildTriTree(allBindings);</span>
+<span class="fc" id="L30">        StringBuilder lines = new StringBuilder();</span>
+        /*
+         * only strict mode binding support missing/extra properties tracking
+         * 1. if null, return null
+         * 2. if empty, return empty
+         * 3. bind first field
+         * 4. while (nextToken() == ',') { bind more fields }
+         * 5. handle missing/extra properties
+         * 6. create obj with args (if ctor binding)
+         * 7. assign fields to obj (if ctor binding)
+         * 8. apply multi param wrappers
+         */
+        // === if null, return null
+<span class="fc" id="L43">        append(lines, &quot;java.lang.Object existingObj = com.jsoniter.CodegenAccess.resetExistingObject(iter);&quot;);</span>
+<span class="fc" id="L44">        append(lines, &quot;if (iter.readNull()) { return null; }&quot;);</span>
+        // === if input is empty obj, return empty obj
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        if (hasRequiredBinding) {</span>
+<span class="fc" id="L47">            append(lines, &quot;long tracker = 0;&quot;);</span>
+        }
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        if (desc.ctor.parameters.isEmpty()) {</span>
+<span class="fc" id="L50">            append(lines, &quot;{{clazz}} obj = {{newInst}};&quot;);</span>
+<span class="fc" id="L51">            append(lines, &quot;if (!com.jsoniter.CodegenAccess.readObjectStart(iter)) {&quot;);</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">            if (hasRequiredBinding) {</span>
+<span class="fc" id="L53">                appendMissingRequiredProperties(lines, desc);</span>
+            }
+<span class="fc" id="L55">            append(lines, &quot;return obj;&quot;);</span>
+<span class="fc" id="L56">            append(lines, &quot;}&quot;);</span>
+            // because obj can be created without binding
+            // so that fields and setters can be bind to obj directly without temp var
+        } else {
+<span class="fc bfc" id="L60" title="All 2 branches covered.">            for (Binding parameter : desc.ctor.parameters) {</span>
+<span class="fc" id="L61">                appendVarDef(lines, parameter);</span>
+<span class="fc" id="L62">            }</span>
+<span class="fc" id="L63">            append(lines, &quot;if (!com.jsoniter.CodegenAccess.readObjectStart(iter)) {&quot;);</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">            if (hasRequiredBinding) {</span>
+<span class="nc" id="L65">                appendMissingRequiredProperties(lines, desc);</span>
+            } else {
+<span class="fc" id="L67">                append(lines, &quot;return {{newInst}};&quot;);</span>
+            }
+<span class="fc" id="L69">            append(lines, &quot;}&quot;);</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">            for (Binding field : desc.fields) {</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">                if (field.fromNames.length == 0) {</span>
+<span class="fc" id="L72">                    continue;</span>
+                }
+<span class="nc" id="L74">                appendVarDef(lines, field);</span>
+<span class="nc" id="L75">            }</span>
+<span class="pc bpc" id="L76" title="1 of 2 branches missed.">            for (Binding setter : desc.setters) {</span>
+<span class="nc" id="L77">                appendVarDef(lines, setter);</span>
+<span class="nc" id="L78">            }</span>
+        }
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (WrapperDescriptor wrapper : desc.bindingTypeWrappers) {</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            for (Binding param : wrapper.parameters) {</span>
+<span class="fc" id="L82">                appendVarDef(lines, param);</span>
+<span class="fc" id="L83">            }</span>
+<span class="fc" id="L84">        }</span>
+        // === bind first field
+<span class="fc bfc" id="L86" title="All 4 branches covered.">        if (desc.onExtraProperties != null || !desc.keyValueTypeWrappers.isEmpty()) {</span>
+<span class="fc" id="L87">            append(lines, &quot;java.util.Map extra = null;&quot;);</span>
+        }
+<span class="fc" id="L89">        append(lines, &quot;com.jsoniter.spi.Slice field = com.jsoniter.CodegenAccess.readObjectFieldAsSlice(iter);&quot;);</span>
+<span class="fc" id="L90">        append(lines, &quot;boolean once = true;&quot;);</span>
+<span class="fc" id="L91">        append(lines, &quot;while (once) {&quot;);</span>
+<span class="fc" id="L92">        append(lines, &quot;once = false;&quot;);</span>
+<span class="fc" id="L93">        String rendered = renderTriTree(trieTree);</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        if (desc.ctor.parameters.isEmpty()) {</span>
+            // if not field or setter, the value will set to temp variable
+<span class="fc bfc" id="L96" title="All 2 branches covered.">            for (Binding field : desc.fields) {</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">                if (field.fromNames.length == 0) {</span>
+<span class="fc" id="L98">                    continue;</span>
+                }
+<span class="fc" id="L100">                rendered = updateBindingSetOp(rendered, field);</span>
+<span class="fc" id="L101">            }</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            for (Binding setter : desc.setters) {</span>
+<span class="fc" id="L103">                rendered = updateBindingSetOp(rendered, setter);</span>
+<span class="fc" id="L104">            }</span>
+        }
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (hasAnythingToBindFrom(allBindings)) {</span>
+<span class="fc" id="L107">            append(lines, &quot;switch (field.len()) {&quot;);</span>
+<span class="fc" id="L108">            append(lines, rendered);</span>
+<span class="fc" id="L109">            append(lines, &quot;}&quot;); // end of switch</span>
+        }
+<span class="fc" id="L111">        appendOnUnknownField(lines, desc);</span>
+<span class="fc" id="L112">        append(lines, &quot;}&quot;); // end of while</span>
+        // === bind all fields
+<span class="fc" id="L114">        append(lines, &quot;while (com.jsoniter.CodegenAccess.nextToken(iter) == ',') {&quot;);</span>
+<span class="fc" id="L115">        append(lines, &quot;field = com.jsoniter.CodegenAccess.readObjectFieldAsSlice(iter);&quot;);</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        if (hasAnythingToBindFrom(allBindings)) {</span>
+<span class="fc" id="L117">            append(lines, &quot;switch (field.len()) {&quot;);</span>
+<span class="fc" id="L118">            append(lines, rendered);</span>
+<span class="fc" id="L119">            append(lines, &quot;}&quot;); // end of switch</span>
+        }
+<span class="fc" id="L121">        appendOnUnknownField(lines, desc);</span>
+<span class="fc" id="L122">        append(lines, &quot;}&quot;); // end of while</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        if (hasRequiredBinding) {</span>
+<span class="fc" id="L124">            append(lines, &quot;if (tracker != &quot; + expectedTracker + &quot;L) {&quot;);</span>
+<span class="fc" id="L125">            appendMissingRequiredProperties(lines, desc);</span>
+<span class="fc" id="L126">            append(lines, &quot;}&quot;);</span>
+        }
+<span class="fc bfc" id="L128" title="All 2 branches covered.">        if (desc.onExtraProperties != null) {</span>
+<span class="fc" id="L129">            appendSetExtraProperteis(lines, desc);</span>
+        }
+<span class="fc bfc" id="L131" title="All 2 branches covered.">        if (!desc.keyValueTypeWrappers.isEmpty()) {</span>
+<span class="fc" id="L132">            appendSetExtraToKeyValueTypeWrappers(lines, desc);</span>
+        }
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (!desc.ctor.parameters.isEmpty()) {</span>
+<span class="fc" id="L135">            append(lines, String.format(&quot;%s obj = {{newInst}};&quot;, CodegenImplNative.getTypeName(desc.clazz)));</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">            for (Binding field : desc.fields) {</span>
+<span class="pc bpc" id="L137" title="1 of 2 branches missed.">                if (field.fromNames.length == 0) {</span>
+<span class="fc" id="L138">                    continue;</span>
+                }
+<span class="nc" id="L140">                append(lines, String.format(&quot;obj.%s = _%s_;&quot;, field.field.getName(), field.name));</span>
+<span class="nc" id="L141">            }</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">            for (Binding setter : desc.setters) {</span>
+<span class="nc" id="L143">                append(lines, String.format(&quot;obj.%s(_%s_);&quot;, setter.method.getName(), setter.name));</span>
+<span class="nc" id="L144">            }</span>
+        }
+<span class="fc" id="L146">        appendWrappers(desc.bindingTypeWrappers, lines);</span>
+<span class="fc" id="L147">        append(lines, &quot;return obj;&quot;);</span>
+<span class="fc" id="L148">        return lines.toString()</span>
+<span class="fc" id="L149">                .replace(&quot;{{clazz}}&quot;, desc.clazz.getCanonicalName())</span>
+<span class="fc" id="L150">                .replace(&quot;{{newInst}}&quot;, CodegenImplObjectHash.genNewInstCode(desc.clazz, desc.ctor));</span>
+    }
+
+    private static void appendSetExtraToKeyValueTypeWrappers(StringBuilder lines, ClassDescriptor desc) {
+<span class="fc" id="L154">        append(lines, &quot;java.util.Iterator extraIter = extra.entrySet().iterator();&quot;);</span>
+<span class="fc" id="L155">        append(lines, &quot;while(extraIter.hasNext()) {&quot;);</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        for (Method wrapper : desc.keyValueTypeWrappers) {</span>
+<span class="fc" id="L157">            append(lines, &quot;java.util.Map.Entry entry = (java.util.Map.Entry)extraIter.next();&quot;);</span>
+<span class="fc" id="L158">            append(lines, &quot;String key = entry.getKey().toString();&quot;);</span>
+<span class="fc" id="L159">            append(lines, &quot;com.jsoniter.any.Any value = (com.jsoniter.any.Any)entry.getValue();&quot;);</span>
+<span class="fc" id="L160">            append(lines, String.format(&quot;obj.%s(key, value.object());&quot;, wrapper.getName()));</span>
+<span class="fc" id="L161">        }</span>
+<span class="fc" id="L162">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L163">    }</span>
+
+    private static void appendSetExtraProperteis(StringBuilder lines, ClassDescriptor desc) {
+<span class="fc" id="L166">        Binding onExtraProperties = desc.onExtraProperties;</span>
+<span class="pc bpc" id="L167" title="1 of 2 branches missed.">        if (GenericsHelper.isSameClass(onExtraProperties.valueType, Map.class)) {</span>
+<span class="pc bpc" id="L168" title="1 of 2 branches missed.">            if (onExtraProperties.field != null) {</span>
+<span class="fc" id="L169">                append(lines, String.format(&quot;obj.%s = extra;&quot;, onExtraProperties.field.getName()));</span>
+            } else {
+<span class="nc" id="L171">                append(lines, String.format(&quot;obj.%s(extra);&quot;, onExtraProperties.method.getName()));</span>
+            }
+<span class="fc" id="L173">            return;</span>
+        }
+<span class="nc" id="L175">        throw new JsonException(&quot;extra properties can only be Map&quot;);</span>
+    }
+
+    private static boolean hasAnythingToBindFrom(List&lt;Binding&gt; allBindings) {
+<span class="fc bfc" id="L179" title="All 2 branches covered.">        for (Binding binding : allBindings) {</span>
+<span class="fc bfc" id="L180" title="All 2 branches covered.">            if (binding.fromNames.length &gt; 0) {</span>
+<span class="fc" id="L181">                return true;</span>
+            }
+<span class="fc" id="L183">        }</span>
+<span class="fc" id="L184">        return false;</span>
+    }
+
+    private static int assignMaskForRequiredProperties(List&lt;Binding&gt; allBindings) {
+<span class="fc" id="L188">        int requiredIdx = 0;</span>
+<span class="fc bfc" id="L189" title="All 2 branches covered.">        for (Binding binding : allBindings) {</span>
+<span class="fc bfc" id="L190" title="All 2 branches covered.">            if (binding.asMissingWhenNotPresent) {</span>
+                // one bit represent one field
+<span class="fc" id="L192">                binding.mask = 1L &lt;&lt; requiredIdx;</span>
+<span class="fc" id="L193">                requiredIdx++;</span>
+            }
+<span class="fc" id="L195">        }</span>
+<span class="pc bpc" id="L196" title="1 of 2 branches missed.">        if (requiredIdx &gt; 63) {</span>
+<span class="nc" id="L197">            throw new JsonException(&quot;too many required properties to track&quot;);</span>
+        }
+<span class="fc" id="L199">        return requiredIdx;</span>
+    }
+
+    private static String updateBindingSetOp(String rendered, Binding binding) {
+<span class="fc bfc" id="L203" title="All 2 branches covered.">        if (binding.fromNames.length == 0) {</span>
+<span class="fc" id="L204">            return rendered;</span>
+        }
+        while (true) {
+<span class="fc" id="L207">            String marker = &quot;_&quot; + binding.name + &quot;_&quot;;</span>
+<span class="fc" id="L208">            int start = rendered.indexOf(marker);</span>
+<span class="fc bfc" id="L209" title="All 2 branches covered.">            if (start == -1) {</span>
+<span class="fc" id="L210">                return rendered;</span>
+            }
+<span class="fc" id="L212">            int middle = rendered.indexOf('=', start);</span>
+<span class="pc bpc" id="L213" title="1 of 2 branches missed.">            if (middle == -1) {</span>
+<span class="nc" id="L214">                throw new JsonException(&quot;can not find = in: &quot; + rendered + &quot; ,at &quot; + start);</span>
+            }
+<span class="fc" id="L216">            middle += 1;</span>
+<span class="fc" id="L217">            int end = rendered.indexOf(';', start);</span>
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">            if (end == -1) {</span>
+<span class="nc" id="L219">                throw new JsonException(&quot;can not find ; in: &quot; + rendered + &quot; ,at &quot; + start);</span>
+            }
+<span class="fc" id="L221">            String op = rendered.substring(middle, end);</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">            if (binding.field != null) {</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">                if (binding.valueCanReuse) {</span>
+                    // reuse; then field set
+<span class="fc" id="L225">                    rendered = String.format(&quot;%scom.jsoniter.CodegenAccess.setExistingObject(iter, obj.%s);obj.%s=%s%s&quot;,</span>
+<span class="fc" id="L226">                            rendered.substring(0, start), binding.field.getName(), binding.field.getName(), op, rendered.substring(end));</span>
+                } else {
+                    // just field set
+<span class="fc" id="L229">                    rendered = String.format(&quot;%sobj.%s=%s%s&quot;,</span>
+<span class="fc" id="L230">                            rendered.substring(0, start), binding.field.getName(), op, rendered.substring(end));</span>
+                }
+            } else {
+                // method set
+<span class="fc" id="L234">                rendered = String.format(&quot;%sobj.%s(%s)%s&quot;,</span>
+<span class="fc" id="L235">                        rendered.substring(0, start), binding.method.getName(), op, rendered.substring(end));</span>
+            }
+<span class="fc" id="L237">        }</span>
+    }
+
+    private static void appendMissingRequiredProperties(StringBuilder lines, ClassDescriptor desc) {
+<span class="fc" id="L241">        append(lines, &quot;java.util.List missingFields = new java.util.ArrayList();&quot;);</span>
+<span class="fc bfc" id="L242" title="All 2 branches covered.">        for (Binding binding : desc.allDecoderBindings()) {</span>
+<span class="fc bfc" id="L243" title="All 2 branches covered.">            if (binding.asMissingWhenNotPresent) {</span>
+<span class="fc" id="L244">                long mask = binding.mask;</span>
+<span class="fc" id="L245">                append(lines, String.format(&quot;com.jsoniter.CodegenAccess.addMissingField(missingFields, tracker, %sL, \&quot;%s\&quot;);&quot;,</span>
+<span class="fc" id="L246">                        mask, binding.name));</span>
+            }
+<span class="fc" id="L248">        }</span>
+<span class="pc bpc" id="L249" title="1 of 4 branches missed.">        if (desc.onMissingProperties == null || !desc.ctor.parameters.isEmpty()) {</span>
+<span class="fc" id="L250">            append(lines, &quot;throw new com.jsoniter.spi.JsonException(\&quot;missing required properties: \&quot; + missingFields);&quot;);</span>
+        } else {
+<span class="pc bpc" id="L252" title="1 of 2 branches missed.">            if (desc.onMissingProperties.field != null) {</span>
+<span class="fc" id="L253">                append(lines, String.format(&quot;obj.%s = missingFields;&quot;, desc.onMissingProperties.field.getName()));</span>
+            } else {
+<span class="nc" id="L255">                append(lines, String.format(&quot;obj.%s(missingFields);&quot;, desc.onMissingProperties.method.getName()));</span>
+            }
+        }
+<span class="fc" id="L258">    }</span>
+
+    private static void appendOnUnknownField(StringBuilder lines, ClassDescriptor desc) {
+<span class="fc bfc" id="L261" title="All 4 branches covered.">        if (desc.asExtraForUnknownProperties &amp;&amp; desc.onExtraProperties == null) {</span>
+<span class="fc" id="L262">            append(lines, &quot;throw new com.jsoniter.spi.JsonException('extra property: ' + field.toString());&quot;.replace('\'', '&quot;'));</span>
+        } else {
+<span class="fc bfc" id="L264" title="All 4 branches covered.">            if (desc.asExtraForUnknownProperties || !desc.keyValueTypeWrappers.isEmpty()) {</span>
+<span class="fc" id="L265">                append(lines, &quot;if (extra == null) { extra = new java.util.HashMap(); }&quot;);</span>
+<span class="fc" id="L266">                append(lines, &quot;extra.put(field.toString(), iter.readAny());&quot;);</span>
+            } else {
+<span class="fc" id="L268">                append(lines, &quot;iter.skip();&quot;);</span>
+            }
+        }
+<span class="fc" id="L271">    }</span>
+
+    private static Map&lt;Integer, Object&gt; buildTriTree(List&lt;Binding&gt; allBindings) {
+<span class="fc" id="L274">        Map&lt;Integer, Object&gt; trieTree = new HashMap&lt;Integer, Object&gt;();</span>
+<span class="fc bfc" id="L275" title="All 2 branches covered.">        for (Binding field : allBindings) {</span>
+<span class="fc bfc" id="L276" title="All 2 branches covered.">            for (String fromName : field.fromNames) {</span>
+<span class="fc" id="L277">                byte[] fromNameBytes = fromName.getBytes();</span>
+<span class="fc" id="L278">                Map&lt;Byte, Object&gt; current = (Map&lt;Byte, Object&gt;) trieTree.get(fromNameBytes.length);</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">                if (current == null) {</span>
+<span class="fc" id="L280">                    current = new HashMap&lt;Byte, Object&gt;();</span>
+<span class="fc" id="L281">                    trieTree.put(fromNameBytes.length, current);</span>
+                }
+<span class="fc bfc" id="L283" title="All 2 branches covered.">                for (int i = 0; i &lt; fromNameBytes.length - 1; i++) {</span>
+<span class="fc" id="L284">                    byte b = fromNameBytes[i];</span>
+<span class="fc" id="L285">                    Map&lt;Byte, Object&gt; next = (Map&lt;Byte, Object&gt;) current.get(b);</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">                    if (next == null) {</span>
+<span class="fc" id="L287">                        next = new HashMap&lt;Byte, Object&gt;();</span>
+<span class="fc" id="L288">                        current.put(b, next);</span>
+                    }
+<span class="fc" id="L290">                    current = next;</span>
+                }
+<span class="fc" id="L292">                current.put(fromNameBytes[fromNameBytes.length - 1], field);</span>
+            }
+<span class="fc" id="L294">        }</span>
+<span class="fc" id="L295">        return trieTree;</span>
+    }
+
+    private static String renderTriTree(Map&lt;Integer, Object&gt; trieTree) {
+<span class="fc" id="L299">        StringBuilder switchBody = new StringBuilder();</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">        for (Map.Entry&lt;Integer, Object&gt; entry : trieTree.entrySet()) {</span>
+<span class="fc" id="L301">            Integer len = entry.getKey();</span>
+<span class="fc" id="L302">            append(switchBody, &quot;case &quot; + len + &quot;: &quot;);</span>
+<span class="fc" id="L303">            Map&lt;Byte, Object&gt; current = (Map&lt;Byte, Object&gt;) entry.getValue();</span>
+<span class="fc" id="L304">            addFieldDispatch(switchBody, len, 0, current, new ArrayList&lt;Byte&gt;());</span>
+<span class="fc" id="L305">            append(switchBody, &quot;break;&quot;);</span>
+<span class="fc" id="L306">        }</span>
+<span class="fc" id="L307">        return switchBody.toString();</span>
+    }
+
+    private static void addFieldDispatch(
+            StringBuilder lines, int len, int i, Map&lt;Byte, Object&gt; current, List&lt;Byte&gt; bytesToCompare) {
+<span class="fc bfc" id="L312" title="All 2 branches covered.">        for (Map.Entry&lt;Byte, Object&gt; entry : current.entrySet()) {</span>
+<span class="fc" id="L313">            Byte b = entry.getKey();</span>
+<span class="fc bfc" id="L314" title="All 2 branches covered.">            if (i == len - 1) {</span>
+<span class="fc" id="L315">                append(lines, &quot;if (&quot;);</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">                for (int j = 0; j &lt; bytesToCompare.size(); j++) {</span>
+<span class="fc" id="L317">                    Byte a = bytesToCompare.get(j);</span>
+<span class="fc" id="L318">                    append(lines, String.format(&quot;field.at(%d)==%s &amp;&amp; &quot;, i - bytesToCompare.size() + j, a));</span>
+                }
+<span class="fc" id="L320">                append(lines, String.format(&quot;field.at(%d)==%s&quot;, i, b));</span>
+<span class="fc" id="L321">                append(lines, &quot;) {&quot;);</span>
+<span class="fc" id="L322">                Binding field = (Binding) entry.getValue();</span>
+<span class="fc bfc" id="L323" title="All 2 branches covered.">                if (field.asExtraWhenPresent) {</span>
+<span class="fc" id="L324">                    append(lines, String.format(</span>
+<span class="fc" id="L325">                            &quot;throw new com.jsoniter.spi.JsonException('extra property: %s');&quot;.replace('\'', '&quot;'),</span>
+                            field.name));
+<span class="pc bpc" id="L327" title="1 of 2 branches missed.">                } else if (field.shouldSkip) {</span>
+<span class="nc" id="L328">                    append(lines, &quot;iter.skip();&quot;);</span>
+<span class="nc" id="L329">                    append(lines, &quot;continue;&quot;);</span>
+                } else {
+<span class="fc" id="L331">                    append(lines, String.format(&quot;_%s_ = %s;&quot;, field.name, CodegenImplNative.genField(field)));</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">                    if (field.asMissingWhenNotPresent) {</span>
+<span class="fc" id="L333">                        append(lines, &quot;tracker = tracker | &quot; + field.mask + &quot;L;&quot;);</span>
+                    }
+<span class="fc" id="L335">                    append(lines, &quot;continue;&quot;);</span>
+                }
+<span class="fc" id="L337">                append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L338">                continue;</span>
+            }
+<span class="fc" id="L340">            Map&lt;Byte, Object&gt; next = (Map&lt;Byte, Object&gt;) entry.getValue();</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">            if (next.size() == 1) {</span>
+<span class="fc" id="L342">                ArrayList&lt;Byte&gt; nextBytesToCompare = new ArrayList&lt;Byte&gt;(bytesToCompare);</span>
+<span class="fc" id="L343">                nextBytesToCompare.add(b);</span>
+<span class="fc" id="L344">                addFieldDispatch(lines, len, i + 1, next, nextBytesToCompare);</span>
+<span class="fc" id="L345">                continue;</span>
+            }
+<span class="fc" id="L347">            append(lines, &quot;if (&quot;);</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">            for (int j = 0; j &lt; bytesToCompare.size(); j++) {</span>
+<span class="fc" id="L349">                Byte a = bytesToCompare.get(j);</span>
+<span class="fc" id="L350">                append(lines, String.format(&quot;field.at(%d)==%s &amp;&amp; &quot;, i - bytesToCompare.size() + j, a));</span>
+            }
+<span class="fc" id="L352">            append(lines, String.format(&quot;field.at(%d)==%s&quot;, i, b));</span>
+<span class="fc" id="L353">            append(lines, &quot;) {&quot;);</span>
+<span class="fc" id="L354">            addFieldDispatch(lines, len, i + 1, next, new ArrayList&lt;Byte&gt;());</span>
+<span class="fc" id="L355">            append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L356">        }</span>
+<span class="fc" id="L357">    }</span>
+
+    public static String genObjectUsingSkip(Class clazz, ConstructorDescriptor ctor) {
+<span class="nc" id="L360">        StringBuilder lines = new StringBuilder();</span>
+<span class="nc" id="L361">        append(lines, &quot;if (iter.readNull()) { return null; }&quot;);</span>
+<span class="nc" id="L362">        append(lines, &quot;{{clazz}} obj = {{newInst}};&quot;);</span>
+<span class="nc" id="L363">        append(lines, &quot;iter.skip();&quot;);</span>
+<span class="nc" id="L364">        append(lines, &quot;return obj;&quot;);</span>
+<span class="nc" id="L365">        return lines.toString()</span>
+<span class="nc" id="L366">                .replace(&quot;{{clazz}}&quot;, clazz.getCanonicalName())</span>
+<span class="nc" id="L367">                .replace(&quot;{{newInst}}&quot;, CodegenImplObjectHash.genNewInstCode(clazz, ctor));</span>
+    }
+
+    static void append(StringBuilder lines, String str) {
+<span class="fc" id="L371">        lines.append(str);</span>
+<span class="fc" id="L372">        lines.append(&quot;\n&quot;);</span>
+<span class="fc" id="L373">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

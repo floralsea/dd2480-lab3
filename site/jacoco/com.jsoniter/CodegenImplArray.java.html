@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CodegenImplArray.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">CodegenImplArray.java</span></div><h1>CodegenImplArray.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">package com.jsoniter;</span>
+
+import com.jsoniter.spi.ClassInfo;
+
+import java.lang.reflect.Type;
+import java.util.*;
+
+<span class="nc" id="L8">class CodegenImplArray {</span>
+
+<span class="fc" id="L10">    final static Set&lt;Class&gt; WITH_CAPACITY_COLLECTION_CLASSES = new HashSet&lt;Class&gt;() {{</span>
+<span class="fc" id="L11">        add(ArrayList.class);</span>
+<span class="fc" id="L12">        add(HashSet.class);</span>
+<span class="fc" id="L13">        add(Vector.class);</span>
+    }};
+
+    public static String genArray(ClassInfo classInfo) {
+<span class="fc" id="L17">        Class compType = classInfo.clazz.getComponentType();</span>
+<span class="pc bpc" id="L18" title="1 of 2 branches missed.">        if (compType.isArray()) {</span>
+<span class="nc" id="L19">            throw new IllegalArgumentException(&quot;nested array not supported: &quot; + classInfo.clazz.getCanonicalName());</span>
+        }
+<span class="fc" id="L21">        StringBuilder lines = new StringBuilder();</span>
+<span class="fc" id="L22">        append(lines, &quot;com.jsoniter.CodegenAccess.resetExistingObject(iter);&quot;);</span>
+<span class="fc" id="L23">        append(lines, &quot;byte nextToken = com.jsoniter.CodegenAccess.readByte(iter);&quot;);</span>
+<span class="fc" id="L24">        append(lines, &quot;if (nextToken != '[') {&quot;);</span>
+<span class="fc" id="L25">        append(lines, &quot;if (nextToken == 'n') {&quot;);</span>
+<span class="fc" id="L26">        append(lines, &quot;com.jsoniter.CodegenAccess.skipFixedBytes(iter, 3);&quot;);</span>
+<span class="fc" id="L27">        append(lines, &quot;com.jsoniter.CodegenAccess.resetExistingObject(iter); return null;&quot;);</span>
+<span class="fc" id="L28">        append(lines, &quot;} else {&quot;);</span>
+<span class="fc" id="L29">        append(lines, &quot;nextToken = com.jsoniter.CodegenAccess.nextToken(iter);&quot;);</span>
+<span class="fc" id="L30">        append(lines, &quot;if (nextToken == 'n') {&quot;);</span>
+<span class="fc" id="L31">        append(lines, &quot;com.jsoniter.CodegenAccess.skipFixedBytes(iter, 3);&quot;);</span>
+<span class="fc" id="L32">        append(lines, &quot;com.jsoniter.CodegenAccess.resetExistingObject(iter); return null;&quot;);</span>
+<span class="fc" id="L33">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L34">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L35">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L36">        append(lines, &quot;nextToken = com.jsoniter.CodegenAccess.nextToken(iter);&quot;);</span>
+<span class="fc" id="L37">        append(lines, &quot;if (nextToken == ']') {&quot;);</span>
+<span class="fc" id="L38">        append(lines, &quot;return new {{comp}}[0];&quot;);</span>
+<span class="fc" id="L39">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L40">        append(lines, &quot;com.jsoniter.CodegenAccess.unreadByte(iter);&quot;);</span>
+<span class="fc" id="L41">        append(lines, &quot;{{comp}} a1 = {{op}};&quot;);</span>
+<span class="fc" id="L42">        append(lines, &quot;if (!com.jsoniter.CodegenAccess.nextTokenIsComma(iter)) {&quot;);</span>
+<span class="fc" id="L43">        append(lines, &quot;return new {{comp}}[]{ a1 };&quot;);</span>
+<span class="fc" id="L44">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L45">        append(lines, &quot;{{comp}} a2 = {{op}};&quot;);</span>
+<span class="fc" id="L46">        append(lines, &quot;if (!com.jsoniter.CodegenAccess.nextTokenIsComma(iter)) {&quot;);</span>
+<span class="fc" id="L47">        append(lines, &quot;return new {{comp}}[]{ a1, a2 };&quot;);</span>
+<span class="fc" id="L48">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L49">        append(lines, &quot;{{comp}} a3 = {{op}};&quot;);</span>
+<span class="fc" id="L50">        append(lines, &quot;if (!com.jsoniter.CodegenAccess.nextTokenIsComma(iter)) {&quot;);</span>
+<span class="fc" id="L51">        append(lines, &quot;return new {{comp}}[]{ a1, a2, a3 };&quot;);</span>
+<span class="fc" id="L52">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L53">        append(lines, &quot;{{comp}} a4 = ({{comp}}) {{op}};&quot;);</span>
+<span class="fc" id="L54">        append(lines, &quot;if (!com.jsoniter.CodegenAccess.nextTokenIsComma(iter)) {&quot;);</span>
+<span class="fc" id="L55">        append(lines, &quot;return new {{comp}}[]{ a1, a2, a3, a4 };&quot;);</span>
+<span class="fc" id="L56">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L57">        append(lines, &quot;{{comp}} a5 = ({{comp}}) {{op}};&quot;);</span>
+<span class="fc" id="L58">        append(lines, &quot;{{comp}}[] arr = new {{comp}}[10];&quot;);</span>
+<span class="fc" id="L59">        append(lines, &quot;arr[0] = a1;&quot;);</span>
+<span class="fc" id="L60">        append(lines, &quot;arr[1] = a2;&quot;);</span>
+<span class="fc" id="L61">        append(lines, &quot;arr[2] = a3;&quot;);</span>
+<span class="fc" id="L62">        append(lines, &quot;arr[3] = a4;&quot;);</span>
+<span class="fc" id="L63">        append(lines, &quot;arr[4] = a5;&quot;);</span>
+<span class="fc" id="L64">        append(lines, &quot;int i = 5;&quot;);</span>
+<span class="fc" id="L65">        append(lines, &quot;while (com.jsoniter.CodegenAccess.nextTokenIsComma(iter)) {&quot;);</span>
+<span class="fc" id="L66">        append(lines, &quot;if (i == arr.length) {&quot;);</span>
+<span class="fc" id="L67">        append(lines, &quot;{{comp}}[] newArr = new {{comp}}[arr.length * 2];&quot;);</span>
+<span class="fc" id="L68">        append(lines, &quot;System.arraycopy(arr, 0, newArr, 0, arr.length);&quot;);</span>
+<span class="fc" id="L69">        append(lines, &quot;arr = newArr;&quot;);</span>
+<span class="fc" id="L70">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L71">        append(lines, &quot;arr[i++] = {{op}};&quot;);</span>
+<span class="fc" id="L72">        append(lines, &quot;}&quot;);</span>
+//        append(lines, &quot;if (c != ']') { com.jsoniter.CodegenAccess.reportIncompleteArray(iter); }&quot;);
+<span class="fc" id="L74">        append(lines, &quot;{{comp}}[] result = new {{comp}}[i];&quot;);</span>
+<span class="fc" id="L75">        append(lines, &quot;System.arraycopy(arr, 0, result, 0, i);&quot;);</span>
+<span class="fc" id="L76">        append(lines, &quot;return result;&quot;);</span>
+<span class="fc" id="L77">        return lines.toString().replace(</span>
+<span class="fc" id="L78">                &quot;{{comp}}&quot;, compType.getCanonicalName()).replace(</span>
+<span class="fc" id="L79">                &quot;{{op}}&quot;, CodegenImplNative.genReadOp(compType));</span>
+    }
+
+    public static String genCollection(ClassInfo classInfo) {
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (WITH_CAPACITY_COLLECTION_CLASSES.contains(classInfo.clazz)) {</span>
+<span class="fc" id="L84">            return CodegenImplArray.genCollectionWithCapacity(classInfo.clazz, classInfo.typeArgs[0]);</span>
+        } else {
+<span class="fc" id="L86">            return CodegenImplArray.genCollectionWithoutCapacity(classInfo.clazz, classInfo.typeArgs[0]);</span>
+        }
+    }
+
+    private static String genCollectionWithCapacity(Class clazz, Type compType) {
+<span class="fc" id="L91">        StringBuilder lines = new StringBuilder();</span>
+<span class="fc" id="L92">        append(lines, &quot;{{clazz}} col = ({{clazz}})com.jsoniter.CodegenAccess.resetExistingObject(iter);&quot;);</span>
+<span class="fc" id="L93">        append(lines, &quot;if (iter.readNull()) { com.jsoniter.CodegenAccess.resetExistingObject(iter); return null; }&quot;);</span>
+<span class="fc" id="L94">        append(lines, &quot;if (!com.jsoniter.CodegenAccess.readArrayStart(iter)) {&quot;);</span>
+<span class="fc" id="L95">        append(lines, &quot;return col == null ? new {{clazz}}(0): ({{clazz}})com.jsoniter.CodegenAccess.reuseCollection(col);&quot;);</span>
+<span class="fc" id="L96">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L97">        append(lines, &quot;Object a1 = {{op}};&quot;);</span>
+<span class="fc" id="L98">        append(lines, &quot;if (com.jsoniter.CodegenAccess.nextToken(iter) != ',') {&quot;);</span>
+<span class="fc" id="L99">        append(lines, &quot;{{clazz}} obj = col == null ? new {{clazz}}(1): ({{clazz}})com.jsoniter.CodegenAccess.reuseCollection(col);&quot;);</span>
+<span class="fc" id="L100">        append(lines, &quot;obj.add(a1);&quot;);</span>
+<span class="fc" id="L101">        append(lines, &quot;return obj;&quot;);</span>
+<span class="fc" id="L102">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L103">        append(lines, &quot;Object a2 = {{op}};&quot;);</span>
+<span class="fc" id="L104">        append(lines, &quot;if (com.jsoniter.CodegenAccess.nextToken(iter) != ',') {&quot;);</span>
+<span class="fc" id="L105">        append(lines, &quot;{{clazz}} obj = col == null ? new {{clazz}}(2): ({{clazz}})com.jsoniter.CodegenAccess.reuseCollection(col);&quot;);</span>
+<span class="fc" id="L106">        append(lines, &quot;obj.add(a1);&quot;);</span>
+<span class="fc" id="L107">        append(lines, &quot;obj.add(a2);&quot;);</span>
+<span class="fc" id="L108">        append(lines, &quot;return obj;&quot;);</span>
+<span class="fc" id="L109">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L110">        append(lines, &quot;Object a3 = {{op}};&quot;);</span>
+<span class="fc" id="L111">        append(lines, &quot;if (com.jsoniter.CodegenAccess.nextToken(iter) != ',') {&quot;);</span>
+<span class="fc" id="L112">        append(lines, &quot;{{clazz}} obj = col == null ? new {{clazz}}(3): ({{clazz}})com.jsoniter.CodegenAccess.reuseCollection(col);&quot;);</span>
+<span class="fc" id="L113">        append(lines, &quot;obj.add(a1);&quot;);</span>
+<span class="fc" id="L114">        append(lines, &quot;obj.add(a2);&quot;);</span>
+<span class="fc" id="L115">        append(lines, &quot;obj.add(a3);&quot;);</span>
+<span class="fc" id="L116">        append(lines, &quot;return obj;&quot;);</span>
+<span class="fc" id="L117">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L118">        append(lines, &quot;Object a4 = {{op}};&quot;);</span>
+<span class="fc" id="L119">        append(lines, &quot;{{clazz}} obj = col == null ? new {{clazz}}(8): ({{clazz}})com.jsoniter.CodegenAccess.reuseCollection(col);&quot;);</span>
+<span class="fc" id="L120">        append(lines, &quot;obj.add(a1);&quot;);</span>
+<span class="fc" id="L121">        append(lines, &quot;obj.add(a2);&quot;);</span>
+<span class="fc" id="L122">        append(lines, &quot;obj.add(a3);&quot;);</span>
+<span class="fc" id="L123">        append(lines, &quot;obj.add(a4);&quot;);</span>
+<span class="fc" id="L124">        append(lines, &quot;while (com.jsoniter.CodegenAccess.nextToken(iter) == ',') {&quot;);</span>
+<span class="fc" id="L125">        append(lines, &quot;obj.add({{op}});&quot;);</span>
+<span class="fc" id="L126">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L127">        append(lines, &quot;return obj;&quot;);</span>
+<span class="fc" id="L128">        return lines.toString().replace(</span>
+<span class="fc" id="L129">                &quot;{{clazz}}&quot;, clazz.getName()).replace(</span>
+<span class="fc" id="L130">                &quot;{{op}}&quot;, CodegenImplNative.genReadOp(compType));</span>
+    }
+
+    private static String genCollectionWithoutCapacity(Class clazz, Type compType) {
+<span class="fc" id="L134">        StringBuilder lines = new StringBuilder();</span>
+<span class="fc" id="L135">        append(lines, &quot;if (iter.readNull()) { com.jsoniter.CodegenAccess.resetExistingObject(iter); return null; }&quot;);</span>
+<span class="fc" id="L136">        append(lines, &quot;{{clazz}} col = ({{clazz}})com.jsoniter.CodegenAccess.resetExistingObject(iter);&quot;);</span>
+<span class="fc" id="L137">        append(lines, &quot;if (!com.jsoniter.CodegenAccess.readArrayStart(iter)) {&quot;);</span>
+<span class="fc" id="L138">        append(lines, &quot;return col == null ? new {{clazz}}(): ({{clazz}})com.jsoniter.CodegenAccess.reuseCollection(col);&quot;);</span>
+<span class="fc" id="L139">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L140">        append(lines, &quot;Object a1 = {{op}};&quot;);</span>
+<span class="fc" id="L141">        append(lines, &quot;if (com.jsoniter.CodegenAccess.nextToken(iter) != ',') {&quot;);</span>
+<span class="fc" id="L142">        append(lines, &quot;{{clazz}} obj = col == null ? new {{clazz}}(): ({{clazz}})com.jsoniter.CodegenAccess.reuseCollection(col);&quot;);</span>
+<span class="fc" id="L143">        append(lines, &quot;obj.add(a1);&quot;);</span>
+<span class="fc" id="L144">        append(lines, &quot;return obj;&quot;);</span>
+<span class="fc" id="L145">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L146">        append(lines, &quot;Object a2 = {{op}};&quot;);</span>
+<span class="fc" id="L147">        append(lines, &quot;if (com.jsoniter.CodegenAccess.nextToken(iter) != ',') {&quot;);</span>
+<span class="fc" id="L148">        append(lines, &quot;{{clazz}} obj = col == null ? new {{clazz}}(): ({{clazz}})com.jsoniter.CodegenAccess.reuseCollection(col);&quot;);</span>
+<span class="fc" id="L149">        append(lines, &quot;obj.add(a1);&quot;);</span>
+<span class="fc" id="L150">        append(lines, &quot;obj.add(a2);&quot;);</span>
+<span class="fc" id="L151">        append(lines, &quot;return obj;&quot;);</span>
+<span class="fc" id="L152">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L153">        append(lines, &quot;Object a3 = {{op}};&quot;);</span>
+<span class="fc" id="L154">        append(lines, &quot;if (com.jsoniter.CodegenAccess.nextToken(iter) != ',') {&quot;);</span>
+<span class="fc" id="L155">        append(lines, &quot;{{clazz}} obj = col == null ? new {{clazz}}(): ({{clazz}})com.jsoniter.CodegenAccess.reuseCollection(col);&quot;);</span>
+<span class="fc" id="L156">        append(lines, &quot;obj.add(a1);&quot;);</span>
+<span class="fc" id="L157">        append(lines, &quot;obj.add(a2);&quot;);</span>
+<span class="fc" id="L158">        append(lines, &quot;obj.add(a3);&quot;);</span>
+<span class="fc" id="L159">        append(lines, &quot;return obj;&quot;);</span>
+<span class="fc" id="L160">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L161">        append(lines, &quot;Object a4 = {{op}};&quot;);</span>
+<span class="fc" id="L162">        append(lines, &quot;{{clazz}} obj = col == null ? new {{clazz}}(): ({{clazz}})com.jsoniter.CodegenAccess.reuseCollection(col);&quot;);</span>
+<span class="fc" id="L163">        append(lines, &quot;obj.add(a1);&quot;);</span>
+<span class="fc" id="L164">        append(lines, &quot;obj.add(a2);&quot;);</span>
+<span class="fc" id="L165">        append(lines, &quot;obj.add(a3);&quot;);</span>
+<span class="fc" id="L166">        append(lines, &quot;obj.add(a4);&quot;);</span>
+<span class="fc" id="L167">        append(lines, &quot;while (com.jsoniter.CodegenAccess.nextToken(iter) == ',') {&quot;);</span>
+<span class="fc" id="L168">        append(lines, &quot;obj.add({{op}});&quot;);</span>
+<span class="fc" id="L169">        append(lines, &quot;}&quot;);</span>
+//        append(lines, &quot;if (c != ']') { com.jsoniter.CodegenAccess.reportIncompleteArray(iter); }&quot;);
+<span class="fc" id="L171">        append(lines, &quot;return obj;&quot;);</span>
+<span class="fc" id="L172">        return lines.toString().replace(</span>
+<span class="fc" id="L173">                &quot;{{clazz}}&quot;, clazz.getName()).replace(</span>
+<span class="fc" id="L174">                &quot;{{op}}&quot;, CodegenImplNative.genReadOp(compType));</span>
+    }
+
+    private static void append(StringBuilder lines, String str) {
+<span class="fc" id="L178">        lines.append(str);</span>
+<span class="fc" id="L179">        lines.append(&quot;\n&quot;);</span>
+<span class="fc" id="L180">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

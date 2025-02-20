@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Any.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.any</a> &gt; <span class="el_source">Any.java</span></div><h1>Any.java</h1><pre class="source lang-java linenums">package com.jsoniter.any;
+
+import com.jsoniter.output.CodegenAccess;
+import com.jsoniter.spi.JsonException;
+import com.jsoniter.ValueType;
+import com.jsoniter.output.JsonStream;
+import com.jsoniter.spi.Encoder;
+import com.jsoniter.spi.TypeLiteral;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.*;
+
+<span class="fc" id="L15">public abstract class Any implements Iterable&lt;Any&gt; {</span>
+
+    static {
+<span class="fc" id="L18">        registerEncoders();</span>
+    }
+
+    public static void registerEncoders() {
+<span class="fc" id="L22">        Encoder.ReflectionEncoder anyEncoder = new Encoder.ReflectionEncoder() {</span>
+            @Override
+            public void encode(Object obj, JsonStream stream) throws IOException {
+<span class="fc" id="L25">                Any any = (Any) obj;</span>
+<span class="fc" id="L26">                any.writeTo(stream);</span>
+<span class="fc" id="L27">            }</span>
+
+            @Override
+            public Any wrap(Object obj) {
+<span class="nc" id="L31">                return (Any) obj;</span>
+            }
+        };
+<span class="fc" id="L34">        JsonStream.registerNativeEncoder(Any.class, anyEncoder);</span>
+<span class="fc" id="L35">        JsonStream.registerNativeEncoder(TrueAny.class, anyEncoder);</span>
+<span class="fc" id="L36">        JsonStream.registerNativeEncoder(FalseAny.class, anyEncoder);</span>
+<span class="fc" id="L37">        JsonStream.registerNativeEncoder(ArrayLazyAny.class, anyEncoder);</span>
+<span class="fc" id="L38">        JsonStream.registerNativeEncoder(DoubleAny.class, anyEncoder);</span>
+<span class="fc" id="L39">        JsonStream.registerNativeEncoder(FloatAny.class, anyEncoder);</span>
+<span class="fc" id="L40">        JsonStream.registerNativeEncoder(IntAny.class, anyEncoder);</span>
+<span class="fc" id="L41">        JsonStream.registerNativeEncoder(LongAny.class, anyEncoder);</span>
+<span class="fc" id="L42">        JsonStream.registerNativeEncoder(NullAny.class, anyEncoder);</span>
+<span class="fc" id="L43">        JsonStream.registerNativeEncoder(LongLazyAny.class, anyEncoder);</span>
+<span class="fc" id="L44">        JsonStream.registerNativeEncoder(DoubleLazyAny.class, anyEncoder);</span>
+<span class="fc" id="L45">        JsonStream.registerNativeEncoder(ObjectLazyAny.class, anyEncoder);</span>
+<span class="fc" id="L46">        JsonStream.registerNativeEncoder(StringAny.class, anyEncoder);</span>
+<span class="fc" id="L47">        JsonStream.registerNativeEncoder(StringLazyAny.class, anyEncoder);</span>
+<span class="fc" id="L48">        JsonStream.registerNativeEncoder(ArrayAny.class, anyEncoder);</span>
+<span class="fc" id="L49">        JsonStream.registerNativeEncoder(ObjectAny.class, anyEncoder);</span>
+<span class="fc" id="L50">        JsonStream.registerNativeEncoder(ListWrapperAny.class, anyEncoder);</span>
+<span class="fc" id="L51">        JsonStream.registerNativeEncoder(ArrayWrapperAny.class, anyEncoder);</span>
+<span class="fc" id="L52">        JsonStream.registerNativeEncoder(MapWrapperAny.class, anyEncoder);</span>
+<span class="fc" id="L53">    }</span>
+
+    public static Any wrapArray(Object val) {
+<span class="fc" id="L56">        return new ArrayWrapperAny(val);</span>
+    }
+
+    public interface EntryIterator {
+        boolean next();
+
+        String key();
+
+        Any value();
+    }
+
+<span class="fc" id="L67">    protected final static Set&lt;String&gt; EMPTY_KEYS = Collections.unmodifiableSet(new HashSet&lt;String&gt;());</span>
+<span class="fc" id="L68">    protected final static EntryIterator EMPTY_ENTRIES_ITERATOR = new EntryIterator() {</span>
+        @Override
+        public boolean next() {
+<span class="nc" id="L71">            return false;</span>
+        }
+
+        @Override
+        public String key() {
+<span class="nc" id="L76">            throw new NoSuchElementException();</span>
+        }
+
+        @Override
+        public Any value() {
+<span class="nc" id="L81">            throw new NoSuchElementException();</span>
+        }
+    };
+<span class="fc" id="L84">    protected final static Iterator&lt;Any&gt; EMPTY_ITERATOR = new Iterator&lt;Any&gt;() {</span>
+        @Override
+        public void remove() {
+<span class="nc" id="L87">            throw new UnsupportedOperationException();</span>
+        }
+
+        @Override
+        public boolean hasNext() {
+<span class="fc" id="L92">            return false;</span>
+        }
+
+        @Override
+        public Any next() {
+<span class="nc" id="L97">            throw new NoSuchElementException();</span>
+        }
+    };
+
+    public abstract ValueType valueType();
+
+    public &lt;T&gt; T bindTo(T obj, Object... keys) {
+<span class="nc" id="L104">        return get(keys).bindTo(obj);</span>
+    }
+
+    public &lt;T&gt; T bindTo(T obj) {
+<span class="nc" id="L108">        return (T) object();</span>
+    }
+
+    public &lt;T&gt; T bindTo(TypeLiteral&lt;T&gt; typeLiteral, T obj, Object... keys) {
+<span class="nc" id="L112">        return get(keys).bindTo(typeLiteral, obj);</span>
+    }
+
+    public &lt;T&gt; T bindTo(TypeLiteral&lt;T&gt; typeLiteral, T obj) {
+<span class="nc" id="L116">        return (T) object();</span>
+    }
+
+    public Object object(Object... keys) {
+<span class="nc" id="L120">        return get(keys).object();</span>
+    }
+
+    public abstract Object object();
+
+    public Map&lt;String, Any&gt; asMap() {
+<span class="fc" id="L126">        return (Map&lt;String, Any&gt;) object();</span>
+    }
+
+    public List&lt;Any&gt; asList() {
+<span class="fc" id="L130">        return (List&lt;Any&gt;) object();</span>
+    }
+
+    public &lt;T&gt; T as(Class&lt;T&gt; clazz, Object... keys) {
+<span class="nc" id="L134">        return get(keys).as(clazz);</span>
+    }
+
+    public &lt;T&gt; T as(Class&lt;T&gt; clazz) {
+<span class="nc" id="L138">        return (T) object();</span>
+    }
+
+    public &lt;T&gt; T as(TypeLiteral&lt;T&gt; typeLiteral, Object... keys) {
+<span class="nc" id="L142">        return get(keys).as(typeLiteral);</span>
+    }
+
+    public &lt;T&gt; T as(TypeLiteral&lt;T&gt; typeLiteral) {
+<span class="nc" id="L146">        return (T) object();</span>
+    }
+
+    public final boolean toBoolean(Object... keys) {
+<span class="fc" id="L150">        return get(keys).toBoolean();</span>
+    }
+
+    public abstract boolean toBoolean();
+
+    public final int toInt(Object... keys) {
+<span class="fc" id="L156">        return get(keys).toInt();</span>
+    }
+
+    public abstract int toInt();
+
+    public final long toLong(Object... keys) {
+<span class="nc" id="L162">        return get(keys).toLong();</span>
+    }
+
+    public abstract long toLong();
+
+    public final float toFloat(Object... keys) {
+<span class="nc" id="L168">        return get(keys).toFloat();</span>
+    }
+
+    public abstract float toFloat();
+
+    public final double toDouble(Object... keys) {
+<span class="nc" id="L174">        return get(keys).toDouble();</span>
+    }
+
+    public abstract double toDouble();
+
+<span class="nc" id="L179">    public final BigInteger toBigInteger(Object ...keys) { return get(keys).toBigInteger(); }</span>
+
+    public abstract BigInteger toBigInteger();
+
+<span class="nc" id="L183">    public final BigDecimal toBigDecimal(Object ...keys) { return get(keys).toBigDecimal(); }</span>
+
+    public abstract BigDecimal toBigDecimal();
+
+    public final String toString(Object... keys) {
+<span class="fc" id="L188">        return get(keys).toString();</span>
+    }
+
+    public abstract String toString();
+
+    public int size() {
+<span class="nc" id="L194">        return 0;</span>
+    }
+
+    public Any mustBeValid() {
+<span class="nc bnc" id="L198" title="All 2 branches missed.">        if(this instanceof NotFoundAny) {</span>
+<span class="nc" id="L199">            throw ((NotFoundAny) this).exception;</span>
+        } else {
+<span class="nc" id="L201">            return this;</span>
+        }
+    }
+
+    public Set keys() {
+<span class="fc" id="L206">        return EMPTY_KEYS;</span>
+    }
+
+    @Override
+    public Iterator&lt;Any&gt; iterator() {
+<span class="fc" id="L211">        return EMPTY_ITERATOR;</span>
+    }
+
+    public EntryIterator entries() {
+<span class="nc" id="L215">        return EMPTY_ENTRIES_ITERATOR;</span>
+    }
+
+    public Any get(int index) {
+<span class="fc" id="L219">        return new NotFoundAny(index, object());</span>
+    }
+
+    public Any get(Object key) {
+<span class="fc" id="L223">        return new NotFoundAny(key, object());</span>
+    }
+
+    public final Any get(Object... keys) {
+<span class="fc" id="L227">        return get(keys, 0);</span>
+    }
+
+    public Any get(Object[] keys, int idx) {
+<span class="fc bfc" id="L231" title="All 2 branches covered.">        if (idx == keys.length) {</span>
+<span class="fc" id="L232">            return this;</span>
+        }
+<span class="fc" id="L234">        return new NotFoundAny(keys, idx, object());</span>
+    }
+
+    public Any set(int newVal) {
+<span class="nc" id="L238">        return wrap(newVal);</span>
+    }
+
+    public Any set(long newVal) {
+<span class="nc" id="L242">        return wrap(newVal);</span>
+    }
+
+    public Any set(float newVal) {
+<span class="nc" id="L246">        return wrap(newVal);</span>
+    }
+
+    public Any set(double newVal) {
+<span class="nc" id="L250">        return wrap(newVal);</span>
+    }
+
+    public Any set(String newVal) {
+<span class="nc" id="L254">        return wrap(newVal);</span>
+    }
+
+    public abstract void writeTo(JsonStream stream) throws IOException;
+
+    protected JsonException reportUnexpectedType(ValueType toType) {
+<span class="nc" id="L260">        throw new JsonException(String.format(&quot;can not convert %s to %s&quot;, valueType(), toType));</span>
+    }
+
+    public static Any lazyString(byte[] data, int head, int tail) {
+<span class="fc" id="L264">        return new StringLazyAny(data, head, tail);</span>
+    }
+
+    public static Any lazyDouble(byte[] data, int head, int tail) {
+<span class="fc" id="L268">        return new DoubleLazyAny(data, head, tail);</span>
+    }
+
+    public static Any lazyLong(byte[] data, int head, int tail) {
+<span class="fc" id="L272">        return new LongLazyAny(data, head, tail);</span>
+    }
+
+    public static Any lazyArray(byte[] data, int head, int tail) {
+<span class="fc" id="L276">        return new ArrayLazyAny(data, head, tail);</span>
+    }
+
+    public static Any lazyObject(byte[] data, int head, int tail) {
+<span class="fc" id="L280">        return new ObjectLazyAny(data, head, tail);</span>
+    }
+
+    public static Any wrap(int val) {
+<span class="fc" id="L284">        return new IntAny(val);</span>
+    }
+
+    public static Any wrap(long val) {
+<span class="fc" id="L288">        return new LongAny(val);</span>
+    }
+
+    public static Any wrap(float val) {
+<span class="fc" id="L292">        return new FloatAny(val);</span>
+    }
+
+    public static Any wrap(double val) {
+<span class="fc" id="L296">        return new DoubleAny(val);</span>
+    }
+
+    public static Any wrap(boolean val) {
+<span class="fc bfc" id="L300" title="All 2 branches covered.">        if (val) {</span>
+<span class="fc" id="L301">            return TrueAny.INSTANCE;</span>
+        } else {
+<span class="fc" id="L303">            return FalseAny.INSTANCE;</span>
+        }
+    }
+
+    public static Any wrap(String val) {
+<span class="pc bpc" id="L308" title="1 of 2 branches missed.">        if (val == null) {</span>
+<span class="nc" id="L309">            return NullAny.INSTANCE;</span>
+        }
+<span class="fc" id="L311">        return new StringAny(val);</span>
+    }
+
+    public static &lt;T&gt; Any wrap(Collection&lt;T&gt; val) {
+<span class="nc bnc" id="L315" title="All 2 branches missed.">        if (val == null) {</span>
+<span class="nc" id="L316">            return NullAny.INSTANCE;</span>
+        }
+<span class="nc" id="L318">        return new ListWrapperAny(new ArrayList(val));</span>
+    }
+
+    public static &lt;T&gt; Any wrap(List&lt;T&gt; val) {
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">        if (val == null) {</span>
+<span class="nc" id="L323">            return NullAny.INSTANCE;</span>
+        }
+<span class="fc" id="L325">        return new ListWrapperAny(val);</span>
+    }
+
+    public static &lt;T&gt; Any wrap(Map&lt;String, T&gt; val) {
+<span class="nc bnc" id="L329" title="All 2 branches missed.">        if (val == null) {</span>
+<span class="nc" id="L330">            return NullAny.INSTANCE;</span>
+        }
+<span class="nc" id="L332">        return new MapWrapperAny(val);</span>
+    }
+
+    public static Any wrap(Object val) {
+<span class="fc" id="L336">        return CodegenAccess.wrap(val);</span>
+    }
+
+    public static Any wrapNull() {
+<span class="fc" id="L340">        return NullAny.INSTANCE;</span>
+    }
+
+    public static Any rewrap(List&lt;Any&gt; val) {
+<span class="fc" id="L344">        return new ArrayAny(val);</span>
+    }
+
+    public static Any rewrap(Map&lt;String, Any&gt; val) {
+<span class="fc" id="L348">        return new ObjectAny(val);</span>
+    }
+
+<span class="fc" id="L351">    private final static int wildcardHashCode = Character.valueOf('*').hashCode();</span>
+<span class="fc" id="L352">    private final static Character wildcard = '*';</span>
+
+    protected boolean isWildcard(Object key) {
+<span class="pc bpc" id="L355" title="1 of 4 branches missed.">        return wildcardHashCode == key.hashCode() &amp;&amp; wildcard.equals(key);</span>
+    }
+
+    @Override
+    public boolean equals(Object o) {
+<span class="pc bpc" id="L360" title="1 of 2 branches missed.">        if (this == o) return true;</span>
+<span class="pc bpc" id="L361" title="2 of 4 branches missed.">        if (o == null || getClass() != o.getClass()) return false;</span>
+
+<span class="fc" id="L363">        Any any = (Any) o;</span>
+
+<span class="fc" id="L365">        Object obj = this.object();</span>
+<span class="fc" id="L366">        Object thatObj = any.object();</span>
+<span class="pc bpc" id="L367" title="3 of 4 branches missed.">        return obj != null ? obj.equals(thatObj) : thatObj == null;</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="fc" id="L372">        Object obj = this.object();</span>
+<span class="pc bpc" id="L373" title="1 of 2 branches missed.">        return obj != null ? obj.hashCode() : 0;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

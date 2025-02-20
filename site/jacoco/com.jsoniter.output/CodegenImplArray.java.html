@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CodegenImplArray.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.output</a> &gt; <span class="el_source">CodegenImplArray.java</span></div><h1>CodegenImplArray.java</h1><pre class="source lang-java linenums">package com.jsoniter.output;
+
+import com.jsoniter.spi.ClassInfo;
+import com.jsoniter.spi.JsoniterSpi;
+
+import java.lang.reflect.Type;
+import java.util.*;
+
+<span class="nc" id="L9">class CodegenImplArray {</span>
+
+    public static CodegenResult genCollection(String cacheKey, ClassInfo classInfo) {
+<span class="fc" id="L12">        Type[] typeArgs = classInfo.typeArgs;</span>
+<span class="fc" id="L13">        Class clazz = classInfo.clazz;</span>
+<span class="fc" id="L14">        Type compType = Object.class;</span>
+<span class="fc bfc" id="L15" title="All 2 branches covered.">        if (typeArgs.length == 0) {</span>
+            // default to List&lt;Object&gt;
+<span class="pc bpc" id="L17" title="1 of 2 branches missed.">        } else if (typeArgs.length == 1) {</span>
+<span class="fc" id="L18">            compType = typeArgs[0];</span>
+        } else {
+<span class="nc" id="L20">            throw new IllegalArgumentException(</span>
+                    &quot;can not bind to generic collection without argument types, &quot; +
+                            &quot;try syntax like TypeLiteral&lt;List&lt;Integer&gt;&gt;{}&quot;);
+        }
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        if (clazz == List.class) {</span>
+<span class="fc" id="L25">            clazz = ArrayList.class;</span>
+<span class="pc bpc" id="L26" title="1 of 2 branches missed.">        } else if (clazz == Set.class) {</span>
+<span class="nc" id="L27">            clazz = HashSet.class;</span>
+        }
+<span class="fc bfc" id="L29" title="All 2 branches covered.">        if (List.class.isAssignableFrom(clazz)) {</span>
+<span class="fc" id="L30">            return genList(cacheKey, clazz, compType);</span>
+        } else {
+<span class="fc" id="L32">            return genCollection(cacheKey, clazz, compType);</span>
+        }
+    }
+
+    public static CodegenResult genArray(String cacheKey, ClassInfo classInfo) {
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        boolean noIndention = JsoniterSpi.getCurrentConfig().indentionStep() == 0;</span>
+<span class="fc" id="L38">        Class clazz = classInfo.clazz;</span>
+<span class="fc" id="L39">        Class compType = clazz.getComponentType();</span>
+<span class="pc bpc" id="L40" title="1 of 2 branches missed.">        if (compType.isArray()) {</span>
+<span class="nc" id="L41">            throw new IllegalArgumentException(&quot;nested array not supported: &quot; + clazz.getCanonicalName());</span>
+        }
+<span class="fc" id="L43">        boolean isCollectionValueNullable = true;</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (cacheKey.endsWith(&quot;__value_not_nullable&quot;)) {</span>
+<span class="fc" id="L45">            isCollectionValueNullable = false;</span>
+        }
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (compType.isPrimitive()) {</span>
+<span class="fc" id="L48">            isCollectionValueNullable = false;</span>
+        }
+<span class="fc" id="L50">        CodegenResult ctx = new CodegenResult();</span>
+<span class="fc" id="L51">        ctx.append(&quot;public static void encode_(java.lang.Object obj, com.jsoniter.output.JsonStream stream) throws java.io.IOException {&quot;);</span>
+<span class="fc" id="L52">        ctx.append(String.format(&quot;%s[] arr = (%s[])obj;&quot;, compType.getCanonicalName(), compType.getCanonicalName()));</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (noIndention) {</span>
+<span class="fc" id="L54">            ctx.append(&quot;if (arr.length == 0) { return; }&quot;);</span>
+<span class="fc" id="L55">            ctx.buffer('[');</span>
+        } else {
+<span class="fc" id="L57">            ctx.append(&quot;if (arr.length == 0) { stream.write((byte)'[', (byte)']'); return; }&quot;);</span>
+<span class="fc" id="L58">            ctx.append(&quot;stream.writeArrayStart(); stream.writeIndention();&quot;);</span>
+        }
+<span class="fc" id="L60">        ctx.append(&quot;int i = 0;&quot;);</span>
+<span class="fc" id="L61">        ctx.append(String.format(&quot;%s e = arr[i++];&quot;, compType.getCanonicalName()));</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        if (isCollectionValueNullable) {</span>
+<span class="fc" id="L63">            ctx.append(&quot;if (e == null) { stream.writeNull(); } else {&quot;);</span>
+<span class="fc" id="L64">            CodegenImplNative.genWriteOp(ctx, &quot;e&quot;, compType, true);</span>
+<span class="fc" id="L65">            ctx.append(&quot;}&quot;); // if</span>
+        } else {
+<span class="fc" id="L67">            CodegenImplNative.genWriteOp(ctx, &quot;e&quot;, compType, false);</span>
+        }
+<span class="fc" id="L69">        ctx.append(&quot;while (i &lt; arr.length) {&quot;);</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        if (noIndention) {</span>
+<span class="fc" id="L71">            ctx.append(&quot;stream.write(',');&quot;);</span>
+        } else {
+<span class="fc" id="L73">            ctx.append(&quot;stream.writeMore();&quot;);</span>
+        }
+<span class="fc" id="L75">        ctx.append(&quot;e = arr[i++];&quot;);</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (isCollectionValueNullable) {</span>
+<span class="fc" id="L77">            ctx.append(&quot;if (e == null) { stream.writeNull(); } else {&quot;);</span>
+<span class="fc" id="L78">            CodegenImplNative.genWriteOp(ctx, &quot;e&quot;, compType, true);</span>
+<span class="fc" id="L79">            ctx.append(&quot;}&quot;); // if</span>
+        } else {
+<span class="fc" id="L81">            CodegenImplNative.genWriteOp(ctx, &quot;e&quot;, compType, false);</span>
+        }
+<span class="fc" id="L83">        ctx.append(&quot;}&quot;); // while</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">        if (noIndention) {</span>
+<span class="fc" id="L85">            ctx.buffer(']');</span>
+        } else {
+<span class="fc" id="L87">            ctx.append(&quot;stream.writeArrayEnd();&quot;);</span>
+        }
+<span class="fc" id="L89">        ctx.append(&quot;}&quot;); // public static void encode_</span>
+<span class="fc" id="L90">        return ctx;</span>
+    }
+
+    private static CodegenResult genList(String cacheKey, Class clazz, Type compType) {
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        boolean noIndention = JsoniterSpi.getCurrentConfig().indentionStep() == 0;</span>
+<span class="fc" id="L95">        boolean isCollectionValueNullable = true;</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        if (cacheKey.endsWith(&quot;__value_not_nullable&quot;)) {</span>
+<span class="nc" id="L97">            isCollectionValueNullable = false;</span>
+        }
+<span class="fc" id="L99">        CodegenResult ctx = new CodegenResult();</span>
+<span class="fc" id="L100">        ctx.append(&quot;public static void encode_(java.lang.Object obj, com.jsoniter.output.JsonStream stream) throws java.io.IOException {&quot;);</span>
+<span class="fc" id="L101">        ctx.append(&quot;java.util.List list = (java.util.List)obj;&quot;);</span>
+<span class="fc" id="L102">        ctx.append(&quot;int size = list.size();&quot;);</span>
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">        if (noIndention) {</span>
+<span class="fc" id="L104">            ctx.append(&quot;if (size == 0) { return; }&quot;);</span>
+<span class="fc" id="L105">            ctx.buffer('[');</span>
+        } else {
+<span class="nc" id="L107">            ctx.append(&quot;if (size == 0) { stream.write((byte)'[', (byte)']'); return; }&quot;);</span>
+<span class="nc" id="L108">            ctx.append(&quot;stream.writeArrayStart(); stream.writeIndention();&quot;);</span>
+        }
+<span class="fc" id="L110">        ctx.append(&quot;java.lang.Object e = list.get(0);&quot;);</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">        if (isCollectionValueNullable) {</span>
+<span class="fc" id="L112">            ctx.append(&quot;if (e == null) { stream.writeNull(); } else {&quot;);</span>
+<span class="fc" id="L113">            CodegenImplNative.genWriteOp(ctx, &quot;e&quot;, compType, true);</span>
+<span class="fc" id="L114">            ctx.append(&quot;}&quot;);</span>
+        } else {
+<span class="nc" id="L116">            CodegenImplNative.genWriteOp(ctx, &quot;e&quot;, compType, false);</span>
+        }
+<span class="fc" id="L118">        ctx.append(&quot;for (int i = 1; i &lt; size; i++) {&quot;);</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">        if (noIndention) {</span>
+<span class="fc" id="L120">            ctx.append(&quot;stream.write(',');&quot;);</span>
+        } else {
+<span class="nc" id="L122">            ctx.append(&quot;stream.writeMore();&quot;);</span>
+        }
+<span class="fc" id="L124">        ctx.append(&quot;e = list.get(i);&quot;);</span>
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">        if (isCollectionValueNullable) {</span>
+<span class="fc" id="L126">            ctx.append(&quot;if (e == null) { stream.writeNull(); } else {&quot;);</span>
+<span class="fc" id="L127">            CodegenImplNative.genWriteOp(ctx, &quot;e&quot;, compType, true);</span>
+<span class="fc" id="L128">            ctx.append(&quot;}&quot;); // if</span>
+        } else {
+<span class="nc" id="L130">            CodegenImplNative.genWriteOp(ctx, &quot;e&quot;, compType, false);</span>
+        }
+<span class="fc" id="L132">        ctx.append(&quot;}&quot;); // for</span>
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">        if (noIndention) {</span>
+<span class="fc" id="L134">            ctx.buffer(']');</span>
+        } else {
+<span class="nc" id="L136">            ctx.append(&quot;stream.writeArrayEnd();&quot;);</span>
+        }
+<span class="fc" id="L138">        ctx.append(&quot;}&quot;); // public static void encode_</span>
+<span class="fc" id="L139">        return ctx;</span>
+    }
+
+    private static CodegenResult genCollection(String cacheKey, Class clazz, Type compType) {
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        boolean noIndention = JsoniterSpi.getCurrentConfig().indentionStep() == 0;</span>
+<span class="fc" id="L144">        boolean isCollectionValueNullable = true;</span>
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">        if (cacheKey.endsWith(&quot;__value_not_nullable&quot;)) {</span>
+<span class="nc" id="L146">            isCollectionValueNullable = false;</span>
+        }
+<span class="fc" id="L148">        CodegenResult ctx = new CodegenResult();</span>
+<span class="fc" id="L149">        ctx.append(&quot;public static void encode_(java.lang.Object obj, com.jsoniter.output.JsonStream stream) throws java.io.IOException {&quot;);</span>
+<span class="fc" id="L150">        ctx.append(&quot;java.util.Iterator iter = ((java.util.Collection)obj).iterator();&quot;);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        if (noIndention) {</span>
+<span class="fc" id="L152">            ctx.append(&quot;if (!iter.hasNext()) { return; }&quot;);</span>
+<span class="fc" id="L153">            ctx.buffer('[');</span>
+        } else {
+<span class="fc" id="L155">            ctx.append(&quot;if (!iter.hasNext()) { stream.write((byte)'[', (byte)']'); return; }&quot;);</span>
+<span class="fc" id="L156">            ctx.append(&quot;stream.writeArrayStart(); stream.writeIndention();&quot;);</span>
+        }
+<span class="fc" id="L158">        ctx.append(&quot;java.lang.Object e = iter.next();&quot;);</span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">        if (isCollectionValueNullable) {</span>
+<span class="fc" id="L160">            ctx.append(&quot;if (e == null) { stream.writeNull(); } else {&quot;);</span>
+<span class="fc" id="L161">            CodegenImplNative.genWriteOp(ctx, &quot;e&quot;, compType, true);</span>
+<span class="fc" id="L162">            ctx.append(&quot;}&quot;); // if</span>
+        } else {
+<span class="nc" id="L164">            CodegenImplNative.genWriteOp(ctx, &quot;e&quot;, compType, false);</span>
+        }
+<span class="fc" id="L166">        ctx.append(&quot;while (iter.hasNext()) {&quot;);</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        if (noIndention) {</span>
+<span class="fc" id="L168">            ctx.append(&quot;stream.write(',');&quot;);</span>
+        } else {
+<span class="fc" id="L170">            ctx.append(&quot;stream.writeMore();&quot;);</span>
+        }
+<span class="fc" id="L172">        ctx.append(&quot;e = iter.next();&quot;);</span>
+<span class="pc bpc" id="L173" title="1 of 2 branches missed.">        if (isCollectionValueNullable) {</span>
+<span class="fc" id="L174">            ctx.append(&quot;if (e == null) { stream.writeNull(); } else {&quot;);</span>
+<span class="fc" id="L175">            CodegenImplNative.genWriteOp(ctx, &quot;e&quot;, compType, true);</span>
+<span class="fc" id="L176">            ctx.append(&quot;}&quot;); // if</span>
+        } else {
+<span class="nc" id="L178">            CodegenImplNative.genWriteOp(ctx, &quot;e&quot;, compType, false);</span>
+        }
+<span class="fc" id="L180">        ctx.append(&quot;}&quot;); // while</span>
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        if (noIndention) {</span>
+<span class="fc" id="L182">            ctx.buffer(']');</span>
+        } else {
+<span class="fc" id="L184">            ctx.append(&quot;stream.writeArrayEnd();&quot;);</span>
+        }
+<span class="fc" id="L186">        ctx.append(&quot;}&quot;); // public static void encode_</span>
+<span class="fc" id="L187">        return ctx;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

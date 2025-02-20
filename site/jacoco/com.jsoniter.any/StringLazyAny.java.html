@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StringLazyAny.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.any</a> &gt; <span class="el_source">StringLazyAny.java</span></div><h1>StringLazyAny.java</h1><pre class="source lang-java linenums">package com.jsoniter.any;
+
+import com.jsoniter.CodegenAccess;
+import com.jsoniter.JsonIterator;
+import com.jsoniter.JsonIteratorPool;
+import com.jsoniter.ValueType;
+import com.jsoniter.spi.JsonException;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
+class StringLazyAny extends LazyAny {
+    private final static String FALSE = &quot;false&quot;;
+    private String cache;
+
+    public StringLazyAny(byte[] data, int head, int tail) {
+<span class="fc" id="L18">        super(data, head, tail);</span>
+<span class="fc" id="L19">    }</span>
+
+    @Override
+    public ValueType valueType() {
+<span class="nc" id="L23">        return ValueType.STRING;</span>
+    }
+
+    @Override
+    public Object object() {
+<span class="fc" id="L28">        fillCache();</span>
+<span class="fc" id="L29">        return cache;</span>
+    }
+
+    @Override
+    public boolean toBoolean() {
+<span class="fc" id="L34">        fillCache();</span>
+<span class="fc" id="L35">        int len = cache.length();</span>
+<span class="pc bpc" id="L36" title="1 of 2 branches missed.">        if (len == 0) {</span>
+<span class="nc" id="L37">            return false;</span>
+        }
+<span class="fc bfc" id="L39" title="All 4 branches covered.">        if (len == 5 &amp;&amp; FALSE.equals(cache)) {</span>
+<span class="fc" id="L40">            return false;</span>
+        }
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">        for (int i = 0; i &lt; len; i++) {</span>
+<span class="pc bpc" id="L43" title="1 of 2 branches missed.">            switch (cache.charAt(i)) {</span>
+                case ' ':
+                case '\t':
+                case '\n':
+                case '\r':
+<span class="nc" id="L48">                    continue;</span>
+                default:
+<span class="fc" id="L50">                    return true;</span>
+            }
+        }
+<span class="nc" id="L53">        return false;</span>
+    }
+
+    @Override
+    public int toInt() {
+<span class="fc" id="L58">        JsonIterator iter = parse();</span>
+        try {
+<span class="fc" id="L60">            CodegenAccess.nextToken(iter);</span>
+<span class="fc" id="L61">            return iter.readInt();</span>
+<span class="nc" id="L62">        } catch (IOException e) {</span>
+<span class="nc" id="L63">            throw new JsonException(e);</span>
+        } finally {
+<span class="fc" id="L65">            JsonIteratorPool.returnJsonIterator(iter);</span>
+        }
+    }
+
+    @Override
+    public long toLong() {
+<span class="fc" id="L71">        JsonIterator iter = parse();</span>
+        try {
+<span class="fc" id="L73">            CodegenAccess.nextToken(iter);</span>
+<span class="fc" id="L74">            return iter.readLong();</span>
+<span class="nc" id="L75">        } catch (IOException e) {</span>
+<span class="nc" id="L76">            throw new JsonException(e);</span>
+        } finally {
+<span class="fc" id="L78">            JsonIteratorPool.returnJsonIterator(iter);</span>
+        }
+    }
+
+    @Override
+    public float toFloat() {
+<span class="fc" id="L84">        JsonIterator iter = parse();</span>
+        try {
+<span class="fc" id="L86">            CodegenAccess.nextToken(iter);</span>
+<span class="fc" id="L87">            return iter.readFloat();</span>
+<span class="nc" id="L88">        } catch (IOException e) {</span>
+<span class="nc" id="L89">            throw new JsonException(e);</span>
+        } finally {
+<span class="fc" id="L91">            JsonIteratorPool.returnJsonIterator(iter);</span>
+        }
+    }
+
+    @Override
+    public double toDouble() {
+<span class="fc" id="L97">        JsonIterator iter = parse();</span>
+        try {
+<span class="fc" id="L99">            CodegenAccess.nextToken(iter);</span>
+<span class="fc" id="L100">            return iter.readDouble();</span>
+<span class="nc" id="L101">        } catch (IOException e) {</span>
+<span class="nc" id="L102">            throw new JsonException(e);</span>
+        } finally {
+<span class="fc" id="L104">            JsonIteratorPool.returnJsonIterator(iter);</span>
+        }
+    }
+
+    @Override
+    public BigInteger toBigInteger() {
+<span class="nc" id="L110">        return new BigInteger(toString());</span>
+    }
+
+    @Override
+    public BigDecimal toBigDecimal() {
+<span class="nc" id="L115">        return new BigDecimal(toString());</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L120">        fillCache();</span>
+<span class="fc" id="L121">        return cache;</span>
+    }
+
+    private void fillCache() {
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        if (cache == null) {</span>
+<span class="fc" id="L126">            JsonIterator iter = parse();</span>
+            try {
+<span class="fc" id="L128">                cache = iter.readString();</span>
+<span class="nc" id="L129">            } catch (IOException e) {</span>
+<span class="nc" id="L130">                throw new JsonException();</span>
+            } finally {
+<span class="fc" id="L132">                JsonIteratorPool.returnJsonIterator(iter);</span>
+            }
+        }
+<span class="fc" id="L135">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IterImplNumber.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">IterImplNumber.java</span></div><h1>IterImplNumber.java</h1><pre class="source lang-java linenums">/*
+this implementations contains significant code from https://github.com/ngs-doo/dsl-json/blob/master/LICENSE
+
+Copyright (c) 2015, Nova Generacija Softvera d.o.o.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+    * Neither the name of Nova Generacija Softvera d.o.o. nor the names of its
+      contributors may be used to endorse or promote products derived from this
+      software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package com.jsoniter;
+
+import java.io.IOException;
+
+<span class="nc" id="L36">class IterImplNumber {</span>
+
+<span class="fc" id="L38">    final static int[] intDigits = new int[127];</span>
+<span class="fc" id="L39">    final static int[] floatDigits = new int[127];</span>
+    final static int END_OF_NUMBER = -2;
+    final static int DOT_IN_NUMBER = -3;
+    final static int INVALID_CHAR_FOR_NUMBER = -1;
+<span class="fc" id="L43">    static final long POW10[] = {</span>
+            1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000,
+            1000000000, 10000000000L, 100000000000L, 1000000000000L,
+            10000000000000L, 100000000000000L, 1000000000000000L};
+
+    static {
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        for (int i = 0; i &lt; floatDigits.length; i++) {</span>
+<span class="fc" id="L50">            floatDigits[i] = INVALID_CHAR_FOR_NUMBER;</span>
+<span class="fc" id="L51">            intDigits[i] = INVALID_CHAR_FOR_NUMBER;</span>
+        }
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        for (int i = '0'; i &lt;= '9'; ++i) {</span>
+<span class="fc" id="L54">            floatDigits[i] = (i - '0');</span>
+<span class="fc" id="L55">            intDigits[i] = (i - '0');</span>
+        }
+<span class="fc" id="L57">        floatDigits[','] = END_OF_NUMBER;</span>
+<span class="fc" id="L58">        floatDigits[']'] = END_OF_NUMBER;</span>
+<span class="fc" id="L59">        floatDigits['}'] = END_OF_NUMBER;</span>
+<span class="fc" id="L60">        floatDigits[' '] = END_OF_NUMBER;</span>
+<span class="fc" id="L61">        floatDigits['.'] = DOT_IN_NUMBER;</span>
+<span class="fc" id="L62">    }</span>
+
+    public static final double readDouble(final JsonIterator iter) throws IOException {
+<span class="fc" id="L65">        final byte c = IterImpl.nextToken(iter);</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (c == '-') {</span>
+<span class="fc" id="L67">            return -IterImpl.readDouble(iter);</span>
+        } else {
+<span class="fc" id="L69">            iter.unreadByte();</span>
+<span class="fc" id="L70">            return IterImpl.readDouble(iter);</span>
+        }
+    }
+
+    public static final float readFloat(final JsonIterator iter) throws IOException {
+<span class="fc" id="L75">        return (float) IterImplNumber.readDouble(iter);</span>
+    }
+
+    public static final int readInt(final JsonIterator iter) throws IOException {
+<span class="fc" id="L79">        byte c = IterImpl.nextToken(iter);</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        if (c == '-') {</span>
+<span class="nc" id="L81">            return IterImpl.readInt(iter, IterImpl.readByte(iter));</span>
+        } else {
+<span class="fc" id="L83">            int val = IterImpl.readInt(iter, c);</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">            if (val == Integer.MIN_VALUE) {</span>
+<span class="nc" id="L85">                throw iter.reportError(&quot;readInt&quot;, &quot;value is too large for int&quot;);</span>
+            }
+<span class="fc" id="L87">            return -val;</span>
+        }
+    }
+
+    public static final long readLong(JsonIterator iter) throws IOException {
+<span class="fc" id="L92">        byte c = IterImpl.nextToken(iter);</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        if (c == '-') {</span>
+<span class="nc" id="L94">            c = IterImpl.readByte(iter);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">            if (IterImplNumber.intDigits[c] == 0) {</span>
+<span class="nc" id="L96">                IterImplForStreaming.assertNotLeadingZero(iter);</span>
+<span class="nc" id="L97">                return 0;</span>
+            }
+<span class="nc" id="L99">            return IterImpl.readLong(iter, c);</span>
+        } else {
+<span class="fc bfc" id="L101" title="All 2 branches covered.">            if (IterImplNumber.intDigits[c] == 0) {</span>
+<span class="fc" id="L102">                IterImplForStreaming.assertNotLeadingZero(iter);</span>
+<span class="fc" id="L103">                return 0;</span>
+            }
+<span class="fc" id="L105">            long val = IterImpl.readLong(iter, c);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            if (val == Long.MIN_VALUE) {</span>
+<span class="nc" id="L107">                throw iter.reportError(&quot;readLong&quot;, &quot;value is too large for long&quot;);</span>
+            }
+<span class="fc" id="L109">            return -val;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

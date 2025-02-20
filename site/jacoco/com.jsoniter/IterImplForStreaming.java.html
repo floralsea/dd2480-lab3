@@ -1,0 +1,664 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IterImplForStreaming.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">IterImplForStreaming.java</span></div><h1>IterImplForStreaming.java</h1><pre class="source lang-java linenums">package com.jsoniter;
+
+import com.jsoniter.any.Any;
+import com.jsoniter.spi.JsonException;
+import com.jsoniter.spi.Slice;
+
+import java.io.IOException;
+
+<span class="nc" id="L9">class IterImplForStreaming {</span>
+
+    public static final int readObjectFieldAsHash(JsonIterator iter) throws IOException {
+<span class="nc bnc" id="L12" title="All 2 branches missed.">        if (nextToken(iter) != '&quot;') {</span>
+<span class="nc" id="L13">            throw iter.reportError(&quot;readObjectFieldAsHash&quot;, &quot;expect \&quot;&quot;);</span>
+        }
+<span class="nc" id="L15">        long hash = 0x811c9dc5;</span>
+        for (; ; ) {
+<span class="nc" id="L17">            byte c = 0;</span>
+<span class="nc" id="L18">            int i = iter.head;</span>
+<span class="nc bnc" id="L19" title="All 2 branches missed.">            for (; i &lt; iter.tail; i++) {</span>
+<span class="nc" id="L20">                c = iter.buf[i];</span>
+<span class="nc bnc" id="L21" title="All 2 branches missed.">                if (c == '&quot;') {</span>
+<span class="nc" id="L22">                    break;</span>
+                }
+<span class="nc" id="L24">                hash ^= c;</span>
+<span class="nc" id="L25">                hash *= 0x1000193;</span>
+            }
+<span class="nc bnc" id="L27" title="All 2 branches missed.">            if (c == '&quot;') {</span>
+<span class="nc" id="L28">                iter.head = i + 1;</span>
+<span class="nc bnc" id="L29" title="All 2 branches missed.">                if (nextToken(iter) != ':') {</span>
+<span class="nc" id="L30">                    throw iter.reportError(&quot;readObjectFieldAsHash&quot;, &quot;expect :&quot;);</span>
+                }
+<span class="nc" id="L32">                return (int) hash;</span>
+            }
+<span class="nc bnc" id="L34" title="All 2 branches missed.">            if (!loadMore(iter)) {</span>
+<span class="nc" id="L35">                throw iter.reportError(&quot;readObjectFieldAsHash&quot;, &quot;unmatched quote&quot;);</span>
+            }
+<span class="nc" id="L37">        }</span>
+    }
+
+    public static final Slice readObjectFieldAsSlice(JsonIterator iter) throws IOException {
+<span class="nc" id="L41">        Slice field = readSlice(iter);</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">        boolean notCopied = field != null;</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        if (CodegenAccess.skipWhitespacesWithoutLoadMore(iter)) {</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">            if (notCopied) {</span>
+<span class="nc" id="L45">                int len = field.tail() - field.head();</span>
+<span class="nc" id="L46">                byte[] newBuf = new byte[len];</span>
+<span class="nc" id="L47">                System.arraycopy(field.data(), field.head(), newBuf, 0, len);</span>
+<span class="nc" id="L48">                field.reset(newBuf, 0, newBuf.length);</span>
+            }
+<span class="nc bnc" id="L50" title="All 2 branches missed.">            if (!loadMore(iter)) {</span>
+<span class="nc" id="L51">                throw iter.reportError(&quot;readObjectFieldAsSlice&quot;, &quot;expect : after object field&quot;);</span>
+            }
+        }
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        if (iter.buf[iter.head] != ':') {</span>
+<span class="nc" id="L55">            throw iter.reportError(&quot;readObjectFieldAsSlice&quot;, &quot;expect : after object field&quot;);</span>
+        }
+<span class="nc" id="L57">        iter.head++;</span>
+<span class="nc" id="L58">        return field;</span>
+    }
+
+    final static void skipArray(JsonIterator iter) throws IOException {
+<span class="nc" id="L62">        int level = 1;</span>
+        for (; ; ) {
+<span class="nc bnc" id="L64" title="All 2 branches missed.">            for (int i = iter.head; i &lt; iter.tail; i++) {</span>
+<span class="nc bnc" id="L65" title="All 4 branches missed.">                switch (iter.buf[i]) {</span>
+                    case '&quot;': // If inside string, skip it
+<span class="nc" id="L67">                        iter.head = i + 1;</span>
+<span class="nc" id="L68">                        skipString(iter);</span>
+<span class="nc" id="L69">                        i = iter.head - 1; // it will be i++ soon</span>
+<span class="nc" id="L70">                        break;</span>
+                    case '[': // If open symbol, increase level
+<span class="nc" id="L72">                        level++;</span>
+<span class="nc" id="L73">                        break;</span>
+                    case ']': // If close symbol, decrease level
+<span class="nc" id="L75">                        level--;</span>
+
+                        // If we have returned to the original level, we're done
+<span class="nc bnc" id="L78" title="All 2 branches missed.">                        if (level == 0) {</span>
+<span class="nc" id="L79">                            iter.head = i + 1;</span>
+<span class="nc" id="L80">                            return;</span>
+                        }
+                        break;
+                }
+            }
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            if (!loadMore(iter)) {</span>
+<span class="nc" id="L86">                return;</span>
+            }
+        }
+    }
+
+    final static void skipObject(JsonIterator iter) throws IOException {
+<span class="nc" id="L92">        int level = 1;</span>
+        for (; ; ) {
+<span class="nc bnc" id="L94" title="All 2 branches missed.">            for (int i = iter.head; i &lt; iter.tail; i++) {</span>
+<span class="nc bnc" id="L95" title="All 4 branches missed.">                switch (iter.buf[i]) {</span>
+                    case '&quot;': // If inside string, skip it
+<span class="nc" id="L97">                        iter.head = i + 1;</span>
+<span class="nc" id="L98">                        skipString(iter);</span>
+<span class="nc" id="L99">                        i = iter.head - 1; // it will be i++ soon</span>
+<span class="nc" id="L100">                        break;</span>
+                    case '{': // If open symbol, increase level
+<span class="nc" id="L102">                        level++;</span>
+<span class="nc" id="L103">                        break;</span>
+                    case '}': // If close symbol, decrease level
+<span class="nc" id="L105">                        level--;</span>
+
+                        // If we have returned to the original level, we're done
+<span class="nc bnc" id="L108" title="All 2 branches missed.">                        if (level == 0) {</span>
+<span class="nc" id="L109">                            iter.head = i + 1;</span>
+<span class="nc" id="L110">                            return;</span>
+                        }
+                        break;
+                }
+            }
+<span class="nc bnc" id="L115" title="All 2 branches missed.">            if (!loadMore(iter)) {</span>
+<span class="nc" id="L116">                return;</span>
+            }
+        }
+    }
+
+    final static void skipString(JsonIterator iter) throws IOException {
+        for (; ; ) {
+<span class="nc" id="L123">            int end = IterImplSkip.findStringEnd(iter);</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">            if (end == -1) {</span>
+<span class="nc" id="L125">                int j = iter.tail - 1;</span>
+<span class="nc" id="L126">                boolean escaped = true;</span>
+                // can not just look the last byte is \
+                // because it could be \\ or \\\
+                for (; ; ) {
+                    // walk backward until head
+<span class="nc bnc" id="L131" title="All 4 branches missed.">                    if (j &lt; iter.head || iter.buf[j] != '\\') {</span>
+                        // even number of backslashes
+                        // either end of buffer, or &quot; found
+<span class="nc" id="L134">                        escaped = false;</span>
+<span class="nc" id="L135">                        break;</span>
+                    }
+<span class="nc" id="L137">                    j--;</span>
+<span class="nc bnc" id="L138" title="All 4 branches missed.">                    if (j &lt; iter.head || iter.buf[j] != '\\') {</span>
+                        // odd number of backslashes
+                        // it is \&quot; or \\\&quot;
+<span class="nc" id="L141">                        break;</span>
+                    }
+<span class="nc" id="L143">                    j--;</span>
+
+                }
+<span class="nc bnc" id="L146" title="All 2 branches missed.">                if (!loadMore(iter)) {</span>
+<span class="nc" id="L147">                    throw iter.reportError(&quot;skipString&quot;, &quot;incomplete string&quot;);</span>
+                }
+<span class="nc bnc" id="L149" title="All 2 branches missed.">                if (escaped) {</span>
+                    // TODO add unit test to prove/verify bug
+<span class="nc" id="L151">                    iter.head += 1; // skip the first char as last char is \</span>
+                }
+<span class="nc" id="L153">            } else {</span>
+<span class="nc" id="L154">                iter.head = end;</span>
+<span class="nc" id="L155">                return;</span>
+            }
+<span class="nc" id="L157">        }</span>
+    }
+
+    final static void skipUntilBreak(JsonIterator iter) throws IOException {
+        // true, false, null, number
+        for (; ; ) {
+<span class="nc bnc" id="L163" title="All 2 branches missed.">            for (int i = iter.head; i &lt; iter.tail; i++) {</span>
+<span class="nc" id="L164">                byte c = iter.buf[i];</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">                if (IterImplSkip.breaks[c]) {</span>
+<span class="nc" id="L166">                    iter.head = i;</span>
+<span class="nc" id="L167">                    return;</span>
+                }
+            }
+<span class="nc bnc" id="L170" title="All 2 branches missed.">            if (!loadMore(iter)) {</span>
+<span class="nc" id="L171">                iter.head = iter.tail;</span>
+<span class="nc" id="L172">                return;</span>
+            }
+        }
+    }
+
+    final static boolean skipNumber(JsonIterator iter) throws IOException {
+        // true, false, null, number
+<span class="nc" id="L179">        boolean dotFound = false;</span>
+        for (; ; ) {
+<span class="nc bnc" id="L181" title="All 2 branches missed.">            for (int i = iter.head; i &lt; iter.tail; i++) {</span>
+<span class="nc" id="L182">                byte c = iter.buf[i];</span>
+<span class="nc bnc" id="L183" title="All 6 branches missed.">                if (c == '.' || c == 'e' || c == 'E') {</span>
+<span class="nc" id="L184">                    dotFound = true;</span>
+<span class="nc" id="L185">                    continue;</span>
+                }
+<span class="nc bnc" id="L187" title="All 2 branches missed.">                if (IterImplSkip.breaks[c]) {</span>
+<span class="nc" id="L188">                    iter.head = i;</span>
+<span class="nc" id="L189">                    return dotFound;</span>
+                }
+            }
+<span class="nc bnc" id="L192" title="All 2 branches missed.">            if (!loadMore(iter)) {</span>
+<span class="nc" id="L193">                iter.head = iter.tail;</span>
+<span class="nc" id="L194">                return dotFound;</span>
+            }
+        }
+    }
+
+    // read the bytes between &quot; &quot;
+    final static Slice readSlice(JsonIterator iter) throws IOException {
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        if (IterImpl.nextToken(iter) != '&quot;') {</span>
+<span class="nc" id="L202">            throw iter.reportError(&quot;readSlice&quot;, &quot;expect \&quot; for string&quot;);</span>
+        }
+<span class="nc" id="L204">        int end = IterImplString.findSliceEnd(iter);</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">        if (end != -1) {</span>
+            // reuse current buffer
+<span class="nc" id="L207">            iter.reusableSlice.reset(iter.buf, iter.head, end - 1);</span>
+<span class="nc" id="L208">            iter.head = end;</span>
+<span class="nc" id="L209">            return iter.reusableSlice;</span>
+        }
+        // TODO: avoid small memory allocation
+<span class="nc" id="L212">        byte[] part1 = new byte[iter.tail - iter.head];</span>
+<span class="nc" id="L213">        System.arraycopy(iter.buf, iter.head, part1, 0, part1.length);</span>
+        for (; ; ) {
+<span class="nc bnc" id="L215" title="All 2 branches missed.">            if (!loadMore(iter)) {</span>
+<span class="nc" id="L216">                throw iter.reportError(&quot;readSlice&quot;, &quot;unmatched quote&quot;);</span>
+            }
+<span class="nc" id="L218">            end = IterImplString.findSliceEnd(iter);</span>
+<span class="nc bnc" id="L219" title="All 2 branches missed.">            if (end == -1) {</span>
+<span class="nc" id="L220">                byte[] part2 = new byte[part1.length + iter.buf.length];</span>
+<span class="nc" id="L221">                System.arraycopy(part1, 0, part2, 0, part1.length);</span>
+<span class="nc" id="L222">                System.arraycopy(iter.buf, 0, part2, part1.length, iter.buf.length);</span>
+<span class="nc" id="L223">                part1 = part2;</span>
+<span class="nc" id="L224">            } else {</span>
+<span class="nc" id="L225">                byte[] part2 = new byte[part1.length + end - 1];</span>
+<span class="nc" id="L226">                System.arraycopy(part1, 0, part2, 0, part1.length);</span>
+<span class="nc" id="L227">                System.arraycopy(iter.buf, 0, part2, part1.length, end - 1);</span>
+<span class="nc" id="L228">                iter.head = end;</span>
+<span class="nc" id="L229">                iter.reusableSlice.reset(part2, 0, part2.length);</span>
+<span class="nc" id="L230">                return iter.reusableSlice;</span>
+            }
+        }
+    }
+
+    final static byte nextToken(JsonIterator iter) throws IOException {
+        for (; ; ) {
+<span class="nc bnc" id="L237" title="All 2 branches missed.">            for (int i = iter.head; i &lt; iter.tail; i++) {</span>
+<span class="nc" id="L238">                byte c = iter.buf[i];</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">                switch (c) {</span>
+                    case ' ':
+                    case '\n':
+                    case '\t':
+                    case '\r':
+<span class="nc" id="L244">                        continue;</span>
+                    default:
+<span class="nc" id="L246">                        iter.head = i + 1;</span>
+<span class="nc" id="L247">                        return c;</span>
+                }
+            }
+<span class="nc bnc" id="L250" title="All 2 branches missed.">            if (!loadMore(iter)) {</span>
+<span class="nc" id="L251">                return 0;</span>
+            }
+        }
+    }
+
+    public final static boolean loadMore(JsonIterator iter) throws IOException {
+<span class="nc bnc" id="L257" title="All 2 branches missed.">        if (iter.in == null) {</span>
+<span class="nc" id="L258">            return false;</span>
+        }
+<span class="nc bnc" id="L260" title="All 2 branches missed.">        if (iter.skipStartedAt != -1) {</span>
+<span class="nc" id="L261">            return keepSkippedBytesThenRead(iter);</span>
+        }
+<span class="nc" id="L263">        int n = iter.in.read(iter.buf);</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        if (n &lt; 1) {</span>
+<span class="nc bnc" id="L265" title="All 2 branches missed.">            if (n == -1) {</span>
+<span class="nc" id="L266">                return false;</span>
+            } else {
+<span class="nc" id="L268">                throw iter.reportError(&quot;loadMore&quot;, &quot;read from input stream returned &quot; + n);</span>
+            }
+        } else {
+<span class="nc" id="L271">            iter.head = 0;</span>
+<span class="nc" id="L272">            iter.tail = n;</span>
+        }
+<span class="nc" id="L274">        return true;</span>
+    }
+
+    private static boolean keepSkippedBytesThenRead(JsonIterator iter) throws IOException {
+<span class="nc" id="L278">        int offset = iter.tail - iter.skipStartedAt;</span>
+<span class="nc" id="L279">        byte[] srcBuffer = iter.buf;</span>
+        // Check there is no unused buffer capacity
+<span class="nc bnc" id="L281" title="All 2 branches missed.">        if ((getUnusedBufferByteCount(iter)) == 0) {</span>
+          // If auto expand buffer enabled, then create larger buffer
+<span class="nc bnc" id="L283" title="All 2 branches missed.">          if (iter.autoExpandBufferStep &gt; 0) {</span>
+<span class="nc" id="L284">            iter.buf = new byte[iter.buf.length + iter.autoExpandBufferStep];</span>
+          } else {
+<span class="nc" id="L286">            throw iter.reportError(&quot;loadMore&quot;, String.format(&quot;buffer is full and autoexpansion is disabled. tail: [%s] skipStartedAt: [%s]&quot;, iter.tail, iter.skipStartedAt));</span>
+          }
+        }
+<span class="nc" id="L289">        System.arraycopy(srcBuffer, iter.skipStartedAt, iter.buf, 0, offset);</span>
+<span class="nc" id="L290">        int n = iter.in.read(iter.buf, offset, iter.buf.length - offset);</span>
+<span class="nc" id="L291">        iter.skipStartedAt = 0;</span>
+<span class="nc bnc" id="L292" title="All 2 branches missed.">        if (n &lt; 1) {</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">            if (n == -1) {</span>
+<span class="nc" id="L294">                return false;</span>
+            } else {
+<span class="nc" id="L296">                throw iter.reportError(&quot;loadMore&quot;, &quot;read from input stream returned &quot; + n);</span>
+            }
+        } else {
+<span class="nc" id="L299">            iter.head = offset;</span>
+<span class="nc" id="L300">            iter.tail = offset + n;</span>
+        }
+<span class="nc" id="L302">        return true;</span>
+    }
+
+    private static int getUnusedBufferByteCount(JsonIterator iter) {
+        // Get bytes from 0 to skipStart + from tail till end
+<span class="nc" id="L307">        return iter.buf.length - iter.tail + iter.skipStartedAt;</span>
+    }
+
+    final static byte readByte(JsonIterator iter) throws IOException {
+<span class="nc bnc" id="L311" title="All 2 branches missed.">        if (iter.head == iter.tail) {</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">            if (!loadMore(iter)) {</span>
+<span class="nc" id="L313">                throw iter.reportError(&quot;readByte&quot;, &quot;no more to read&quot;);</span>
+            }
+        }
+<span class="nc" id="L316">        return iter.buf[iter.head++];</span>
+    }
+
+    public static Any readAny(JsonIterator iter) throws IOException {
+        // TODO: avoid small memory allocation
+<span class="nc" id="L321">        iter.skipStartedAt = iter.head;</span>
+<span class="nc" id="L322">        byte c = nextToken(iter);</span>
+<span class="nc bnc" id="L323" title="All 7 branches missed.">        switch (c) {</span>
+            case '&quot;':
+<span class="nc" id="L325">                skipString(iter);</span>
+<span class="nc" id="L326">                byte[] copied = copySkippedBytes(iter);</span>
+<span class="nc" id="L327">                return Any.lazyString(copied, 0, copied.length);</span>
+            case 't':
+<span class="nc" id="L329">                skipFixedBytes(iter, 3);</span>
+<span class="nc" id="L330">                iter.skipStartedAt = -1;</span>
+<span class="nc" id="L331">                return Any.wrap(true);</span>
+            case 'f':
+<span class="nc" id="L333">                skipFixedBytes(iter, 4);</span>
+<span class="nc" id="L334">                iter.skipStartedAt = -1;</span>
+<span class="nc" id="L335">                return Any.wrap(false);</span>
+            case 'n':
+<span class="nc" id="L337">                skipFixedBytes(iter, 3);</span>
+<span class="nc" id="L338">                iter.skipStartedAt = -1;</span>
+<span class="nc" id="L339">                return Any.wrap((Object) null);</span>
+            case '[':
+<span class="nc" id="L341">                skipArray(iter);</span>
+<span class="nc" id="L342">                copied = copySkippedBytes(iter);</span>
+<span class="nc" id="L343">                return Any.lazyArray(copied, 0, copied.length);</span>
+            case '{':
+<span class="nc" id="L345">                skipObject(iter);</span>
+<span class="nc" id="L346">                copied = copySkippedBytes(iter);</span>
+<span class="nc" id="L347">                return Any.lazyObject(copied, 0, copied.length);</span>
+            default:
+<span class="nc bnc" id="L349" title="All 2 branches missed.">                if (skipNumber(iter)) {</span>
+<span class="nc" id="L350">                    copied = copySkippedBytes(iter);</span>
+<span class="nc" id="L351">                    return Any.lazyDouble(copied, 0, copied.length);</span>
+                } else {
+<span class="nc" id="L353">                    copied = copySkippedBytes(iter);</span>
+<span class="nc" id="L354">                    return Any.lazyLong(copied, 0, copied.length);</span>
+                }
+        }
+    }
+
+    private static byte[] copySkippedBytes(JsonIterator iter) {
+<span class="nc" id="L360">        int start = iter.skipStartedAt;</span>
+<span class="nc" id="L361">        iter.skipStartedAt = -1;</span>
+<span class="nc" id="L362">        int end = iter.head;</span>
+<span class="nc" id="L363">        byte[] bytes = new byte[end - start];</span>
+<span class="nc" id="L364">        System.arraycopy(iter.buf, start, bytes, 0, bytes.length);</span>
+<span class="nc" id="L365">        return bytes;</span>
+    }
+
+    public static void skipFixedBytes(JsonIterator iter, int n) throws IOException {
+<span class="nc" id="L369">        iter.head += n;</span>
+<span class="nc bnc" id="L370" title="All 2 branches missed.">        if (iter.head &gt;= iter.tail) {</span>
+<span class="nc" id="L371">            int more = iter.head - iter.tail;</span>
+<span class="nc bnc" id="L372" title="All 2 branches missed.">            if (!loadMore(iter)) {</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">                if (more == 0) {</span>
+<span class="nc" id="L374">                    iter.head = iter.tail;</span>
+<span class="nc" id="L375">                    return;</span>
+                }
+<span class="nc" id="L377">                throw iter.reportError(&quot;skipFixedBytes&quot;, &quot;unexpected end&quot;);</span>
+            }
+<span class="nc" id="L379">            iter.head += more;</span>
+        }
+<span class="nc" id="L381">    }</span>
+
+    public static int updateStringCopyBound(final JsonIterator iter, final int bound) {
+<span class="nc bnc" id="L384" title="All 2 branches missed.">        if (bound &gt; iter.tail - iter.head) {</span>
+<span class="nc" id="L385">            return iter.tail - iter.head;</span>
+        } else {
+<span class="nc" id="L387">            return bound;</span>
+        }
+    }
+
+    public final static int readStringSlowPath(JsonIterator iter, int j) throws IOException {
+<span class="nc" id="L392">        boolean isExpectingLowSurrogate = false;</span>
+        for (;;) {
+<span class="nc" id="L394">            int bc = readByte(iter);</span>
+<span class="nc bnc" id="L395" title="All 2 branches missed.">            if (bc == '&quot;') {</span>
+<span class="nc" id="L396">                return j;</span>
+            }
+<span class="nc bnc" id="L398" title="All 2 branches missed.">            if (bc == '\\') {</span>
+<span class="nc" id="L399">                bc = readByte(iter);</span>
+<span class="nc bnc" id="L400" title="All 8 branches missed.">                switch (bc) {</span>
+                    case 'b':
+<span class="nc" id="L402">                        bc = '\b';</span>
+<span class="nc" id="L403">                        break;</span>
+                    case 't':
+<span class="nc" id="L405">                        bc = '\t';</span>
+<span class="nc" id="L406">                        break;</span>
+                    case 'n':
+<span class="nc" id="L408">                        bc = '\n';</span>
+<span class="nc" id="L409">                        break;</span>
+                    case 'f':
+<span class="nc" id="L411">                        bc = '\f';</span>
+<span class="nc" id="L412">                        break;</span>
+                    case 'r':
+<span class="nc" id="L414">                        bc = '\r';</span>
+<span class="nc" id="L415">                        break;</span>
+                    case '&quot;':
+                    case '/':
+                    case '\\':
+<span class="nc" id="L419">                        break;</span>
+                    case 'u':
+<span class="nc" id="L421">                        bc = (IterImplString.translateHex(readByte(iter)) &lt;&lt; 12) +</span>
+<span class="nc" id="L422">                                (IterImplString.translateHex(readByte(iter)) &lt;&lt; 8) +</span>
+<span class="nc" id="L423">                                (IterImplString.translateHex(readByte(iter)) &lt;&lt; 4) +</span>
+<span class="nc" id="L424">                                IterImplString.translateHex(readByte(iter));</span>
+<span class="nc bnc" id="L425" title="All 2 branches missed.">                        if (Character.isHighSurrogate((char) bc)) {</span>
+<span class="nc bnc" id="L426" title="All 2 branches missed.">                            if (isExpectingLowSurrogate) {</span>
+<span class="nc" id="L427">                                throw new JsonException(&quot;invalid surrogate&quot;);</span>
+                            } else {
+<span class="nc" id="L429">                                isExpectingLowSurrogate = true;</span>
+                            }
+<span class="nc bnc" id="L431" title="All 2 branches missed.">                        } else if (Character.isLowSurrogate((char) bc)) {</span>
+<span class="nc bnc" id="L432" title="All 2 branches missed.">                            if (isExpectingLowSurrogate) {</span>
+<span class="nc" id="L433">                                isExpectingLowSurrogate = false;</span>
+                            } else {
+<span class="nc" id="L435">                                throw new JsonException(&quot;invalid surrogate&quot;);</span>
+                            }
+                        } else {
+<span class="nc bnc" id="L438" title="All 2 branches missed.">                            if (isExpectingLowSurrogate) {</span>
+<span class="nc" id="L439">                                throw new JsonException(&quot;invalid surrogate&quot;);</span>
+                            }
+                        }
+                        break;
+
+                    default:
+<span class="nc" id="L445">                        throw iter.reportError(&quot;readStringSlowPath&quot;, &quot;invalid escape character: &quot; + bc);</span>
+                }
+<span class="nc bnc" id="L447" title="All 2 branches missed.">            } else if ((bc &amp; 0x80) != 0) {</span>
+<span class="nc" id="L448">                final int u2 = readByte(iter);</span>
+<span class="nc bnc" id="L449" title="All 2 branches missed.">                if ((bc &amp; 0xE0) == 0xC0) {</span>
+<span class="nc" id="L450">                    bc = ((bc &amp; 0x1F) &lt;&lt; 6) + (u2 &amp; 0x3F);</span>
+                } else {
+<span class="nc" id="L452">                    final int u3 = readByte(iter);</span>
+<span class="nc bnc" id="L453" title="All 2 branches missed.">                    if ((bc &amp; 0xF0) == 0xE0) {</span>
+<span class="nc" id="L454">                        bc = ((bc &amp; 0x0F) &lt;&lt; 12) + ((u2 &amp; 0x3F) &lt;&lt; 6) + (u3 &amp; 0x3F);</span>
+                    } else {
+<span class="nc" id="L456">                        final int u4 = readByte(iter);</span>
+<span class="nc bnc" id="L457" title="All 2 branches missed.">                        if ((bc &amp; 0xF8) == 0xF0) {</span>
+<span class="nc" id="L458">                            bc = ((bc &amp; 0x07) &lt;&lt; 18) + ((u2 &amp; 0x3F) &lt;&lt; 12) + ((u3 &amp; 0x3F) &lt;&lt; 6) + (u4 &amp; 0x3F);</span>
+                        } else {
+<span class="nc" id="L460">                            throw iter.reportError(&quot;readStringSlowPath&quot;, &quot;invalid unicode character&quot;);</span>
+                        }
+
+<span class="nc bnc" id="L463" title="All 2 branches missed.">                        if (bc &gt;= 0x10000) {</span>
+                            // check if valid unicode
+<span class="nc bnc" id="L465" title="All 2 branches missed.">                            if (bc &gt;= 0x110000)</span>
+<span class="nc" id="L466">                                throw iter.reportError(&quot;readStringSlowPath&quot;, &quot;invalid unicode character&quot;);</span>
+
+                            // split surrogates
+<span class="nc" id="L469">                            final int sup = bc - 0x10000;</span>
+<span class="nc bnc" id="L470" title="All 2 branches missed.">                            if (iter.reusableChars.length == j) {</span>
+<span class="nc" id="L471">                                char[] newBuf = new char[iter.reusableChars.length * 2];</span>
+<span class="nc" id="L472">                                System.arraycopy(iter.reusableChars, 0, newBuf, 0, iter.reusableChars.length);</span>
+<span class="nc" id="L473">                                iter.reusableChars = newBuf;</span>
+                            }
+<span class="nc" id="L475">                            iter.reusableChars[j++] = (char) ((sup &gt;&gt;&gt; 10) + 0xd800);</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">                            if (iter.reusableChars.length == j) {</span>
+<span class="nc" id="L477">                                char[] newBuf = new char[iter.reusableChars.length * 2];</span>
+<span class="nc" id="L478">                                System.arraycopy(iter.reusableChars, 0, newBuf, 0, iter.reusableChars.length);</span>
+<span class="nc" id="L479">                                iter.reusableChars = newBuf;</span>
+                            }
+<span class="nc" id="L481">                            iter.reusableChars[j++] = (char) ((sup &amp; 0x3ff) + 0xdc00);</span>
+<span class="nc" id="L482">                            continue;</span>
+                        }
+                    }
+                }
+            }
+<span class="nc bnc" id="L487" title="All 2 branches missed.">            if (iter.reusableChars.length == j) {</span>
+<span class="nc" id="L488">                char[] newBuf = new char[iter.reusableChars.length * 2];</span>
+<span class="nc" id="L489">                System.arraycopy(iter.reusableChars, 0, newBuf, 0, iter.reusableChars.length);</span>
+<span class="nc" id="L490">                iter.reusableChars = newBuf;</span>
+            }
+<span class="nc" id="L492">            iter.reusableChars[j++] = (char) bc;</span>
+<span class="nc" id="L493">        }</span>
+    }
+
+    static long readLongSlowPath(final JsonIterator iter, long value) throws IOException {
+<span class="fc" id="L497">        value = -value; // add negatives to avoid redundant checks for Long.MIN_VALUE on each iteration</span>
+<span class="fc" id="L498">        long multmin = -922337203685477580L; // limit / 10</span>
+        for (; ; ) {
+<span class="fc bfc" id="L500" title="All 2 branches covered.">            for (int i = iter.head; i &lt; iter.tail; i++) {</span>
+<span class="fc" id="L501">                int ind = IterImplNumber.intDigits[iter.buf[i]];</span>
+<span class="fc bfc" id="L502" title="All 2 branches covered.">                if (ind == IterImplNumber.INVALID_CHAR_FOR_NUMBER) {</span>
+<span class="fc" id="L503">                    iter.head = i;</span>
+<span class="fc" id="L504">                    return value;</span>
+                }
+<span class="fc bfc" id="L506" title="All 2 branches covered.">                if (value &lt; multmin) {</span>
+<span class="nc" id="L507">                    throw iter.reportError(&quot;readLongSlowPath&quot;, &quot;value is too large for long&quot;);</span>
+                }
+<span class="fc" id="L509">                value = (value &lt;&lt; 3) + (value &lt;&lt; 1) - ind;</span>
+<span class="pc bpc" id="L510" title="1 of 2 branches missed.">                if (value &gt;= 0) {</span>
+<span class="nc" id="L511">                    throw iter.reportError(&quot;readLongSlowPath&quot;, &quot;value is too large for long&quot;);</span>
+                }
+            }
+<span class="pc bpc" id="L514" title="1 of 2 branches missed.">            if (!IterImpl.loadMore(iter)) {</span>
+<span class="fc" id="L515">                iter.head = iter.tail;</span>
+<span class="fc" id="L516">                return value;</span>
+            }
+        }
+    }
+
+    static int readIntSlowPath(final JsonIterator iter, int value) throws IOException {
+<span class="fc" id="L522">        value = -value; // add negatives to avoid redundant checks for Integer.MIN_VALUE on each iteration</span>
+<span class="fc" id="L523">        int multmin = -214748364; // limit / 10</span>
+        for (; ; ) {
+<span class="pc bpc" id="L525" title="1 of 2 branches missed.">            for (int i = iter.head; i &lt; iter.tail; i++) {</span>
+<span class="fc" id="L526">                int ind = IterImplNumber.intDigits[iter.buf[i]];</span>
+<span class="fc bfc" id="L527" title="All 2 branches covered.">                if (ind == IterImplNumber.INVALID_CHAR_FOR_NUMBER) {</span>
+<span class="fc" id="L528">                    iter.head = i;</span>
+<span class="fc" id="L529">                    return value;</span>
+                }
+<span class="pc bpc" id="L531" title="1 of 2 branches missed.">                if (value &lt; multmin) {</span>
+<span class="nc" id="L532">                    throw iter.reportError(&quot;readIntSlowPath&quot;, &quot;value is too large for int&quot;);</span>
+                }
+<span class="fc" id="L534">                value = (value &lt;&lt; 3) + (value &lt;&lt; 1) - ind;</span>
+<span class="pc bpc" id="L535" title="1 of 2 branches missed.">                if (value &gt;= 0) {</span>
+<span class="nc" id="L536">                    throw iter.reportError(&quot;readIntSlowPath&quot;, &quot;value is too large for int&quot;);</span>
+                }
+            }
+<span class="nc bnc" id="L539" title="All 2 branches missed.">            if (!IterImpl.loadMore(iter)) {</span>
+<span class="nc" id="L540">                iter.head = iter.tail;</span>
+<span class="nc" id="L541">                return value;</span>
+            }
+        }
+    }
+
+    public static final double readDoubleSlowPath(final JsonIterator iter) throws IOException {
+        try {
+<span class="fc" id="L548">            numberChars numberChars = readNumber(iter);</span>
+<span class="pc bpc" id="L549" title="1 of 4 branches missed.">            if (numberChars.charsLength == 0 &amp;&amp; iter.whatIsNext() == ValueType.STRING) {</span>
+<span class="fc" id="L550">                String possibleInf = iter.readString();</span>
+<span class="fc bfc" id="L551" title="All 2 branches covered.">                if (&quot;infinity&quot;.equals(possibleInf)) {</span>
+<span class="fc" id="L552">                    return Double.POSITIVE_INFINITY;</span>
+                }
+<span class="pc bpc" id="L554" title="1 of 2 branches missed.">                if (&quot;-infinity&quot;.equals(possibleInf)) {</span>
+<span class="fc" id="L555">                    return Double.NEGATIVE_INFINITY;</span>
+                }
+<span class="nc" id="L557">                throw iter.reportError(&quot;readDoubleSlowPath&quot;, &quot;expect number but found string: &quot; + possibleInf);</span>
+            }
+<span class="fc" id="L559">            return Double.valueOf(new String(numberChars.chars, 0, numberChars.charsLength));</span>
+<span class="nc" id="L560">        } catch (NumberFormatException e) {</span>
+<span class="nc" id="L561">            throw iter.reportError(&quot;readDoubleSlowPath&quot;, e.toString());</span>
+        }
+    }
+
+<span class="fc" id="L565">    static class numberChars {</span>
+        char[] chars;
+        int charsLength;
+        boolean dotFound;
+    }
+
+    public static final numberChars readNumber(final JsonIterator iter) throws IOException {
+<span class="fc" id="L572">        int j = 0;</span>
+<span class="fc" id="L573">        boolean dotFound = false;</span>
+        for (; ; ) {
+<span class="fc bfc" id="L575" title="All 2 branches covered.">            for (int i = iter.head; i &lt; iter.tail; i++) {</span>
+<span class="pc bpc" id="L576" title="1 of 2 branches missed.">                if (j == iter.reusableChars.length) {</span>
+<span class="nc" id="L577">                    char[] newBuf = new char[iter.reusableChars.length * 2];</span>
+<span class="nc" id="L578">                    System.arraycopy(iter.reusableChars, 0, newBuf, 0, iter.reusableChars.length);</span>
+<span class="nc" id="L579">                    iter.reusableChars = newBuf;</span>
+                }
+<span class="fc" id="L581">                byte c = iter.buf[i];</span>
+<span class="fc bfc" id="L582" title="All 3 branches covered.">                switch (c) {</span>
+                    case '.':
+                    case 'e':
+                    case 'E':
+<span class="fc" id="L586">                        dotFound = true;</span>
+                        // fallthrough
+                    case '-':
+                    case '+':
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                    case '8':
+                    case '9':
+<span class="fc" id="L600">                        iter.reusableChars[j++] = (char) c;</span>
+<span class="fc" id="L601">                        break;</span>
+                    default:
+<span class="fc" id="L603">                        iter.head = i;</span>
+<span class="fc" id="L604">                        numberChars numberChars = new numberChars();</span>
+<span class="fc" id="L605">                        numberChars.chars = iter.reusableChars;</span>
+<span class="fc" id="L606">                        numberChars.charsLength = j;</span>
+<span class="fc" id="L607">                        numberChars.dotFound = dotFound;</span>
+<span class="fc" id="L608">                        return numberChars;</span>
+                }
+            }
+<span class="pc bpc" id="L611" title="1 of 2 branches missed.">            if (!IterImpl.loadMore(iter)) {</span>
+<span class="fc" id="L612">                iter.head = iter.tail;</span>
+<span class="fc" id="L613">                numberChars numberChars = new numberChars();</span>
+<span class="fc" id="L614">                numberChars.chars = iter.reusableChars;</span>
+<span class="fc" id="L615">                numberChars.charsLength = j;</span>
+<span class="fc" id="L616">                numberChars.dotFound = dotFound;</span>
+<span class="fc" id="L617">                return numberChars;</span>
+            }
+        }
+    }
+
+    static final double readDouble(final JsonIterator iter) throws IOException {
+<span class="nc" id="L623">        return readDoubleSlowPath(iter);</span>
+    }
+
+    static final long readLong(final JsonIterator iter, final byte c) throws IOException {
+<span class="nc" id="L627">        long ind = IterImplNumber.intDigits[c];</span>
+<span class="nc bnc" id="L628" title="All 2 branches missed.">        if (ind == 0) {</span>
+<span class="nc" id="L629">            assertNotLeadingZero(iter);</span>
+<span class="nc" id="L630">            return 0;</span>
+        }
+<span class="nc bnc" id="L632" title="All 2 branches missed.">        if (ind == IterImplNumber.INVALID_CHAR_FOR_NUMBER) {</span>
+<span class="nc" id="L633">            throw iter.reportError(&quot;readLong&quot;, &quot;expect 0~9&quot;);</span>
+        }
+<span class="nc" id="L635">        return IterImplForStreaming.readLongSlowPath(iter, ind);</span>
+    }
+
+    static final int readInt(final JsonIterator iter, final byte c) throws IOException {
+<span class="nc" id="L639">        int ind = IterImplNumber.intDigits[c];</span>
+<span class="nc bnc" id="L640" title="All 2 branches missed.">        if (ind == 0) {</span>
+<span class="nc" id="L641">            assertNotLeadingZero(iter);</span>
+<span class="nc" id="L642">            return 0;</span>
+        }
+<span class="nc bnc" id="L644" title="All 2 branches missed.">        if (ind == IterImplNumber.INVALID_CHAR_FOR_NUMBER) {</span>
+<span class="nc" id="L645">            throw iter.reportError(&quot;readInt&quot;, &quot;expect 0~9&quot;);</span>
+        }
+<span class="nc" id="L647">        return IterImplForStreaming.readIntSlowPath(iter, ind);</span>
+    }
+
+    static void assertNotLeadingZero(JsonIterator iter) throws IOException {
+        try {
+<span class="fc" id="L652">            byte nextByte = iter.buf[iter.head];</span>
+<span class="fc" id="L653">            int ind2 = IterImplNumber.intDigits[nextByte];</span>
+<span class="fc bfc" id="L654" title="All 2 branches covered.">            if (ind2 == IterImplNumber.INVALID_CHAR_FOR_NUMBER) {</span>
+<span class="fc" id="L655">                return;</span>
+            }
+<span class="nc" id="L657">            throw iter.reportError(&quot;assertNotLeadingZero&quot;, &quot;leading zero is invalid&quot;);</span>
+<span class="fc" id="L658">        } catch (ArrayIndexOutOfBoundsException e) {</span>
+<span class="fc" id="L659">            iter.head = iter.tail;</span>
+<span class="fc" id="L660">            return;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

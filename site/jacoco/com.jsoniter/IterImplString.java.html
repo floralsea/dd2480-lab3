@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>IterImplString.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">IterImplString.java</span></div><h1>IterImplString.java</h1><pre class="source lang-java linenums">/*
+this implementations contains significant code from https://github.com/ngs-doo/dsl-json/blob/master/LICENSE
+
+Copyright (c) 2015, Nova Generacija Softvera d.o.o.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+    * Neither the name of Nova Generacija Softvera d.o.o. nor the names of its
+      contributors may be used to endorse or promote products derived from this
+      software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot; AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package com.jsoniter;
+
+import java.io.IOException;
+
+<span class="nc" id="L36">class IterImplString {</span>
+
+<span class="fc" id="L38">    final static int[] hexDigits = new int['f' + 1];</span>
+
+    static {
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        for (int i = 0; i &lt; hexDigits.length; i++) {</span>
+<span class="fc" id="L42">            hexDigits[i] = -1;</span>
+        }
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        for (int i = '0'; i &lt;= '9'; ++i) {</span>
+<span class="fc" id="L45">            hexDigits[i] = (i - '0');</span>
+        }
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        for (int i = 'a'; i &lt;= 'f'; ++i) {</span>
+<span class="fc" id="L48">            hexDigits[i] = ((i - 'a') + 10);</span>
+        }
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        for (int i = 'A'; i &lt;= 'F'; ++i) {</span>
+<span class="fc" id="L51">            hexDigits[i] = ((i - 'A') + 10);</span>
+        }
+<span class="fc" id="L53">    }</span>
+
+    public static final String readString(JsonIterator iter) throws IOException {
+<span class="fc" id="L56">        byte c = IterImpl.nextToken(iter);</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (c != '&quot;') {</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">            if (c == 'n') {</span>
+<span class="fc" id="L59">                IterImpl.skipFixedBytes(iter, 3);</span>
+<span class="fc" id="L60">                return null;</span>
+            }
+<span class="nc" id="L62">            throw iter.reportError(&quot;readString&quot;, &quot;expect string or null, but &quot; + (char) c);</span>
+        }
+<span class="fc" id="L64">        int j = parse(iter);</span>
+<span class="fc" id="L65">        return new String(iter.reusableChars, 0, j);</span>
+    }
+
+    private static int parse(JsonIterator iter) throws IOException {
+        byte c;// try fast path first
+<span class="fc" id="L70">        int i = iter.head;</span>
+        // this code will trigger jvm hotspot pattern matching to highly optimized assembly
+<span class="fc" id="L72">        int bound = iter.reusableChars.length;</span>
+<span class="fc" id="L73">        bound = IterImpl.updateStringCopyBound(iter, bound);</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        for(int j = 0; j &lt; bound; j++) {</span>
+<span class="fc" id="L75">            c = iter.buf[i++];</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">            if (c == '&quot;') {</span>
+<span class="fc" id="L77">                iter.head = i;</span>
+<span class="fc" id="L78">                return j;</span>
+            }
+            // If we encounter a backslash, which is a beginning of an escape sequence
+            // or a high bit was set - indicating an UTF-8 encoded multibyte character,
+            // there is no chance that we can decode the string without instantiating
+            // a temporary buffer, so quit this loop
+<span class="fc bfc" id="L84" title="All 2 branches covered.">            if ((c ^ '\\') &lt; 1) {</span>
+<span class="fc" id="L85">                break;</span>
+            }
+<span class="fc" id="L87">            iter.reusableChars[j] = (char) c;</span>
+        }
+<span class="fc" id="L89">        int alreadyCopied = 0;</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (i &gt; iter.head) {</span>
+<span class="fc" id="L91">            alreadyCopied = i - iter.head - 1;</span>
+<span class="fc" id="L92">            iter.head = i - 1;</span>
+        }
+<span class="fc" id="L94">        return IterImpl.readStringSlowPath(iter, alreadyCopied);</span>
+    }
+
+    public static int translateHex(final byte b) {
+<span class="fc" id="L98">        int val = hexDigits[b];</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        if (val == -1) {</span>
+<span class="fc" id="L100">            throw new IndexOutOfBoundsException(b + &quot; is not valid hex digit&quot;);</span>
+        }
+<span class="fc" id="L102">        return val;</span>
+    }
+
+    // slice does not allow escape
+    final static int findSliceEnd(JsonIterator iter) {
+<span class="fc bfc" id="L107" title="All 2 branches covered.">        for (int i = iter.head; i &lt; iter.tail; i++) {</span>
+<span class="fc" id="L108">            byte c = iter.buf[i];</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">            if (c == '&quot;') {</span>
+<span class="fc" id="L110">                return i + 1;</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">            } else if (c == '\\') {</span>
+<span class="nc" id="L112">                throw iter.reportError(&quot;findSliceEnd&quot;, &quot;slice does not support escape char&quot;);</span>
+            }
+        }
+<span class="fc" id="L115">        return -1;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

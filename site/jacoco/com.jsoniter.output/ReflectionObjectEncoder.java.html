@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReflectionObjectEncoder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.output</a> &gt; <span class="el_source">ReflectionObjectEncoder.java</span></div><h1>ReflectionObjectEncoder.java</h1><pre class="source lang-java linenums">package com.jsoniter.output;
+
+import com.jsoniter.spi.*;
+import com.jsoniter.any.Any;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+class ReflectionObjectEncoder implements Encoder.ReflectionEncoder {
+
+    private final ClassDescriptor desc;
+<span class="fc" id="L15">    private final List&lt;EncodeTo&gt; fields = new ArrayList&lt;EncodeTo&gt;();</span>
+<span class="fc" id="L16">    private final List&lt;EncodeTo&gt; getters = new ArrayList&lt;EncodeTo&gt;();</span>
+
+<span class="fc" id="L18">    public ReflectionObjectEncoder(ClassInfo classInfo) {</span>
+<span class="fc" id="L19">        desc = ClassDescriptor.getEncodingClassDescriptor(classInfo, true);</span>
+<span class="fc bfc" id="L20" title="All 2 branches covered.">        for (EncodeTo encodeTo : desc.encodeTos()) {</span>
+<span class="fc" id="L21">            Binding binding = encodeTo.binding;</span>
+<span class="fc bfc" id="L22" title="All 2 branches covered.">            if (binding.encoder == null) {</span>
+                // the field encoder might be registered directly
+<span class="fc" id="L24">                binding.encoder = JsoniterSpi.getEncoder(binding.encoderCacheKey());</span>
+            }
+<span class="fc bfc" id="L26" title="All 2 branches covered.">            if (binding.field != null) {</span>
+<span class="fc" id="L27">                fields.add(encodeTo);</span>
+            } else {
+<span class="fc" id="L29">                getters.add(encodeTo);</span>
+            }
+<span class="fc" id="L31">        }</span>
+<span class="fc" id="L32">    }</span>
+
+    @Override
+    public void encode(Object obj, JsonStream stream) throws IOException {
+        try {
+<span class="fc" id="L37">            enocde_(obj, stream);</span>
+<span class="nc" id="L38">        } catch (JsonException e) {</span>
+<span class="nc" id="L39">            throw e;</span>
+<span class="nc" id="L40">        } catch (Exception e) {</span>
+<span class="nc" id="L41">            throw new JsonException(e);</span>
+<span class="fc" id="L42">        }</span>
+<span class="fc" id="L43">    }</span>
+
+    @Override
+    public Any wrap(Object obj) {
+<span class="nc" id="L47">        HashMap&lt;String, Object&gt; copied = new HashMap&lt;String, Object&gt;();</span>
+        try {
+<span class="nc bnc" id="L49" title="All 2 branches missed.">            for (EncodeTo encodeTo : fields) {</span>
+<span class="nc" id="L50">                Object val = encodeTo.binding.field.get(obj);</span>
+<span class="nc" id="L51">                copied.put(encodeTo.toName, val);</span>
+<span class="nc" id="L52">            }</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">            for (EncodeTo getter : getters) {</span>
+<span class="nc" id="L54">                Object val = getter.binding.method.invoke(obj);</span>
+<span class="nc" id="L55">                copied.put(getter.toName, val);</span>
+<span class="nc" id="L56">            }</span>
+<span class="nc" id="L57">        } catch (JsonException e) {</span>
+<span class="nc" id="L58">            throw e;</span>
+<span class="nc" id="L59">        } catch (Exception e) {</span>
+<span class="nc" id="L60">            throw new JsonException(e);</span>
+<span class="nc" id="L61">        }</span>
+<span class="nc" id="L62">        return Any.wrap(copied);</span>
+    }
+
+    private void enocde_(Object obj, JsonStream stream) throws Exception {
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">        if (obj == null) {</span>
+<span class="nc" id="L67">            stream.writeNull();</span>
+<span class="nc" id="L68">            return;</span>
+        }
+<span class="fc" id="L70">        stream.writeObjectStart();</span>
+<span class="fc" id="L71">        boolean notFirst = false;</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        for (EncodeTo encodeTo : fields) {</span>
+<span class="fc" id="L73">            Object val = encodeTo.binding.field.get(obj);</span>
+<span class="fc" id="L74">            notFirst = writeEncodeTo(stream, notFirst, encodeTo, val);</span>
+<span class="fc" id="L75">        }</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        for (EncodeTo encodeTo : getters) {</span>
+<span class="fc" id="L77">            Object val = encodeTo.binding.method.invoke(obj);</span>
+<span class="fc" id="L78">            notFirst = writeEncodeTo(stream, notFirst, encodeTo, val);</span>
+<span class="fc" id="L79">        }</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        for (UnwrapperDescriptor unwrapper : desc.unwrappers) {</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            if (unwrapper.isMap) {</span>
+<span class="fc" id="L82">                Map&lt;Object, Object&gt; map = (Map&lt;Object, Object&gt;) unwrapper.method.invoke(obj);</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">                for (Map.Entry&lt;Object, Object&gt; entry : map.entrySet()) {</span>
+<span class="pc bpc" id="L84" title="1 of 2 branches missed.">                    if (notFirst) {</span>
+<span class="nc" id="L85">                        stream.writeMore();</span>
+                    } else {
+<span class="fc" id="L87">                        notFirst = true;</span>
+                    }
+<span class="fc" id="L89">                    stream.writeObjectField(entry.getKey().toString());</span>
+<span class="fc" id="L90">                    stream.writeVal(unwrapper.mapValueTypeLiteral, entry.getValue());</span>
+<span class="fc" id="L91">                }</span>
+<span class="fc" id="L92">            } else {</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">                if (notFirst) {</span>
+<span class="nc" id="L94">                    stream.writeMore();</span>
+                } else {
+<span class="fc" id="L96">                    notFirst = true;</span>
+                }
+<span class="fc" id="L98">                unwrapper.method.invoke(obj, stream);</span>
+            }
+<span class="fc" id="L100">        }</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        if (notFirst) {</span>
+<span class="fc" id="L102">            stream.writeObjectEnd();</span>
+        } else {
+<span class="fc" id="L104">            stream.write('}');</span>
+        }
+<span class="fc" id="L106">    }</span>
+
+    private boolean writeEncodeTo(JsonStream stream, boolean notFirst, EncodeTo encodeTo, Object val) throws IOException {
+<span class="fc" id="L109">        OmitValue defaultValueToOmit = encodeTo.binding.defaultValueToOmit;</span>
+<span class="fc bfc" id="L110" title="All 4 branches covered.">        if (!(defaultValueToOmit != null &amp;&amp; defaultValueToOmit.shouldOmit(val))) {</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            if (notFirst) {</span>
+<span class="fc" id="L112">                stream.writeMore();</span>
+            } else {
+<span class="fc" id="L114">                stream.writeIndention();</span>
+<span class="fc" id="L115">                notFirst = true;</span>
+            }
+<span class="fc" id="L117">            stream.writeObjectField(encodeTo.toName);</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">            if (encodeTo.binding.encoder != null) {</span>
+<span class="fc" id="L119">                encodeTo.binding.encoder.encode(val, stream);</span>
+            } else {
+<span class="fc" id="L121">                stream.writeVal(val);</span>
+            }
+        }
+<span class="fc" id="L124">        return notFirst;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CodegenImplMap.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">CodegenImplMap.java</span></div><h1>CodegenImplMap.java</h1><pre class="source lang-java linenums">package com.jsoniter;
+
+import com.jsoniter.spi.ClassInfo;
+import com.jsoniter.spi.TypeLiteral;
+
+import java.lang.reflect.Type;
+
+<span class="nc" id="L8">class CodegenImplMap {</span>
+
+    public static String genMap(ClassInfo classInfo) {
+<span class="fc" id="L11">        Type keyType = classInfo.typeArgs[0];</span>
+<span class="fc" id="L12">        Type valueType = classInfo.typeArgs[1];</span>
+<span class="fc" id="L13">        StringBuilder lines = new StringBuilder();</span>
+<span class="fc" id="L14">        append(lines, &quot;{{clazz}} map = ({{clazz}})com.jsoniter.CodegenAccess.resetExistingObject(iter);&quot;);</span>
+<span class="fc" id="L15">        append(lines, &quot;if (iter.readNull()) { return null; }&quot;);</span>
+<span class="fc" id="L16">        append(lines, &quot;if (map == null) { map = new {{clazz}}(); }&quot;);</span>
+<span class="fc" id="L17">        append(lines, &quot;if (!com.jsoniter.CodegenAccess.readObjectStart(iter)) {&quot;);</span>
+<span class="fc" id="L18">        append(lines, &quot;return map;&quot;);</span>
+<span class="fc" id="L19">        append(lines, &quot;}&quot;);</span>
+<span class="fc" id="L20">        append(lines, &quot;do {&quot;);</span>
+<span class="fc bfc" id="L21" title="All 2 branches covered.">        if (keyType == String.class) {</span>
+<span class="fc" id="L22">            append(lines, &quot;java.lang.Object mapKey = com.jsoniter.CodegenAccess.readObjectFieldAsString(iter);&quot;);</span>
+        } else {
+<span class="fc" id="L24">            append(lines, &quot;java.lang.Object mapKey = com.jsoniter.CodegenAccess.readMapKey(\&quot;&quot; +</span>
+<span class="fc" id="L25">                    TypeLiteral.create(keyType).getDecoderCacheKey() +&quot;\&quot;, iter);&quot;);</span>
+        }
+<span class="fc" id="L27">        append(lines, &quot;map.put(mapKey, {{op}});&quot;);</span>
+<span class="fc" id="L28">        append(lines, &quot;} while (com.jsoniter.CodegenAccess.nextToken(iter) == ',');&quot;);</span>
+<span class="fc" id="L29">        append(lines, &quot;return map;&quot;);</span>
+<span class="fc" id="L30">        return lines.toString()</span>
+<span class="fc" id="L31">                .replace(&quot;{{clazz}}&quot;, classInfo.clazz.getName())</span>
+<span class="fc" id="L32">                .replace(&quot;{{op}}&quot;, CodegenImplNative.genReadOp(valueType));</span>
+    }
+
+    private static void append(StringBuilder lines, String str) {
+<span class="fc" id="L36">        lines.append(str);</span>
+<span class="fc" id="L37">        lines.append(&quot;\n&quot;);</span>
+<span class="fc" id="L38">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

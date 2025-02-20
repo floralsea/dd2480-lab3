@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DynamicCodegen.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.output</a> &gt; <span class="el_source">DynamicCodegen.java</span></div><h1>DynamicCodegen.java</h1><pre class="source lang-java linenums">package com.jsoniter.output;
+
+import com.jsoniter.spi.Encoder;
+import javassist.*;
+
+<span class="nc" id="L6">class DynamicCodegen {</span>
+
+<span class="fc" id="L8">    static ClassPool pool = ClassPool.getDefault();</span>
+
+    static {
+<span class="fc" id="L11">        pool.insertClassPath(new ClassClassPath(Encoder.class));</span>
+<span class="fc" id="L12">    }</span>
+
+    public static Encoder gen(Class clazz, String cacheKey, CodegenResult source) throws Exception {
+<span class="fc" id="L15">        source.flushBuffer();</span>
+<span class="fc" id="L16">        CtClass ctClass = pool.makeClass(cacheKey);</span>
+<span class="fc" id="L17">        ctClass.setInterfaces(new CtClass[]{pool.get(Encoder.class.getName())});</span>
+<span class="fc" id="L18">        String staticCode = source.toString();</span>
+<span class="fc" id="L19">        CtMethod staticMethod = CtNewMethod.make(staticCode, ctClass);</span>
+<span class="fc" id="L20">        ctClass.addMethod(staticMethod);</span>
+<span class="fc" id="L21">        String wrapperCode = source.generateWrapperCode(clazz);</span>
+<span class="pc bpc" id="L22" title="1 of 2 branches missed.">        if (&quot;true&quot;.equals(System.getenv(&quot;JSONITER_DEBUG&quot;))) {</span>
+<span class="nc" id="L23">            System.out.println(&quot;&gt;&gt;&gt; &quot; + cacheKey);</span>
+<span class="nc" id="L24">            System.out.println(wrapperCode);</span>
+<span class="nc" id="L25">            System.out.println(staticCode);</span>
+        }
+<span class="fc" id="L27">        CtMethod interfaceMethod = CtNewMethod.make(wrapperCode, ctClass);</span>
+<span class="fc" id="L28">        ctClass.addMethod(interfaceMethod);</span>
+<span class="nc" id="L29">        return (Encoder) ctClass.toClass().newInstance();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

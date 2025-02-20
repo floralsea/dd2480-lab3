@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UnwrapperDescriptor.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter.spi</a> &gt; <span class="el_source">UnwrapperDescriptor.java</span></div><h1>UnwrapperDescriptor.java</h1><pre class="source lang-java linenums">package com.jsoniter.spi;
+
+import com.jsoniter.output.JsonStream;
+
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.Map;
+
+public class UnwrapperDescriptor {
+
+    public Method method;
+
+    public boolean isMap;
+
+    public TypeLiteral mapValueTypeLiteral;
+
+<span class="fc" id="L18">    public UnwrapperDescriptor(Method method) {</span>
+<span class="fc" id="L19">        this.method = method;</span>
+<span class="fc bfc" id="L20" title="All 2 branches covered.">        if (isMapUnwrapper(method)) {</span>
+<span class="fc" id="L21">            this.isMap = true;</span>
+<span class="fc" id="L22">            Type mapType = method.getGenericReturnType();</span>
+<span class="fc" id="L23">            mapValueTypeLiteral = TypeLiteral.create(Object.class);</span>
+<span class="pc bpc" id="L24" title="1 of 2 branches missed.">            if (mapType instanceof ParameterizedType) {</span>
+<span class="fc" id="L25">                ParameterizedType pType = (ParameterizedType) mapType;</span>
+<span class="fc" id="L26">                Type[] typeArgs = pType.getActualTypeArguments();</span>
+<span class="pc bpc" id="L27" title="1 of 2 branches missed.">                if (typeArgs.length == 2) {</span>
+<span class="fc" id="L28">                    mapValueTypeLiteral = TypeLiteral.create(typeArgs[1]);</span>
+                }
+            }
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        } else if (isStreamUnwrapper(method)) {</span>
+<span class="fc" id="L32">            this.isMap = false;</span>
+        } else {
+<span class="nc" id="L34">            throw new JsonException(&quot;invalid unwrapper method signature: &quot; + method);</span>
+        }
+<span class="fc" id="L36">    }</span>
+
+    private boolean isMapUnwrapper(Method method) {
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (method.getParameterTypes().length != 0) {</span>
+<span class="fc" id="L40">            return false;</span>
+        }
+<span class="fc" id="L42">        return Map.class.isAssignableFrom(method.getReturnType());</span>
+    }
+
+    private boolean isStreamUnwrapper(Method method) {
+<span class="pc bpc" id="L46" title="1 of 2 branches missed.">        if (method.getReturnType() != void.class) {</span>
+<span class="nc" id="L47">            return false;</span>
+        }
+<span class="fc" id="L49">        Class&lt;?&gt;[] parameterTypes = method.getParameterTypes();</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">        if (parameterTypes.length != 1) {</span>
+<span class="nc" id="L51">            return false;</span>
+        }
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">        return parameterTypes[0] == JsonStream.class;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

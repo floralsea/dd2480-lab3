@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExperimentFunctions.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">ExperimentFunctions.java</span></div><h1>ExperimentFunctions.java</h1><pre class="source lang-java linenums">package com.jsoniter;
+
+import java.io.IOException;
+import com.jsoniter.JsonIterator;
+
+import static com.jsoniter.IterImplForStreaming.loadMore;
+
+<span class="nc" id="L8">public class ExperimentFunctions {</span>
+
+    public static final String readObject(JsonIterator iter) throws IOException {
+<span class="nc" id="L11">        CoverageData coverage = CoverageData.getInstance(&quot;readObject&quot;, 11);</span>
+<span class="nc" id="L12">        coverage.logBranch(&quot;branch&quot;, 1);</span>
+
+<span class="nc" id="L14">        byte c = IterImpl.nextToken(iter);</span>
+<span class="nc bnc" id="L15" title="All 5 branches missed.">        switch (c) {</span>
+            case 'n':
+<span class="nc" id="L17">                coverage.logBranch(&quot;branch&quot;, 2);</span>
+<span class="nc" id="L18">                IterImpl.skipFixedBytes(iter, 3);</span>
+<span class="nc" id="L19">                coverage.logBranch(&quot;exit&quot;, 1);</span>
+<span class="nc" id="L20">                return null;</span>
+            case '{':
+<span class="nc" id="L22">                coverage.logBranch(&quot;branch&quot;, 3);</span>
+<span class="nc" id="L23">                c = IterImpl.nextToken(iter);</span>
+<span class="nc bnc" id="L24" title="All 2 branches missed.">                if (c == '&quot;') {</span>
+<span class="nc" id="L25">                    coverage.logBranch(&quot;branch&quot;, 4);</span>
+<span class="nc" id="L26">                    iter.unreadByte();</span>
+<span class="nc" id="L27">                    String field = iter.readString();</span>
+<span class="nc bnc" id="L28" title="All 2 branches missed.">                    if (IterImpl.nextToken(iter) != ':') {</span>
+<span class="nc" id="L29">                        coverage.logBranch(&quot;branch&quot;, 5);</span>
+<span class="nc" id="L30">                        throw iter.reportError(&quot;readObject&quot;, &quot;expect :&quot;);</span>
+                    }
+<span class="nc" id="L32">                    coverage.logBranch(&quot;exit&quot;, 2);</span>
+<span class="nc" id="L33">                    return field;</span>
+                }
+<span class="nc bnc" id="L35" title="All 2 branches missed.">                if (c == '}') {</span>
+<span class="nc" id="L36">                    coverage.logBranch(&quot;branch&quot;, 6);</span>
+<span class="nc" id="L37">                    coverage.logBranch(&quot;exit&quot;, 3);</span>
+<span class="nc" id="L38">                    return null;</span>
+                }
+<span class="nc" id="L40">                coverage.logBranch(&quot;branch&quot;, 7);</span>
+<span class="nc" id="L41">                throw iter.reportError(&quot;readObject&quot;, &quot;expect \&quot; after {&quot;);</span>
+            case ',':
+<span class="nc" id="L43">                coverage.logBranch(&quot;branch&quot;, 8);</span>
+<span class="nc" id="L44">                String field = iter.readString();</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">                if (IterImpl.nextToken(iter) != ':') {</span>
+<span class="nc" id="L46">                    coverage.logBranch(&quot;branch&quot;, 9);</span>
+<span class="nc" id="L47">                    throw iter.reportError(&quot;readObject&quot;, &quot;expect :&quot;);</span>
+                }
+<span class="nc" id="L49">                coverage.logBranch(&quot;exit&quot;, 4);</span>
+<span class="nc" id="L50">                return field;</span>
+            case '}':
+<span class="nc" id="L52">                coverage.logBranch(&quot;branch&quot;, 10);</span>
+<span class="nc" id="L53">                coverage.logBranch(&quot;exit&quot;, 5);</span>
+<span class="nc" id="L54">                return null;</span>
+            default:
+<span class="nc" id="L56">                coverage.logBranch(&quot;branch&quot;, 11);</span>
+<span class="nc" id="L57">                throw iter.reportError(&quot;readObject&quot;, &quot;unexpected character&quot;);</span>
+        }
+    }
+
+    public static boolean readObjectCB(JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment) throws IOException {
+<span class="nc" id="L62">        CoverageData coverage = CoverageData.getInstance(&quot;readObjectCB&quot;, 8);</span>
+<span class="nc" id="L63">        coverage.logBranch(&quot;branch&quot;, 1);</span>
+
+<span class="nc" id="L65">        byte c = IterImpl.nextToken(iter);</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (c != '{') {</span>
+<span class="nc" id="L67">            coverage.logBranch(&quot;branch&quot;, 2);</span>
+<span class="nc" id="L68">            coverage.logBranch(&quot;exit&quot;, 1);</span>
+<span class="nc" id="L69">            return false;</span>
+        }
+
+<span class="nc" id="L72">        coverage.logBranch(&quot;branch&quot;, 3);</span>
+        while (true) {
+<span class="nc" id="L74">            c = IterImpl.nextToken(iter);</span>
+<span class="nc bnc" id="L75" title="All 2 branches missed.">            if (c == '}') {</span>
+<span class="nc" id="L76">                coverage.logBranch(&quot;branch&quot;, 4);</span>
+<span class="nc" id="L77">                coverage.logBranch(&quot;exit&quot;, 2);</span>
+<span class="nc" id="L78">                return true;</span>
+            }
+
+<span class="nc" id="L81">            coverage.logBranch(&quot;branch&quot;, 5);</span>
+<span class="nc" id="L82">            iter.unreadByte();</span>
+<span class="nc" id="L83">            String field = iter.readString();</span>
+
+<span class="nc bnc" id="L85" title="All 2 branches missed.">            if (IterImpl.nextToken(iter) != ':') {</span>
+<span class="nc" id="L86">                coverage.logBranch(&quot;branch&quot;, 6);</span>
+<span class="nc" id="L87">                coverage.logBranch(&quot;exit&quot;, 3);</span>
+<span class="nc" id="L88">                throw iter.reportError(&quot;readObjectCB&quot;, &quot;expect :&quot;);</span>
+            }
+
+<span class="nc" id="L91">            coverage.logBranch(&quot;branch&quot;, 7);</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">            if (!cb.handle(iter, field, attachment)) {</span>
+<span class="nc" id="L93">                coverage.logBranch(&quot;branch&quot;, 8);</span>
+<span class="nc" id="L94">                coverage.logBranch(&quot;exit&quot;, 4);</span>
+<span class="nc" id="L95">                return false;</span>
+            }
+<span class="nc" id="L97">        }</span>
+    }
+
+
+
+    /*
+     * Function 3: findStringEnd()
+     * Location: src/main/java/com/jsoniter/IterImplSkip.java
+     */
+    final static int findStringEnd(JsonIterator iter) {
+<span class="nc" id="L107">        CoverageData coverage = CoverageData.getInstance(&quot;findStringEnd&quot;, 8);</span>
+<span class="nc" id="L108">        coverage.logBranch(&quot;branch&quot;, 1); // record function call</span>
+
+<span class="nc" id="L110">        boolean escaped = false;</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">        for (int i = iter.head; i &lt; iter.tail; i++) {</span>
+<span class="nc" id="L112">            byte c = iter.buf[i];</span>
+
+<span class="nc bnc" id="L114" title="All 2 branches missed.">            if (c == '&quot;') {</span>
+<span class="nc" id="L115">                coverage.logBranch(&quot;branch&quot;, 2);</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">                if (!escaped) {</span>
+<span class="nc" id="L117">                    coverage.logBranch(&quot;branch&quot;, 3);</span>
+<span class="nc" id="L118">                    coverage.logBranch(&quot;exit&quot;, 1);</span>
+<span class="nc" id="L119">                    return i + 1;  // exit point 1</span>
+                } else {
+<span class="nc" id="L121">                    coverage.logBranch(&quot;branch&quot;, 4);</span>
+<span class="nc" id="L122">                    int j = i - 1;</span>
+                    for (;;) {
+<span class="nc bnc" id="L124" title="All 4 branches missed.">                        if (j &lt; iter.head || iter.buf[j] != '\\') {</span>
+<span class="nc" id="L125">                            coverage.logBranch(&quot;branch&quot;, 5);</span>
+                            // even number of backslashes
+                            // either end of buffer, or &quot; found
+<span class="nc" id="L128">                            coverage.logBranch(&quot;exit&quot;, 2);</span>
+<span class="nc" id="L129">                            return i + 1;  // exit point 2</span>
+                        }
+<span class="nc" id="L131">                        j--;</span>
+<span class="nc bnc" id="L132" title="All 4 branches missed.">                        if (j &lt; iter.head || iter.buf[j] != '\\') {</span>
+<span class="nc" id="L133">                            coverage.logBranch(&quot;branch&quot;, 6);</span>
+                            // odd number of backslashes
+                            // it is \&quot; or \\\&quot;
+<span class="nc" id="L136">                            break;</span>
+                        }
+<span class="nc" id="L138">                        j--;</span>
+                    }
+<span class="nc" id="L140">                }</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">            } else if (c == '\\') {</span>
+<span class="nc" id="L142">                coverage.logBranch(&quot;branch&quot;, 7);</span>
+<span class="nc" id="L143">                escaped = true;</span>
+            }
+        }
+<span class="nc" id="L146">        coverage.logBranch(&quot;branch&quot;, 8);</span>
+<span class="nc" id="L147">        coverage.logBranch(&quot;exit&quot;, 3);</span>
+<span class="nc" id="L148">        return -1; // exit point 3</span>
+    }
+
+
+    /*
+     * Function 4: skipString()
+     * Location: src/main/java/com/jsoniter/IterImplForStreaming.java
+     */
+    final static void skipString(JsonIterator iter) throws IOException {
+<span class="nc" id="L157">        CoverageData coverage = CoverageData.getInstance(&quot;skipString&quot;, 7);</span>
+<span class="nc" id="L158">        coverage.logBranch(&quot;branch&quot;, 1);</span>
+
+        for (;;) {
+<span class="nc" id="L161">            int end = IterImplSkip.findStringEnd(iter);</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">            if (end == -1) {</span>
+<span class="nc" id="L163">                coverage.logBranch(&quot;branch&quot;, 2);</span>
+<span class="nc" id="L164">                int j = iter.tail - 1;</span>
+<span class="nc" id="L165">                boolean escaped = true;</span>
+                // can not just look the last byte is \
+                // because it could be \\ or \\\
+                for (;;) {
+                    // walk backward until head
+<span class="nc bnc" id="L170" title="All 4 branches missed.">                    if (j &lt; iter.head || iter.buf[j] != '\\') {</span>
+<span class="nc" id="L171">                        coverage.logBranch(&quot;branch&quot;, 3);</span>
+                        // even number of backslashes
+                        // either end of buffer, or &quot; found
+<span class="nc" id="L174">                        escaped = false;</span>
+<span class="nc" id="L175">                        break;</span>
+                    }
+<span class="nc" id="L177">                    j--;</span>
+<span class="nc bnc" id="L178" title="All 4 branches missed.">                    if (j &lt; iter.head || iter.buf[j] != '\\') {</span>
+<span class="nc" id="L179">                        coverage.logBranch(&quot;branch&quot;, 4);</span>
+                        // odd number of backslashes
+                        // it is \&quot; or \\\&quot;
+<span class="nc" id="L182">                        break;</span>
+                    }
+<span class="nc" id="L184">                    j--;</span>
+                }
+<span class="nc bnc" id="L186" title="All 2 branches missed.">                if (!loadMore(iter)) {</span>
+<span class="nc" id="L187">                    coverage.logBranch(&quot;branch&quot;, 5);</span>
+<span class="nc" id="L188">                    coverage.logBranch(&quot;exit&quot;, 1);</span>
+<span class="nc" id="L189">                    throw iter.reportError(&quot;skipString&quot;, &quot;incomplete string&quot;);</span>
+                }
+<span class="nc bnc" id="L191" title="All 2 branches missed.">                if (escaped) {</span>
+<span class="nc" id="L192">                    coverage.logBranch(&quot;branch&quot;, 6);</span>
+                    // TODO add unit test to prove/verify bug
+<span class="nc" id="L194">                    iter.head += 1; // skip the first char as last char is \</span>
+                }
+<span class="nc" id="L196">            } else {</span>
+<span class="nc" id="L197">                coverage.logBranch(&quot;branch&quot;, 7);</span>
+<span class="nc" id="L198">                iter.head = end;</span>
+<span class="nc" id="L199">                coverage.logBranch(&quot;exit&quot;, 2);</span>
+<span class="nc" id="L200">                return;</span>
+            }
+<span class="nc" id="L202">        }</span>
+    }
+
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

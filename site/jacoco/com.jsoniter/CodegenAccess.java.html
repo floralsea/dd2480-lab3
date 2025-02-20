@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CodegenAccess.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">json iterator</a> &gt; <a href="index.source.html" class="el_package">com.jsoniter</a> &gt; <span class="el_source">CodegenAccess.java</span></div><h1>CodegenAccess.java</h1><pre class="source lang-java linenums">package com.jsoniter;
+
+import com.jsoniter.spi.*;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+
+// only uesd by generated code to access decoder
+<span class="nc" id="L10">public class CodegenAccess {</span>
+
+    public static void addMissingField(List missingFields, long tracker, long mask, String fieldName) {
+<span class="pc bpc" id="L13" title="1 of 2 branches missed.">        if ((tracker &amp; mask) == 0) {</span>
+<span class="fc" id="L14">            missingFields.add(fieldName);</span>
+        }
+<span class="fc" id="L16">    }</span>
+
+    public static &lt;T extends Collection&gt; T reuseCollection(T col) {
+<span class="nc" id="L19">        col.clear();</span>
+<span class="nc" id="L20">        return col;</span>
+    }
+
+    public static Object existingObject(JsonIterator iter) {
+<span class="fc" id="L24">        return iter.existingObject;</span>
+    }
+
+    public static Object resetExistingObject(JsonIterator iter) {
+<span class="fc" id="L28">        Object obj = iter.existingObject;</span>
+<span class="fc" id="L29">        iter.existingObject = null;</span>
+<span class="fc" id="L30">        return obj;</span>
+    }
+
+    public static void setExistingObject(JsonIterator iter, Object obj) {
+<span class="fc" id="L34">        iter.existingObject = obj;</span>
+<span class="fc" id="L35">    }</span>
+
+    public final static boolean nextTokenIsComma(final JsonIterator iter) throws IOException {
+<span class="nc" id="L38">        byte c = readByte(iter);</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">        if (c == ',') {</span>
+<span class="nc" id="L40">            return true;</span>
+        }
+<span class="nc" id="L42">        return nextTokenIsCommaSlowPath(iter, c);</span>
+    }
+
+    private static boolean nextTokenIsCommaSlowPath(JsonIterator iter, byte c) throws IOException {
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        switch (c) {</span>
+            case ' ':
+            case '\n':
+            case '\r':
+            case '\t':
+<span class="nc" id="L51">                break;</span>
+            default:
+<span class="nc" id="L53">                return false;</span>
+        }
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        return nextToken(iter) == ',';</span>
+    }
+
+    public static byte nextToken(JsonIterator iter) throws IOException {
+<span class="fc" id="L59">        return IterImpl.nextToken(iter);</span>
+    }
+
+    public static final boolean readBoolean(String cacheKey, JsonIterator iter) throws IOException {
+<span class="nc" id="L63">        return ((Decoder.BooleanDecoder) JsoniterSpi.getDecoder(cacheKey)).decodeBoolean(iter);</span>
+    }
+
+    public static final short readShort(String cacheKey, JsonIterator iter) throws IOException {
+<span class="nc" id="L67">        return ((Decoder.ShortDecoder) JsoniterSpi.getDecoder(cacheKey)).decodeShort(iter);</span>
+    }
+
+    public static final int readInt(String cacheKey, JsonIterator iter) throws IOException {
+<span class="nc" id="L71">        return ((Decoder.IntDecoder) JsoniterSpi.getDecoder(cacheKey)).decodeInt(iter);</span>
+    }
+
+    public static final long readLong(String cacheKey, JsonIterator iter) throws IOException {
+<span class="nc" id="L75">        return ((Decoder.LongDecoder) JsoniterSpi.getDecoder(cacheKey)).decodeLong(iter);</span>
+    }
+
+    public static final float readFloat(String cacheKey, JsonIterator iter) throws IOException {
+<span class="nc" id="L79">        return ((Decoder.FloatDecoder) JsoniterSpi.getDecoder(cacheKey)).decodeFloat(iter);</span>
+    }
+
+    public static final double readDouble(String cacheKey, JsonIterator iter) throws IOException {
+<span class="nc" id="L83">        return ((Decoder.DoubleDecoder) JsoniterSpi.getDecoder(cacheKey)).decodeDouble(iter);</span>
+    }
+
+    public static final &lt;T&gt; T read(String cacheKey, JsonIterator iter) throws IOException {
+<span class="nc" id="L87">        return (T) Codegen.getDecoder(cacheKey, null).decode(iter);</span>
+    }
+
+    public static boolean readArrayStart(JsonIterator iter) throws IOException {
+<span class="fc" id="L91">        byte c = IterImpl.nextToken(iter);</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (c == '[') {</span>
+<span class="fc" id="L93">            c = IterImpl.nextToken(iter);</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">            if (c == ']') {</span>
+<span class="fc" id="L95">                return false;</span>
+            }
+<span class="fc" id="L97">            iter.unreadByte();</span>
+<span class="fc" id="L98">            return true;</span>
+        }
+<span class="nc" id="L100">        throw iter.reportError(&quot;readArrayStart&quot;, &quot;expect [ or n&quot;);</span>
+    }
+
+    public static boolean readObjectStart(JsonIterator iter) throws IOException {
+<span class="fc" id="L104">        byte c = IterImpl.nextToken(iter);</span>
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (c == '{') {</span>
+<span class="fc" id="L106">            c = IterImpl.nextToken(iter);</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">            if (c == '}') {</span>
+<span class="fc" id="L108">                return false;</span>
+            }
+<span class="fc" id="L110">            iter.unreadByte();</span>
+<span class="fc" id="L111">            return true;</span>
+        }
+<span class="nc" id="L113">        throw iter.reportError(&quot;readObjectStart&quot;, &quot;expect { or n, found: &quot; + (char) c);</span>
+    }
+
+    public static void reportIncompleteObject(JsonIterator iter) {
+<span class="nc" id="L117">        throw iter.reportError(&quot;genObject&quot;, &quot;expect }&quot;);</span>
+    }
+
+    public static void reportIncompleteArray(JsonIterator iter) {
+<span class="nc" id="L121">        throw iter.reportError(&quot;genArray&quot;, &quot;expect ]&quot;);</span>
+    }
+
+    public static final String readObjectFieldAsString(JsonIterator iter) throws IOException {
+<span class="fc" id="L125">        String field = iter.readString();</span>
+<span class="pc bpc" id="L126" title="1 of 2 branches missed.">        if (IterImpl.nextToken(iter) != ':') {</span>
+<span class="nc" id="L127">            throw iter.reportError(&quot;readObjectFieldAsString&quot;, &quot;expect :&quot;);</span>
+        }
+<span class="fc" id="L129">        return field;</span>
+    }
+
+    public static final int readObjectFieldAsHash(JsonIterator iter) throws IOException {
+<span class="nc" id="L133">        return IterImpl.readObjectFieldAsHash(iter);</span>
+    }
+
+    public static final Slice readObjectFieldAsSlice(JsonIterator iter) throws IOException {
+<span class="fc" id="L137">        return IterImpl.readObjectFieldAsSlice(iter);</span>
+    }
+
+    public static final Slice readSlice(JsonIterator iter) throws IOException {
+<span class="nc" id="L141">        return IterImpl.readSlice(iter);</span>
+    }
+
+    public static final Object readMapKey(String cacheKey, JsonIterator iter) throws IOException {
+<span class="nc" id="L145">        Decoder mapKeyDecoder = JsoniterSpi.getMapKeyDecoder(cacheKey);</span>
+<span class="nc" id="L146">        Object key = mapKeyDecoder.decode(iter);</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        if (IterImpl.nextToken(iter) != ':') {</span>
+<span class="nc" id="L148">            throw iter.reportError(&quot;readMapKey&quot;, &quot;expect :&quot;);</span>
+        }
+<span class="nc" id="L150">        return key;</span>
+    }
+
+    final static boolean skipWhitespacesWithoutLoadMore(JsonIterator iter) throws IOException {
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        for (int i = iter.head; i &lt; iter.tail; i++) {</span>
+<span class="nc" id="L155">            byte c = iter.buf[i];</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">            switch (c) {</span>
+                case ' ':
+                case '\n':
+                case '\t':
+                case '\r':
+<span class="nc" id="L161">                    continue;</span>
+            }
+<span class="nc" id="L163">            iter.head = i;</span>
+<span class="nc" id="L164">            return false;</span>
+        }
+<span class="nc" id="L166">        return true;</span>
+    }
+
+    public static void staticGenDecoders(TypeLiteral[] typeLiterals, StaticCodegenTarget staticCodegenTarget) {
+<span class="nc" id="L170">        Codegen.staticGenDecoders(typeLiterals, staticCodegenTarget);</span>
+<span class="nc" id="L171">    }</span>
+
+    public static int head(JsonIterator iter) {
+<span class="fc" id="L174">        return iter.head;</span>
+    }
+
+    public static void unreadByte(JsonIterator iter) throws IOException {
+<span class="nc" id="L178">        iter.unreadByte();</span>
+<span class="nc" id="L179">    }</span>
+
+    public static byte readByte(JsonIterator iter) throws IOException {
+<span class="nc" id="L182">        return IterImpl.readByte(iter);</span>
+    }
+
+    public static int calcHash(String str) {
+<span class="nc" id="L186">        return CodegenImplObjectHash.calcHash(str);</span>
+    }
+
+    public static void skipFixedBytes(JsonIterator iter, int n) throws IOException {
+<span class="nc" id="L190">        IterImpl.skipFixedBytes(iter, n);</span>
+<span class="nc" id="L191">    }</span>
+
+    public static class StaticCodegenTarget {
+        public String outputDir;
+
+<span class="nc" id="L196">        public StaticCodegenTarget(String outputDir) {</span>
+<span class="nc" id="L197">            this.outputDir = outputDir;</span>
+<span class="nc" id="L198">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>
