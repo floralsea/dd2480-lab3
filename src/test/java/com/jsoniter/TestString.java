@@ -125,4 +125,47 @@ public class TestString extends TestCase {
         JsonIterator iter = JsonIterator.parse(new ByteArrayInputStream("\"[\\\"LL\\\",\\\"MM\\\\\\/LW\\\",\\\"JY\\\",\\\"S\\\",\\\"C\\\",\\\"IN\\\",\\\"ME \\\\\\/ LE\\\"]\"".getBytes()), 2);
         assertEquals("[\"LL\",\"MM\\/LW\",\"JY\",\"S\",\"C\",\"IN\",\"ME \\/ LE\"]", iter.readString());
     }
+
+    // Lab task: More specific test cases for findStringEnd() in IterImplSkip.java
+
+    // req: handle strings without a closing quote
+    public void testFindStringEnd_UnterminatedString() {
+        JsonIterator iter = new JsonIterator();
+        iter.buf = "unfinished\\".getBytes(); // No closing quote
+        iter.head = 0;
+        iter.tail = iter.buf.length;
+        
+        assertEquals(-1, IterImplSkip.findStringEnd(iter));
+    }
+
+    // detects an unescaped quote after even slashes
+    public void testFindStringEnd_EvenBackslashes() {
+        JsonIterator iter = new JsonIterator();
+        iter.buf = "test\\\\\"".getBytes(); // ' test\\" ' with an even number of backslashes
+        iter.head = 0;
+        iter.tail = iter.buf.length;
+    
+        assertEquals(iter.tail, IterImplSkip.findStringEnd(iter));
+    }
+
+    // treat quotes after odd slashes as escaped
+    public void testFindStringEnd_OddBackslashesBeforeQuote() {
+        JsonIterator iter = new JsonIterator();
+        iter.buf = "test\\\"moretext".getBytes(); // ' test\" ' with odd number of backslashes before the quote (\")
+        iter.head = 0;
+        iter.tail = iter.buf.length;
+      
+        assertEquals(-1, IterImplSkip.findStringEnd(iter));
+    }
+    
+    // handle escaped quotes at start of string
+    public void testFindStringEnd_BackslashAtStart() {
+        JsonIterator iter = new JsonIterator();
+        iter.buf = "\\\"escaped\"".getBytes(); // start with an escaped quote
+        iter.head = 0;
+        iter.tail = iter.buf.length;
+    
+        assertEquals(iter.tail, IterImplSkip.findStringEnd(iter));  // return the position after the second unescaped quote
+    }
+
 }
