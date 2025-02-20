@@ -2,12 +2,18 @@ package com.jsoniter;
 
 import com.jsoniter.any.Any;
 import com.jsoniter.spi.JsonException;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 import jdk.jshell.spi.ExecutionControl;
 import junit.framework.TestCase;
+
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 //import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
@@ -95,5 +101,59 @@ public class IterImplForStreamingTest extends TestCase {
 				return -1;
 			}
 		};
+	}
+
+	@Test
+    public void testSkipString_Simple() throws IOException {
+        JsonIterator iter = new JsonIterator();
+		iter.buf = "test\\\\\"".getBytes();
+		iter.head = 0;
+        iter.tail = iter.buf.length;
+
+        IterImplForStreaming.skipString(iter);
+        assertEquals(iter.head, iter.tail);
+    }
+
+
+	@Test
+    public void testSkipString_Complex() throws IOException {
+        JsonIterator iter = new JsonIterator();
+		iter.buf = "hej\\".getBytes();
+		iter.head = 0;
+        iter.tail = iter.buf.length;
+		iter.in = new ByteArrayInputStream("\\\"".getBytes());
+
+        IterImplForStreaming.skipString(iter);
+        assertEquals(iter.head, iter.tail);
+    }
+
+	@Test
+	public void testSkipString_IncompleteString() throws IOException {
+		JsonIterator iter = new JsonIterator();
+		iter.buf = "".getBytes();
+		iter.head = 0;
+        iter.tail = iter.buf.length;
+
+		Exception exception = assertThrows(JsonException.class, () -> {
+            IterImplForStreaming.skipString(iter);
+        });
+
+        assertTrue(exception.getMessage().contains("incomplete string"));
+         
+	}
+
+	@Test
+	public void testSkipString_EscapedBackslash() throws IOException {
+		JsonIterator iter = new JsonIterator();
+		iter.buf = "test\\".getBytes();
+		iter.head = 0;
+        iter.tail = iter.buf.length;
+
+		Exception exception = assertThrows(JsonException.class, () -> {
+            IterImplForStreaming.skipString(iter);
+        });
+
+        assertTrue(exception.getMessage().contains("incomplete string"));
+         
 	}
 }
