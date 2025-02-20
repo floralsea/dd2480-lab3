@@ -45,6 +45,7 @@ class IterImplObject {
                 iter.unreadByte();
                 String field = iter.readString();
                 if (IterImpl.nextToken(iter) != ':') {
+                    System.out.println("Invalid field: " + field + "expect: ':'");
                     throw iter.reportError("readObject", "expect :");
                 }
                 if (!cb.handle(iter, field, attachment)) {
@@ -53,6 +54,7 @@ class IterImplObject {
                 while (IterImpl.nextToken(iter) == ',') {
                     field = iter.readString();
                     if (IterImpl.nextToken(iter) != ':') {
+                        System.out.println("Invalid field: " + field + "expect: ':'");
                         throw iter.reportError("readObject", "expect :");
                     }
                     if (!cb.handle(iter, field, attachment)) {
@@ -64,12 +66,14 @@ class IterImplObject {
             if ('}' == c) {
                 return true;
             }
+            System.out.println("readObjectCB error, expect \" after {");
             throw iter.reportError("readObjectCB", "expect \" after {");
         }
         if ('n' == c) {
             IterImpl.skipFixedBytes(iter, 3);
             return true;
         }
+        System.out.println("readObjectCB error expect { or n}");
         throw iter.reportError("readObjectCB", "expect { or n");
     }
 }

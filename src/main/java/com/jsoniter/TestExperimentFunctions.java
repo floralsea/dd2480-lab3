@@ -26,7 +26,7 @@ public class TestExperimentFunctions {
         ExperimentFunctions.skipString(iter4);
 
         // Output coverage results
-        ExperimentFunctions.printCoverageReport();
+        // ExperimentFunctions.printCoverageReport();
     }
 }
 

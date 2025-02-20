@@ -8,6 +8,10 @@ import com.jsoniter.spi.EmptyExtension;
 import com.jsoniter.spi.JsonException;
 import com.jsoniter.spi.JsoniterSpi;
 import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -266,5 +270,202 @@ public class TestObject extends TestCase {
     public void test_non_ascii_field() {
         TestObject9 obj = JsonIterator.deserialize("{\"字段\":100}", TestObject9.class);
         assertEquals(100, obj.字段);
+    }
+
+
+
+
+    // Test for valid JSON object with fields
+    @Test
+    public void testReadObjectCB_validJson() throws Exception {
+        String json = "{\"field1\":1, \"field2\":2, \"field3\":3}";
+        JsonIterator iter = JsonIterator.parse(json);
+
+        // Create a callback to handle the fields
+        JsonIterator.ReadObjectCallback cb = (jsonIter, field, attachment) -> {
+            switch (field) {
+                case "field1":
+                    assertEquals(1, jsonIter.readInt());
+                    break;
+                case "field2":
+                    assertEquals(2, jsonIter.readInt());
+                    break;
+                case "field3":
+                    assertEquals(3, jsonIter.readInt());
+                    break;
+                default:
+                    fail("Unexpected field: " + field);
+            }
+            return true; // Return true to continue processing
+        };
+
+        // Call the method and assert the result
+        boolean result = IterImplObject.readObjectCB(iter, cb, null);
+        assertTrue(result);
+    }
+
+    // Test for empty JSON object
+    @Test
+    public void testReadObjectCB_emptyObject() throws Exception {
+        String json = "{}";
+        JsonIterator iter = JsonIterator.parse(json);
+
+        // Create a mock callback
+        JsonIterator.ReadObjectCallback cb = Mockito.mock(JsonIterator.ReadObjectCallback.class);
+
+        // Call the method and expect it to return true for an empty object
+        boolean result = IterImplObject.readObjectCB(iter, cb, null);
+
+        // Assert the result and verify the callback is not invoked (since it's an empty object)
+        assertTrue(result);
+        Mockito.verify(cb, Mockito.never()).handle(Mockito.any(), Mockito.any(), Mockito.any());
+    }
+
+    // Test for JSON object with a null value
+    @Test
+    public void testReadObjectCB_nullValue() throws Exception {
+        String json = "{\"field1\":null}";
+        JsonIterator iter = JsonIterator.parse(json);
+
+        // Create a callback
+        JsonIterator.ReadObjectCallback cb = (jsonIter, field, attachment) -> {
+            if ("field1".equals(field)) {
+                assertNull(jsonIter.read()); // Read the null value
+            }
+            return true;
+        };
+
+        // Call the method and expect it to handle the field correctly
+        boolean result = IterImplObject.readObjectCB(iter, cb, null);
+
+        // Assert the result
+        assertTrue(result);
+    }
+
+    // Test for JSON object with invalid syntax (missing colon)
+    @Test
+    public void testReadObjectCB_invalidJson_missingColon() throws Exception {
+        String json = "{\"field1\":1, \"field2\"}";
+        JsonIterator iter = JsonIterator.parse(json);
+
+        // Create a callback
+        JsonIterator.ReadObjectCallback cb = Mockito.mock(JsonIterator.ReadObjectCallback.class);
+
+        // Call the method and expect an exception due to the invalid JSON
+        Exception exception = assertThrows(Exception.class, () -> {
+            IterImplObject.readObjectCB(iter, cb, null);
+        });
+
+        // Check that the exception contains the expected error message
+        assertTrue(exception.getMessage().contains("expect :"));
+    }
+
+    // Test for JSON object with no fields (empty object)
+    @Test
+    public void testReadObjectCB_noFields() throws Exception {
+        String json = "{}";
+        JsonIterator iter = JsonIterator.parse(json);
+
+        // Create a callback
+        JsonIterator.ReadObjectCallback cb = Mockito.mock(JsonIterator.ReadObjectCallback.class);
+
+        // Call the method and assert it returns true
+        boolean result = IterImplObject.readObjectCB(iter, cb, null);
+
+        // Assert that the result is true and callback was never called
+        assertTrue(result);
+        Mockito.verify(cb, Mockito.never()).handle(Mockito.any(), Mockito.any(), Mockito.any());
+    }
+
+    // Test for JSON object where the first field is valid but the second field is missing a colon
+    @Test
+    public void testReadObjectCB_missingColonAfterField() throws Exception {
+        String json = "{\"field1\":1, \"field2\"}";
+        JsonIterator iter = JsonIterator.parse(json);
+
+        JsonIterator.ReadObjectCallback cb = (jsonIter, field, attachment) -> {
+            assertEquals("field1", field);
+            return true;
+        };
+
+        // Call the method and expect an exception
+        Exception exception = assertThrows(Exception.class, () -> {
+            IterImplObject.readObjectCB(iter, cb, null);
+        });
+
+        // Assert the exception message
+        assertTrue(exception.getMessage().contains("expect :"));
+    }
+
+    // Test for a JSON object with a single field
+    @Test
+    public void testReadObjectCB_singleField() throws Exception {
+        String json = "{\"field1\": 10}";
+        JsonIterator iter = JsonIterator.parse(json);
+
+        JsonIterator.ReadObjectCallback cb = (jsonIter, field, attachment) -> {
+            assertEquals("field1", field);
+            assertEquals(10, jsonIter.readInt());
+            return true;
+        };
+
+        // Call the method and assert the result
+        boolean result = IterImplObject.readObjectCB(iter, cb, null);
+        assertTrue(result);
+    }
+
+    // Test for JSON object with multiple fields and commas
+    @Test
+    public void testReadObjectCB_multipleFields() throws Exception {
+        String json = "{\"field1\":1, \"field2\":2, \"field3\":3}";
+        JsonIterator iter = JsonIterator.parse(json);
+
+        JsonIterator.ReadObjectCallback cb = (jsonIter, field, attachment) -> {
+            switch (field) {
+                case "field1":
+                    assertEquals(1, jsonIter.readInt());
+                    break;
+                case "field2":
+                    assertEquals(2, jsonIter.readInt());
+                    break;
+                case "field3":
+                    assertEquals(3, jsonIter.readInt());
+                    break;
+                default:
+                    fail("Unexpected field: " + field);
+            }
+            return true; // Return true to continue processing
+        };
+
+        // Call the method and assert the result
+        boolean result = IterImplObject.readObjectCB(iter, cb, null);
+        assertTrue(result);
+    }
+
+    // Test for JSON object with no opening brace, expecting error
+    @Test
+    public void testReadObjectCB_missingOpeningBrace() throws Exception {
+        String json = "\"field1\":1, \"field2\":2}";
+        JsonIterator iter = JsonIterator.parse(json);
+
+        // Expecting the method to throw an exception due to the missing opening brace
+        Exception exception = assertThrows(Exception.class, () -> {
+            IterImplObject.readObjectCB(iter, (jsonIter, field, attachment) -> true, null);
+        });
+
+        assertTrue(exception.getMessage().contains("expect {"));
+    }
+
+    // Test for JSON object with "null" literal (not an object)
+    @Test
+    public void testReadObjectCB_nullLiteral() throws Exception {
+        String json = "null";
+        JsonIterator iter = JsonIterator.parse(json);
+
+        // Call the method and expect it to handle the "null" value correctly
+        boolean result = IterImplObject.readObjectCB(iter, (jsonIter, field, attachment) -> true, null);
+
+        // Assert the result
+        assertTrue(result);
     }
 }
