@@ -84,6 +84,11 @@ Since there are only four active members in our group, we chose four functions, 
    * Are the results clear?
 2. Are the functions just complex, or also long?
 3. What is the purpose of the functions?
+
+- [`readObject(JsonIterator iter)`](./src/main/java/com/jsoniter/IterImplObject.java)
+
+  The `readObject()` function is responsible for parsing the next JSON object key from a JsonIterator stream. It processes different token cases to ensure correct JSON syntax, **handling null values**, **extracting field names**, and **verifying that keys** are **followed by a colon** `(:)`. If an **empty object** `{}` is encountered, it returns `null`. The function also detects unexpected tokens and **throws an error** if the input does not conform to valid JSON formatting. 
+
 4. Are exceptions taken into account in the given measurements?
 5. Is the documentation clear w.r.t. all the possible outcomes?
 
