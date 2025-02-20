@@ -176,8 +176,8 @@ The table below shows the original CC counted by JaCoCo and new CC after refacto
 | Functions       | Refactored by | Old CC | New CC | Reduced by |
 |-----------------|---------------|--------|--------|------------|
 | readObject()    | Xu Zuo        | 9      | 5      | 44.4%      |
-| readObjectCB()  | Wen Biming    | 10     | 3       |  70%         |
-| findStringEnd() |               |        |        |            |
+| readObjectCB()  | Wen Biming    | 10     | 3      |  70%       |
+| findStringEnd() | Gustav Wallin | 10     | 6      | 40%        |
 | skipString()    |               |        |        |            |
 
 For more implementation details about each function refactoring, please click the link in the following paragraph.
@@ -189,6 +189,8 @@ refactored code worked well and passed all test cases. The original `readObject(
 by **Xu Zuo** is `5`, since we can't avoid the `switch` clause, we could only reduce it by 4, while this also meets the requirement.
 
 For `readObjectCB` function, **Wen Biming** refactored it and reduced the complexity by **70%**, which can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/056f79a31ca6b025fe412cf70b826ee55ffcccfd)
+
+For `findStringEnd()`, **Gustav Wallin** refactored it and reduced complexity by **40%** found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/7ad1ed8a170fcad35a3d660f1e4b8171558a8c43) or by ```git diff 7ad1ed8 67ed156```. The refactored function was also unit tested. The original function's CC is `10`, and the refactored function has CC `6`, as measured by Lizard. The function could be further refactored, but given that its now within a lower and more acceptable CC and the most complex part has been refactored, it was considered sufficient. 
 
 ## Coverage
 
