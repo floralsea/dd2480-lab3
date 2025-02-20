@@ -162,11 +162,20 @@ could be easier to test. While it does increase code length.
 
 Carried out refactoring (optional, P+):
 
-git diff ...
+The table below shows the original CC counted by JaCoCo and new CC after refactoring:
+
+| Functions       | Refactored by | Old CC | New CC | Reduced by |
+|-----------------|---------------|--------|--------|------------|
+| readObject()    | Xu Zuo        | 9      | 5      | 44.4%      |
+| readObjectCB()  |               |        |        |            |
+| findStringEnd() |               |        |        |            |
+| skipString()    |               |        |        |            |
+
+For more implementation details about each function refactoring, please click the link in the following paragraph.
 
 For `readObject()` function, **Xu Zuo** refactored it and reduced the complexity by **44.4%**, which can be found in this 
-[commit](https://github.com/floralsea/dd2480-lab3/commit/0551e795428d2a9afeee0460dc757579c558d507). Also, we used the same 
-unit test cases (both the original project and new test cases we added) to test whether the refactored code worked, and the 
+[commit](https://github.com/floralsea/dd2480-lab3/commit/0551e795428d2a9afeee0460dc757579c558d507) and in issue [#20](https://github.com/floralsea/dd2480-lab3/issues/20). 
+Also, we used the same unit test cases (both the original project and new test cases we added) to test whether the refactored code worked, and the 
 refactored code worked well and passed all test cases. The original `readObject()` CC is `9`, and the refactored `readObject()` 
 by **Xu Zuo** is `5`, since we can't avoid the `switch` clause, we could only reduce it by 4, while this also meets the requirement.
 
@@ -304,19 +313,33 @@ we have to add additional `System.out.println()` before each `throw` clause so t
 
 Show the comments that describe the requirements for the coverage.
 
-Report of old coverage: [link]
+Report of old coverage: find in [`old-coverage branch`](https://github.com/floralsea/dd2480-lab3/tree/old-coverage)
 
-Report of new coverage: [link]
+Report of new coverage: find in [`coverage-improvemrnt branch`](https://github.com/floralsea/dd2480-lab3/tree/coverage-improvement)
 
-Test cases added:
+You can find `screenshots` in [`old-coverage branch`](https://github.com/floralsea/dd2480-lab3/tree/old-coverage), the location is 
+`src/main/resources`, or click this [link](https://github.com/floralsea/dd2480-lab3/tree/old-coverage/src/main/resources) directly to it. Also, you can 
+find the `report` by `JaCoCo` under [site/](https://github.com/floralsea/dd2480-lab3/blob/old-coverage/site/jacoco/index.html).
 
-git diff ...
+Similarly, we present our improvements in [`coverage-improvemrnt branch`](https://github.com/floralsea/dd2480-lab3/tree/coverage-improvement).
+
+The table below is the comparison of `old coverage` and `new coverage`:
+
+| Function        | old coverage | new coverage |
+|-----------------|--------------|--------------|
+| readObject()    | 61%          | 92%          |
+| readObjectCB()  | 55%          |              |
+| findStringEnd() | 31%          |              |
+| skipString()    | 0%           |              |
+
+
+Test cases added: see the following or click the `links` in the following paragraphs for more new test cases details 
 
 Number of test cases added: two per team member (P) or at least four (P+).
 
 For `readObject()` function, **Xu Zuo** added four unit test cases and improved the branch coverage, from 61% to 92%, which 
 can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/64ab32ebaeccc1d79ed3ac0ad5552b297d32173d). We track the changes 
-by using `issue` in our repo, and it relates to this issue `#12`.
+by using `issue` in our repo, and it relates to this issue [#12](https://github.com/floralsea/dd2480-lab3/issues/12).
 
 ## Self-assessment: Way of working
 
@@ -333,3 +356,11 @@ Where is potential for improvement?
 What are your main take-aways from this project? What did you learn?
 
 Is there something special you want to mention here?
+
+We've mentioned above that JaCoCo does not register exception-based branches as covered unless add additional debug code, 
+even when unit tests execute them. This issue was observed in our debugging process, where test cases successfully triggered 
+exception paths, but JaCoCo’s report still marked them as uncovered. While our DIY tool explicitly logs branch execution, 
+including those leading to throw statements, it ensures complete branch tracking, making it more accurate for measuring 
+exception-handling coverage. We found limitations of industry-standard tools in our practice and we could improve it based on 
+the current issues. Also, through this process, we have gained a deeper understanding of coverage limitations in existing tools 
+and have enhanced our ability to design and implement a more customized and effective testing framework.
