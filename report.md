@@ -89,8 +89,12 @@ Since there are only four active members in our group, we chose four functions, 
 
   The `readObject()` function is responsible for parsing the next JSON object key from a JsonIterator stream. It processes different token cases to ensure correct JSON syntax, **handling null values**, **extracting field names**, and **verifying that keys** are **followed by a colon** `(:)`. If an **empty object** `{}` is encountered, it returns `null`. The function also detects unexpected tokens and **throws an error** if the input does not conform to valid JSON formatting. 
 
-4. Are exceptions taken into account in the given measurements?
-5. Is the documentation clear w.r.t. all the possible outcomes?
+- [`readObjectCB((JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment) throws IOException )`](./src/main/java/com/jsoniter/IterImplObject.java)
+    
+    The `readObjectCB` method is similar to `readObject`, but it introduces the use of a callback (cb) to handle the parsed fields.
+
+1. Are exceptions taken into account in the given measurements?
+2. Is the documentation clear w.r.t. all the possible outcomes?
 
 ## Refactoring
 
@@ -172,7 +176,7 @@ The table below shows the original CC counted by JaCoCo and new CC after refacto
 | Functions       | Refactored by | Old CC | New CC | Reduced by |
 |-----------------|---------------|--------|--------|------------|
 | readObject()    | Xu Zuo        | 9      | 5      | 44.4%      |
-| readObjectCB()  |               |        |        |            |
+| readObjectCB()  | Wen Biming    | 10     | 3       |  70%         |
 | findStringEnd() |               |        |        |            |
 | skipString()    |               |        |        |            |
 
@@ -183,6 +187,8 @@ For `readObject()` function, **Xu Zuo** refactored it and reduced the complexity
 Also, we used the same unit test cases (both the original project and new test cases we added) to test whether the refactored code worked, and the 
 refactored code worked well and passed all test cases. The original `readObject()` CC is `9`, and the refactored `readObject()` 
 by **Xu Zuo** is `5`, since we can't avoid the `switch` clause, we could only reduce it by 4, while this also meets the requirement.
+
+For `readObjectCB` function, **Wen Biming** refactored it and reduced the complexity by **70%**, which can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/056f79a31ca6b025fe412cf70b826ee55ffcccfd)
 
 ## Coverage
 
@@ -333,7 +339,7 @@ The table below is the comparison of `old coverage` and `new coverage`:
 | Function        | old coverage | new coverage |
 |-----------------|--------------|--------------|
 | readObject()    | 61%          | 92%          |
-| readObjectCB()  | 55%          |              |
+| readObjectCB()  | 55%          | 77%             |
 | findStringEnd() | 31%          |              |
 | skipString()    | 0%           |              |
 
@@ -345,6 +351,8 @@ Number of test cases added: two per team member (P) or at least four (P+).
 For `readObject()` function, **Xu Zuo** added four unit test cases and improved the branch coverage, from 61% to 92%, which 
 can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/64ab32ebaeccc1d79ed3ac0ad5552b297d32173d). We track the changes 
 by using `issue` in our repo, and it relates to this issue [#12](https://github.com/floralsea/dd2480-lab3/issues/12).
+
+For `readObjectCB` function, **Wen Biming** added 4 unit test cases and improved the branch coverage, from 61% to 77%, which can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/d0c52ef1951f5d8d9cf63d6dfd35159c8452a31b)
 
 ## Self-assessment: Way of working
 
