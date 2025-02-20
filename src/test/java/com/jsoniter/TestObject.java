@@ -468,4 +468,74 @@ public class TestObject extends TestCase {
         // Assert the result
         assertTrue(result);
     }
+
+
+    // Tests for refactored readObjectCB() method
+
+    @Test
+    public void testrefactoredReadObjectCB_validJson() throws Exception {
+        String json = "{\"field1\":1, \"field2\":2, \"field3\":3}";
+        JsonIterator iter = JsonIterator.parse(json);
+
+        // Create a callback to handle the fields
+        JsonIterator.ReadObjectCallback cb = (jsonIter, field, attachment) -> {
+            switch (field) {
+                case "field1":
+                    assertEquals(1, jsonIter.readInt());
+                    break;
+                case "field2":
+                    assertEquals(2, jsonIter.readInt());
+                    break;
+                case "field3":
+                    assertEquals(3, jsonIter.readInt());
+                    break;
+                default:
+                    fail("Unexpected field: " + field);
+            }
+            return true; // Return true to continue processing
+        };
+
+        // Call the method and assert the result
+        boolean result = IterImplObject.readObjectCB(iter, cb, null);
+        assertTrue(result);
+    }
+
+    // Test for empty JSON object
+    @Test
+    public void testrefactoredReadObjectCB_emptyObject() throws Exception {
+        String json = "{}";
+        JsonIterator iter = JsonIterator.parse(json);
+
+        // Create a mock callback
+        JsonIterator.ReadObjectCallback cb = Mockito.mock(JsonIterator.ReadObjectCallback.class);
+
+        // Call the method and expect it to return true for an empty object
+        boolean result = IterImplObject.readObjectCB(iter, cb, null);
+
+        // Assert the result and verify the callback is not invoked (since it's an empty object)
+        assertTrue(result);
+        Mockito.verify(cb, Mockito.never()).handle(Mockito.any(), Mockito.any(), Mockito.any());
+    }
+
+    // Test for JSON object with a null value
+    @Test
+    public void testrefactoredReadObjectCB_nullValue() throws Exception {
+        String json = "{\"field1\":null}";
+        JsonIterator iter = JsonIterator.parse(json);
+
+        // Create a callback
+        JsonIterator.ReadObjectCallback cb = (jsonIter, field, attachment) -> {
+            if ("field1".equals(field)) {
+                assertNull(jsonIter.read()); // Read the null value
+            }
+            return true;
+        };
+
+        // Call the method and expect it to handle the field correctly
+        boolean result = IterImplObject.readObjectCB(iter, cb, null);
+
+        // Assert the result
+        assertTrue(result);
+    }
+
 }

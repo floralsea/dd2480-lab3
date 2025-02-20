@@ -76,4 +76,66 @@ class IterImplObject {
         System.out.println("readObjectCB error expect { or n}");
         throw iter.reportError("readObjectCB", "expect { or n");
     }
+
+    /**
+     * refactor version
+     * @param iter JsonIterator
+     * @param cb ReadObjectCallback Function
+     * @param attachment an Object
+     * @return boolean
+     * @throws IOException
+     */
+    public static final boolean refactoredreadObjectCB(JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment) throws IOException {
+        byte c = IterImpl.nextToken(iter);
+
+        if (c == '{') {
+            return handleObject(iter, cb, attachment);
+        } else if (c == 'n') {
+            IterImpl.skipFixedBytes(iter, 3);
+            return true;
+        } else {
+            System.out.println("readObjectCB error, expect { or n");
+            throw iter.reportError("readObjectCB", "expect { or n");
+        }
+    }
+
+    private static boolean handleObject(JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment) throws IOException {
+        byte c = IterImpl.nextToken(iter);
+
+        if (c == '"') {
+            return handleFields(iter, cb, attachment);
+        } else if (c == '}') {
+            return true; // End of object
+        } else {
+            System.out.println("readObjectCB error, expect \" after {");
+            throw iter.reportError("readObjectCB", "expect \" after {");
+        }
+    }
+
+    private static boolean handleFields(JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment) throws IOException {
+        String field = iter.readString();
+        if (IterImpl.nextToken(iter) != ':') {
+            System.out.println("Invalid field: " + field + " expect: ':'");
+            throw iter.reportError("readObject", "expect :");
+        }
+
+        if (!cb.handle(iter, field, attachment)) {
+            return false;
+        }
+
+        // Handle additional fields separated by commas
+        while (IterImpl.nextToken(iter) == ',') {
+            field = iter.readString();
+            if (IterImpl.nextToken(iter) != ':') {
+                System.out.println("Invalid field: " + field + " expect: ':'");
+                throw iter.reportError("readObject", "expect :");
+            }
+
+            if (!cb.handle(iter, field, attachment)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
