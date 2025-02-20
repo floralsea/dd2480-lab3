@@ -86,4 +86,50 @@ class IterImplSkip {
         }
         return -1;
     }
+
+/**
+ * Refactored version of findStringEnd() function
+ * Separate logic for determining even or odd number of backslashes behiiind a quote into separate function
+ * 
+ * @param iter JsonIterator object
+ * @return int position of the end of the string or -1 if no valid end found
+ */
+    final static int refactoredfindStringEnd(JsonIterator iter) {
+        boolean escaped = false;
+    
+        for (int i = iter.head; i < iter.tail; i++) {
+            byte c = iter.buf[i];
+    
+            if (c == '"') {
+                if (!escaped) {
+                    return i + 1; // Unescaped quote means string end
+                }
+                if (isEvenBackslashes(iter, i)) {
+                    return i + 1; // Even backslashes qote not escaped, so string ends
+                }
+            } else if (c == '\\') {
+                escaped = true;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Determine if the quote is escaped or not
+     * 
+     * @param iter JsonIterator object
+     * @param position int position of the quote
+     * @return boolean true if quote is not escaped, false otherwise
+     */
+    private static boolean isEvenBackslashes(JsonIterator iter, int position) {
+        int backslashCount = 0;
+        for (int j = position - 1; j >= iter.head; j--) {
+            if (iter.buf[j] == '\\') {
+                backslashCount++;
+            } else {
+                break;
+            }
+        }
+        return backslashCount % 2 == 0; // even count means quote is not escaped
+    }
 }
