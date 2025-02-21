@@ -74,10 +74,10 @@ Since there are only four active members in our group, we chose four functions, 
 
 | Function                                      | Location                                             | CCN, lizard | NLOC, lizard  | CCN, manual (Student 1) | CCN, manual (Student 2) |
 | --------------------------------------------- | ---------------------------------------------------- | ----------- | ------------- | ----------------------- | ----------------------- |
-| readObject(JsonIterator iter)                 | src/main/java/com/jsoniter/IterImplObject.java       | 9           | 32            |    9                   |                         |
-| readObjectCB(JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment)                   | src/main/java/com/jsoniter/IterImplObject.java | 10          | 35                      |     10               |            |
-| findStringEnd(JsonIterator iter)              | src/main/java/com/jsoniter/IterImplSkip.java         | 10          | 26                      |         10              |            |
-| skipString(JsonIterator iter)                              | src/main/java/com/jsoniter/IterImplForStreaming.java                                  | 9          | 27                      |      9              |            |
+| readObject(JsonIterator iter)                 | src/main/java/com/jsoniter/IterImplObject.java       | 9           | 32            |    9                   |          9               |
+| readObjectCB(JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment)                   | src/main/java/com/jsoniter/IterImplObject.java | 10          | 35                      |     10               |    10        |
+| findStringEnd(JsonIterator iter)              | src/main/java/com/jsoniter/IterImplSkip.java         | 10          | 26                      |         10              |  10          |
+| skipString(JsonIterator iter)                              | src/main/java/com/jsoniter/IterImplForStreaming.java                                  | 9          | 27                      |      9              |  9          |
 
 
    * Did all methods (tools vs. manual count) get the same result?
@@ -103,6 +103,9 @@ Since there are only four active members in our group, we chose four functions, 
 - [`final static int findStringEnd(JsonIterator iter)`](./src/main/java/com/jsoniter/iterImplSkip.java)
 
     The `findStringEnd` method returns is used in parsing to find the position in the iterator where the next string ends. It is mostly used in the code in for skipping/jumping over a newly encountered string in the iterator.
+
+- [`skipString(JsonIterator iter)`](./src/main/java/com/jsoniter/IterImplForStreaming.java)
+    The `skipString()` method skips over a string in the iterator. It handles escape sequences and processes the string, even if it's loaded incrementally from a stream.
 
 4. Are exceptions taken into account in the given measurements?
 
@@ -381,13 +384,11 @@ For `skipString()` function, **Gustav Nordström** added four unit tests and imp
 
 ## Self-assessment: Way of working
 
-Current state according to the Essence standard: ...
+Current state according to the Essence standard: Collaborating
 
-Was the self-assessment unanimous? Any doubts about certain items?
+We're currently working as one cohesive unit, and are still improving. We've improved our communication since the start of the course, and we're collaborating well to reach our common goals.
 
-How have you improved so far?
-
-Where is potential for improvement?
+There are no real doubts about our potential areas for improvement. We acknowledge that there are opportunities to enhance or communication and further improve effectiveness. By focusing on more efficient collaboration and addressing minor inefficiencies, we can optimize our performance even further.
 
 ## Overall experience
 
