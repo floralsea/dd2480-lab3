@@ -351,7 +351,7 @@ The table below is the comparison of `old coverage` and `new coverage`:
 | readObject()    | 61%          | 92%          |
 | readObjectCB()  | 55%          | 77%          |
 | findStringEnd() | 31%          | 93%          |
-| skipString()    | 0%           |              |
+| skipString()    | 0%           | 83%          |
 
 
 Test cases added: see the following or click the `links` in the following paragraphs for more new test cases details 
@@ -365,6 +365,8 @@ by using `issue` in our repo, and it relates to this issue [#12](https://github.
 For `readObjectCB` function, **Wen Biming** added 4 unit test cases and improved the branch coverage, from 61% to 77%, which can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/d0c52ef1951f5d8d9cf63d6dfd35159c8452a31b)
 
 for `findStringEnd()`, four new test cases were added that that specifically targeted uncovered branches. The low coverage before is likely explained by this function only being indirectly tested by other tests. Therefore the new tests directly tested this function which improved coverage greatly. The tests can be seen in this [commit](https://github.com/floralsea/dd2480-lab3/commit/fcc600c096190b22714f91092a0b903403fd435f) or using ```git diff 67ed156 18c987f```. 
+
+For `skipString()` function, **Gustav Nordström** added four unit tests and improved branch coverage, from 0% to 83%. The changes can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/16823829fbd3fbd7fab49f7a9091837a670aaafa), and it relates to issue [#15](https://github.com/floralsea/dd2480-lab3/issues/15).
 
 ## Self-assessment: Way of working
 
