@@ -74,14 +74,18 @@ Since there are only four active members in our group, we chose four functions, 
 
 | Function                                      | Location                                             | CCN, lizard | NLOC, lizard  | CCN, manual (Student 1) | CCN, manual (Student 2) |
 | --------------------------------------------- | ---------------------------------------------------- | ----------- | ------------- | ----------------------- | ----------------------- |
-| readObject(JsonIterator iter)                 | src/main/java/com/jsoniter/IterImplObject.java       | 9           | 32            |                         |                         |
-| readObjectCB(JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment)                   | src/main/java/com/jsoniter/IterImplObject.java | 10          | 35                      |                       |            |
-| findStringEnd(JsonIterator iter)              | src/main/java/com/jsoniter/IterImplSkip.java         | 10          | 26                      |                         |            |
-| skipString(JsonIterator iter)                              | src/main/java/com/jsoniter/IterImplForStreaming.java                                  | 9          | 27                      |                       |            |
+| readObject(JsonIterator iter)                 | src/main/java/com/jsoniter/IterImplObject.java       | 9           | 32            |    9                   |                         |
+| readObjectCB(JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment)                   | src/main/java/com/jsoniter/IterImplObject.java | 10          | 35                      |     10               |            |
+| findStringEnd(JsonIterator iter)              | src/main/java/com/jsoniter/IterImplSkip.java         | 10          | 26                      |         10              |            |
+| skipString(JsonIterator iter)                              | src/main/java/com/jsoniter/IterImplForStreaming.java                                  | 9          | 27                      |      9              |            |
 
 
    * Did all methods (tools vs. manual count) get the same result?
+    Since there are different ways to count cyclomatic complexity, there can be slight discrepancies in counting. If counting by the common and simple way of ```#decisionPoints - 1```, you get the same as the count from Lizard. However, if you take into account early returns in the function, and use a formula such as ```#decisionPoints - #exitPoints + 2```, the CC will be smaller and this could potentially reflect reality better. There are also instances of code using infinite for loops (```for(; ; )```), which could be argued wheither or not they add compexity. The same for a default case in a switch statement. 
+
    * Are the results clear?
+    The CC results are generally clear given that the functions are quite long and complex. There could be an argument made about which method of counting is better in this case, and also how to handle the questions like infinite for loops or default cases.
+
 2. Are the functions just complex, or also long?
 
     The functions we selected, such as `readObject()` and `readObjectCB()`, exhibit high cyclomatic complexity due to multiple branching conditions (e.g., `switch-case`, `if-else` structures) rather than excessive length. While they are not particularly long in terms of lines of code, their complexity arises from multiple possible execution paths, error handling, and nested conditions. Other functions like `findStringEnd()` and `skipString()` also demonstrate high complexity due to loops and conditional checks, but they are relatively short in size.
@@ -90,19 +94,24 @@ Since there are only four active members in our group, we chose four functions, 
 
 - [`readObject(JsonIterator iter)`](./src/main/java/com/jsoniter/IterImplObject.java)
 
-  The `readObject()` function is responsible for parsing the next JSON object key from a JsonIterator stream. It processes different token cases to ensure correct JSON syntax, **handling null values**, **extracting field names**, and **verifying that keys** are **followed by a colon** `(:)`. If an **empty object** `{}` is encountered, it returns `null`. The function also detects unexpected tokens and **throws an error** if the input does not conform to valid JSON formatting. 
+    The `readObject()` function is responsible for parsing the next JSON object key from a JsonIterator stream. It processes different token cases to ensure correct JSON syntax, **handling null values**, **extracting field names**, and **verifying that keys** are **followed by a colon** `(:)`. If an **empty object** `{}` is encountered, it returns `null`. The function also detects unexpected tokens and **throws an error** if the input does not conform to valid JSON formatting. 
 
 - [`readObjectCB((JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment) throws IOException )`](./src/main/java/com/jsoniter/IterImplObject.java)
     
     The `readObjectCB` method is similar to `readObject`, but it introduces the use of a callback (cb) to handle the parsed fields.
 
-3. Are exceptions taken into account in the given measurements?
+- [`final static int findStringEnd(JsonIterator iter)`](./src/main/java/com/jsoniter/iterImplSkip.java)
+
+    The `findStringEnd` method returns is used in parsing to find the position in the iterator where the next string ends. It is mostly used in the code in for skipping/jumping over a newly encountered string in the iterator.
+
+4. Are exceptions taken into account in the given measurements?
 
     We think JaCoCo does not seem to fully account for `exception-throwing branches` in its branch coverage measurement. Even though exceptions are explicitly thrown in different branches, it appears that JaCoCo treats them differently than regular conditionals (if or switch-case). This is consistent with our later observation where our test cases successfully executed exception paths (verified via debugging), yet JaCoCo still marked them as missed branches. Thus, when using JaCoCo, exception handling paths might need to be manually verified to ensure they are covered, as the tool may not always reflect this in its reports.
    
-4. Is the documentation clear w.r.t. all the possible outcomes?
+6. Is the documentation clear w.r.t. all the possible outcomes?
 
    The documentation of the original functions provides some indication of expected outcomes. However, it does not explicitly detail all possible paths, including edge cases where certain JSON structures could trigger unexpected errors. Additionally, while some assumptions about input structure are implicit in the code, a more explicit explanation of expected inputs, error scenarios, and return values would improve clarity.
+
 
 ## Refactoring
 
