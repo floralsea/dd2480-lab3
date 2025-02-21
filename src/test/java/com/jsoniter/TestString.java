@@ -168,4 +168,47 @@ public class TestString extends TestCase {
         assertEquals(iter.tail, IterImplSkip.findStringEnd(iter));  // return the position after the second unescaped quote
     }
 
+
+    // test also the refactoredfindStringEnd() in IterImplSkip.java
+
+    // req: handle strings without a closing quote
+    public void testrefactoredFindStringEnd_UnterminatedString() {
+        JsonIterator iter = new JsonIterator();
+        iter.buf = "unfinished\\".getBytes(); // No closing quote
+        iter.head = 0;
+        iter.tail = iter.buf.length;
+        
+        assertEquals(-1, IterImplSkip.refactoredfindStringEnd(iter));
+    }
+
+    // detects an unescaped quote after even slashes
+    public void testrefactoredFindStringEnd_EvenBackslashes() {
+        JsonIterator iter = new JsonIterator();
+        iter.buf = "test\\\\\"".getBytes(); // ' test\\" ' with an even number of backslashes
+        iter.head = 0;
+        iter.tail = iter.buf.length;
+    
+        assertEquals(iter.tail, IterImplSkip.refactoredfindStringEnd(iter));
+    }
+
+    // treat quotes after odd slashes as escaped
+    public void testrefactoredFindStringEnd_OddBackslashesBeforeQuote() {
+        JsonIterator iter = new JsonIterator();
+        iter.buf = "test\\\"moretext".getBytes(); // ' test\" ' with odd number of backslashes before the quote (\")
+        iter.head = 0;
+        iter.tail = iter.buf.length;
+      
+        assertEquals(-1, IterImplSkip.refactoredfindStringEnd(iter));
+    }
+    
+    // handle escaped quotes at start of string
+    public void testrefactoredFindStringEnd_BackslashAtStart() {
+        JsonIterator iter = new JsonIterator();
+        iter.buf = "\\\"escaped\"".getBytes(); // start with an escaped quote
+        iter.head = 0;
+        iter.tail = iter.buf.length;
+    
+        assertEquals(iter.tail, IterImplSkip.refactoredfindStringEnd(iter));  // return the position after the second unescaped quote
+    }
+
 }
