@@ -84,8 +84,17 @@ Since there are only four active members in our group, we chose four functions, 
    * Are the results clear?
 2. Are the functions just complex, or also long?
 3. What is the purpose of the functions?
-4. Are exceptions taken into account in the given measurements?
-5. Is the documentation clear w.r.t. all the possible outcomes?
+
+- [`readObject(JsonIterator iter)`](./src/main/java/com/jsoniter/IterImplObject.java)
+
+  The `readObject()` function is responsible for parsing the next JSON object key from a JsonIterator stream. It processes different token cases to ensure correct JSON syntax, **handling null values**, **extracting field names**, and **verifying that keys** are **followed by a colon** `(:)`. If an **empty object** `{}` is encountered, it returns `null`. The function also detects unexpected tokens and **throws an error** if the input does not conform to valid JSON formatting. 
+
+- [`readObjectCB((JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment) throws IOException )`](./src/main/java/com/jsoniter/IterImplObject.java)
+    
+    The `readObjectCB` method is similar to `readObject`, but it introduces the use of a callback (cb) to handle the parsed fields.
+
+1. Are exceptions taken into account in the given measurements?
+2. Is the documentation clear w.r.t. all the possible outcomes?
 
 ## Refactoring
 
@@ -167,8 +176,8 @@ The table below shows the original CC counted by JaCoCo and new CC after refacto
 | Functions       | Refactored by | Old CC | New CC | Reduced by |
 |-----------------|---------------|--------|--------|------------|
 | readObject()    | Xu Zuo        | 9      | 5      | 44.4%      |
-| readObjectCB()  |               |        |        |            |
-| findStringEnd() |               |        |        |            |
+| readObjectCB()  | Wen Biming    | 10     | 3      |  70%       |
+| findStringEnd() | Gustav Wallin | 10     | 6      | 40%        |
 | skipString()    |               |        |        |            |
 
 For more implementation details about each function refactoring, please click the link in the following paragraph.
@@ -178,6 +187,10 @@ For `readObject()` function, **Xu Zuo** refactored it and reduced the complexity
 Also, we used the same unit test cases (both the original project and new test cases we added) to test whether the refactored code worked, and the 
 refactored code worked well and passed all test cases. The original `readObject()` CC is `9`, and the refactored `readObject()` 
 by **Xu Zuo** is `5`, since we can't avoid the `switch` clause, we could only reduce it by 4, while this also meets the requirement.
+
+For `readObjectCB` function, **Wen Biming** refactored it and reduced the complexity by **70%**, which can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/056f79a31ca6b025fe412cf70b826ee55ffcccfd)
+
+For `findStringEnd()`, **Gustav Wallin** refactored it and reduced complexity by **40%** found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/7ad1ed8a170fcad35a3d660f1e4b8171558a8c43) or by ```git diff 7ad1ed8 67ed156```. The refactored function was also unit tested. The original function's CC is `10`, and the refactored function has CC `6`, as measured by Lizard. The function could be further refactored, but given that its now within a lower and more acceptable CC and the most complex part has been refactored, it was considered sufficient. 
 
 ## Coverage
 
@@ -328,8 +341,8 @@ The table below is the comparison of `old coverage` and `new coverage`:
 | Function        | old coverage | new coverage |
 |-----------------|--------------|--------------|
 | readObject()    | 61%          | 92%          |
-| readObjectCB()  | 55%          |              |
-| findStringEnd() | 31%          |              |
+| readObjectCB()  | 55%          | 77%          |
+| findStringEnd() | 31%          | 93%          |
 | skipString()    | 0%           | 83%          |
 
 
@@ -340,6 +353,10 @@ Number of test cases added: two per team member (P) or at least four (P+).
 For `readObject()` function, **Xu Zuo** added four unit test cases and improved the branch coverage, from 61% to 92%, which 
 can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/64ab32ebaeccc1d79ed3ac0ad5552b297d32173d). We track the changes 
 by using `issue` in our repo, and it relates to this issue [#12](https://github.com/floralsea/dd2480-lab3/issues/12).
+
+For `readObjectCB` function, **Wen Biming** added 4 unit test cases and improved the branch coverage, from 61% to 77%, which can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/d0c52ef1951f5d8d9cf63d6dfd35159c8452a31b)
+
+for `findStringEnd()`, four new test cases were added that that specifically targeted uncovered branches. The low coverage before is likely explained by this function only being indirectly tested by other tests. Therefore the new tests directly tested this function which improved coverage greatly. The tests can be seen in this [commit](https://github.com/floralsea/dd2480-lab3/commit/fcc600c096190b22714f91092a0b903403fd435f) or using ```git diff 67ed156 18c987f```. 
 
 For `skipString()` function, **Gustav Nordström** added four unit tests and improved branch coverage, from 0% to 83%. The changes can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/16823829fbd3fbd7fab49f7a9091837a670aaafa), and it relates to issue [#15](https://github.com/floralsea/dd2480-lab3/issues/15).
 
