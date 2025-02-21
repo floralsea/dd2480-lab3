@@ -74,10 +74,10 @@ Since there are only four active members in our group, we chose four functions, 
 
 | Function                                      | Location                                             | CCN, lizard | NLOC, lizard  | CCN, manual (Student 1) | CCN, manual (Student 2) |
 | --------------------------------------------- | ---------------------------------------------------- | ----------- | ------------- | ----------------------- | ----------------------- |
-| readObject(JsonIterator iter)                 | src/main/java/com/jsoniter/IterImplObject.java       | 9           | 32            |    9                   |                         |
-| readObjectCB(JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment)                   | src/main/java/com/jsoniter/IterImplObject.java | 10          | 35                      |     10               |            |
-| findStringEnd(JsonIterator iter)              | src/main/java/com/jsoniter/IterImplSkip.java         | 10          | 26                      |         10              |            |
-| skipString(JsonIterator iter)                              | src/main/java/com/jsoniter/IterImplForStreaming.java                                  | 9          | 27                      |      9              |            |
+| readObject(JsonIterator iter)                 | src/main/java/com/jsoniter/IterImplObject.java       | 9           | 32            |    9                   |          9               |
+| readObjectCB(JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment)                   | src/main/java/com/jsoniter/IterImplObject.java | 10          | 35                      |     10               |    10        |
+| findStringEnd(JsonIterator iter)              | src/main/java/com/jsoniter/IterImplSkip.java         | 10          | 26                      |         10              |  10          |
+| skipString(JsonIterator iter)                              | src/main/java/com/jsoniter/IterImplForStreaming.java                                  | 9          | 27                      |      9              |  9          |
 
 
    * Did all methods (tools vs. manual count) get the same result?
