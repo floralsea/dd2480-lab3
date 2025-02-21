@@ -157,6 +157,47 @@ class IterImplForStreaming {
         }
     }
 
+    final static void refactoredSkipString(JsonIterator iter) throws IOException {
+        for (; ; ) {
+            int end = IterImplSkip.findStringEnd(iter);
+
+            if(end != -1){
+                iter.head = end;
+                return;
+            }
+
+            if (!handleEscapedBackslashes(iter)) {
+                throw iter.reportError("skipString", "incomplete string");
+            }
+        }
+    }
+
+    private static boolean handleEscapedBackslashes(JsonIterator iter) throws IOException {
+        int j = iter.tail - 1;
+        boolean escaped = isEscaped(iter, j);
+
+        if (!loadMore(iter)) {
+            return false;
+        }
+
+        if (escaped) {
+            iter.head += 1;
+        }
+    
+        return true;
+    }
+
+    private static boolean isEscaped(JsonIterator iter, int j) {
+        int backslashCount = 0;
+
+        while(!(j < iter.head || iter.buf[j] != '\\')){
+            backslashCount++;
+            j--;
+        }
+
+        return backslashCount % 2 != 0;
+    }
+
     final static void skipUntilBreak(JsonIterator iter) throws IOException {
         // true, false, null, number
         for (; ; ) {
