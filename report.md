@@ -74,18 +74,44 @@ Since there are only four active members in our group, we chose four functions, 
 
 | Function                                      | Location                                             | CCN, lizard | NLOC, lizard  | CCN, manual (Student 1) | CCN, manual (Student 2) |
 | --------------------------------------------- | ---------------------------------------------------- | ----------- | ------------- | ----------------------- | ----------------------- |
-| readObject(JsonIterator iter)                 | src/main/java/com/jsoniter/IterImplObject.java       | 9           | 32            |                         |                         |
-| readObjectCB(JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment)                   | src/main/java/com/jsoniter/IterImplObject.java | 10          | 35                      |                       |            |
-| findStringEnd(JsonIterator iter)              | src/main/java/com/jsoniter/IterImplSkip.java         | 10          | 26                      |                         |            |
-| skipString(JsonIterator iter)                              | src/main/java/com/jsoniter/IterImplForStreaming.java                                  | 9          | 27                      |                       |            |
+| readObject(JsonIterator iter)                 | src/main/java/com/jsoniter/IterImplObject.java       | 9           | 32            |    9                   |                         |
+| readObjectCB(JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment)                   | src/main/java/com/jsoniter/IterImplObject.java | 10          | 35                      |     10               |            |
+| findStringEnd(JsonIterator iter)              | src/main/java/com/jsoniter/IterImplSkip.java         | 10          | 26                      |         10              |            |
+| skipString(JsonIterator iter)                              | src/main/java/com/jsoniter/IterImplForStreaming.java                                  | 9          | 27                      |      9              |            |
 
 
    * Did all methods (tools vs. manual count) get the same result?
+    Since there are different ways to count cyclomatic complexity, there can be slight discrepancies in counting. If counting by the common and simple way of ```#decisionPoints - 1```, you get the same as the count from Lizard. However, if you take into account early returns in the function, and use a formula such as ```#decisionPoints - #exitPoints + 2```, the CC will be smaller and this could potentially reflect reality better. There are also instances of code using infinite for loops (```for(; ; )```), which could be argued wheither or not they add compexity. The same for a default case in a switch statement. 
+
    * Are the results clear?
+    The CC results are generally clear given that the functions are quite long and complex. There could be an argument made about which method of counting is better in this case, and also how to handle the questions like infinite for loops or default cases.
+
 2. Are the functions just complex, or also long?
+
+    The functions we selected, such as `readObject()` and `readObjectCB()`, exhibit high cyclomatic complexity due to multiple branching conditions (e.g., `switch-case`, `if-else` structures) rather than excessive length. While they are not particularly long in terms of lines of code, their complexity arises from multiple possible execution paths, error handling, and nested conditions. Other functions like `findStringEnd()` and `skipString()` also demonstrate high complexity due to loops and conditional checks, but they are relatively short in size.
+
 3. What is the purpose of the functions?
+
+- [`readObject(JsonIterator iter)`](./src/main/java/com/jsoniter/IterImplObject.java)
+
+    The `readObject()` function is responsible for parsing the next JSON object key from a JsonIterator stream. It processes different token cases to ensure correct JSON syntax, **handling null values**, **extracting field names**, and **verifying that keys** are **followed by a colon** `(:)`. If an **empty object** `{}` is encountered, it returns `null`. The function also detects unexpected tokens and **throws an error** if the input does not conform to valid JSON formatting. 
+
+- [`readObjectCB((JsonIterator iter, JsonIterator.ReadObjectCallback cb, Object attachment) throws IOException )`](./src/main/java/com/jsoniter/IterImplObject.java)
+    
+    The `readObjectCB` method is similar to `readObject`, but it introduces the use of a callback (cb) to handle the parsed fields.
+
+- [`final static int findStringEnd(JsonIterator iter)`](./src/main/java/com/jsoniter/iterImplSkip.java)
+
+    The `findStringEnd` method returns is used in parsing to find the position in the iterator where the next string ends. It is mostly used in the code in for skipping/jumping over a newly encountered string in the iterator.
+
 4. Are exceptions taken into account in the given measurements?
-5. Is the documentation clear w.r.t. all the possible outcomes?
+
+    We think JaCoCo does not seem to fully account for `exception-throwing branches` in its branch coverage measurement. Even though exceptions are explicitly thrown in different branches, it appears that JaCoCo treats them differently than regular conditionals (if or switch-case). This is consistent with our later observation where our test cases successfully executed exception paths (verified via debugging), yet JaCoCo still marked them as missed branches. Thus, when using JaCoCo, exception handling paths might need to be manually verified to ensure they are covered, as the tool may not always reflect this in its reports.
+   
+6. Is the documentation clear w.r.t. all the possible outcomes?
+
+   The documentation of the original functions provides some indication of expected outcomes. However, it does not explicitly detail all possible paths, including edge cases where certain JSON structures could trigger unexpected errors. Additionally, while some assumptions about input structure are implicit in the code, a more explicit explanation of expected inputs, error scenarios, and return values would improve clarity.
+
 
 ## Refactoring
 
@@ -167,8 +193,8 @@ The table below shows the original CC counted by JaCoCo and new CC after refacto
 | Functions       | Refactored by | Old CC | New CC | Reduced by |
 |-----------------|---------------|--------|--------|------------|
 | readObject()    | Xu Zuo        | 9      | 5      | 44.4%      |
-| readObjectCB()  |               |        |        |            |
-| findStringEnd() |               |        |        |            |
+| readObjectCB()  | Wen Biming    | 10     | 3      |  70%       |
+| findStringEnd() | Gustav Wallin | 10     | 6      | 40%        |
 | skipString()    |Gustav Nordström | 9    | 4      | 55.5%      |
 
 For more implementation details about each function refactoring, please click the link in the following paragraph.
@@ -179,7 +205,11 @@ Also, we used the same unit test cases (both the original project and new test c
 refactored code worked well and passed all test cases. The original `readObject()` CC is `9`, and the refactored `readObject()` 
 by **Xu Zuo** is `5`, since we can't avoid the `switch` clause, we could only reduce it by 4, while this also meets the requirement.
 
-For `skipString()`, **Gustav Nordström** refactored it and reduced the complexity by **55.5%**. It passes the unit tests and the changes can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/64db82459728e99b8143f65dc5e3dddae6fc9714). Two new methods were added, `handleEscapedBackslashes()` and `isEscaped()`. The latter method is where the major improvement lies, replacing two if-statements within a loop with a single loop.
+For `readObjectCB` function, **Wen Biming** refactored it and reduced the complexity by **70%**, which can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/056f79a31ca6b025fe412cf70b826ee55ffcccfd)
+
+For `findStringEnd()`, **Gustav Wallin** refactored it and reduced complexity by **40%** found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/7ad1ed8a170fcad35a3d660f1e4b8171558a8c43) or by ```git diff 7ad1ed8 67ed156```. The refactored function was also unit tested. The original function's CC is `10`, and the refactored function has CC `6`, as measured by Lizard. The function could be further refactored, but given that its now within a lower and more acceptable CC and the most complex part has been refactored, it was considered sufficient. 
+
+For `skipString()`, **Gustav Nordström** refactored it and reduced the complexity by **55.5%**. It passes the unit tests and the changes can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/7be37087f8a196af3c78ebda9c899f11cc43546e). Two new methods were added, `handleEscapedBackslashes()` and `isEscaped()`. The latter method is where the major improvement lies, replacing two if-statements within a loop with a single loop.
 
 ## Coverage
 
@@ -320,18 +350,18 @@ Report of old coverage: find in [`old-coverage branch`](https://github.com/flora
 Report of new coverage: find in [`coverage-improvemrnt branch`](https://github.com/floralsea/dd2480-lab3/tree/coverage-improvement)
 
 You can find `screenshots` in [`old-coverage branch`](https://github.com/floralsea/dd2480-lab3/tree/old-coverage), the location is 
-`src/main/resources`, or click this [link](https://github.com/floralsea/dd2480-lab3/tree/old-coverage/src/main/resources) directly to it. Also, you can 
+[`src/main/resources`](https://github.com/floralsea/dd2480-lab3/tree/coverage-improvement/src/main/resources), or click this [link](https://github.com/floralsea/dd2480-lab3/tree/old-coverage/src/main/resources) directly to it. Also, you can 
 find the `report` by `JaCoCo` under [site/](https://github.com/floralsea/dd2480-lab3/blob/old-coverage/site/jacoco/index.html).
 
-Similarly, we present our improvements in [`coverage-improvemrnt branch`](https://github.com/floralsea/dd2480-lab3/tree/coverage-improvement).
+Similarly, we present our improvements in [`coverage-improvemrnt branch`](https://github.com/floralsea/dd2480-lab3/tree/coverage-improvement), you can directly checkout `main` branch and see `sec/main/resources` for screenshots.
 
 The table below is the comparison of `old coverage` and `new coverage`:
 
 | Function        | old coverage | new coverage |
 |-----------------|--------------|--------------|
 | readObject()    | 61%          | 92%          |
-| readObjectCB()  | 55%          |              |
-| findStringEnd() | 31%          |              |
+| readObjectCB()  | 55%          | 77%          |
+| findStringEnd() | 31%          | 93%          |
 | skipString()    | 0%           | 83%          |
 
 
@@ -342,6 +372,10 @@ Number of test cases added: two per team member (P) or at least four (P+).
 For `readObject()` function, **Xu Zuo** added four unit test cases and improved the branch coverage, from 61% to 92%, which 
 can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/64ab32ebaeccc1d79ed3ac0ad5552b297d32173d). We track the changes 
 by using `issue` in our repo, and it relates to this issue [#12](https://github.com/floralsea/dd2480-lab3/issues/12).
+
+For `readObjectCB` function, **Wen Biming** added 4 unit test cases and improved the branch coverage, from 61% to 77%, which can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/d0c52ef1951f5d8d9cf63d6dfd35159c8452a31b)
+
+for `findStringEnd()`, four new test cases were added that that specifically targeted uncovered branches. The low coverage before is likely explained by this function only being indirectly tested by other tests. Therefore the new tests directly tested this function which improved coverage greatly. The tests can be seen in this [commit](https://github.com/floralsea/dd2480-lab3/commit/fcc600c096190b22714f91092a0b903403fd435f) or using ```git diff 67ed156 18c987f```. 
 
 For `skipString()` function, **Gustav Nordström** added four unit tests and improved branch coverage, from 0% to 83%. The changes can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/16823829fbd3fbd7fab49f7a9091837a670aaafa), and it relates to issue [#15](https://github.com/floralsea/dd2480-lab3/issues/15).
 

@@ -14,6 +14,9 @@ public class ExperimentFunctionsTest {
         coverageTool.addTest("readObject", this::testReadObject_ValidJson, 11);
         coverageTool.addTest("readObject", this::testReadObject_Null, 11);
         coverageTool.addTest("readObjectCB", this::testReadObjectCB_EmptyObject, 8);
+        coverageTool.addTest("findStringEnd", this::testFindStringEnd_NormalString, 8);
+        coverageTool.addTest("findStringEnd", this::testFindStringEnd_EvenBackslashes, 8);
+        coverageTool.addTest("findStringEnd", this::testFindStringEnd_UnterminatedString, 8);
     }
 
     // Test example from Xu Zuo
@@ -44,6 +47,37 @@ public class ExperimentFunctionsTest {
             boolean result = ExperimentFunctions.readObjectCB(iter, (i, field, att) -> true, null);
             assertTrue(result);
         });
+    }
+
+    // Test examples for findStringEnd() function
+    @Test
+    public void testFindStringEnd_NormalString() {
+        JsonIterator iter = new JsonIterator();
+        iter.buf = "test\"".getBytes(); // ' test" '
+        iter.head = 0;
+        iter.tail = iter.buf.length;
+    
+        assertEquals(iter.tail, ExperimentFunctions.findStringEnd(iter));
+    }
+
+    @Test
+    public void testFindStringEnd_EvenBackslashes() {
+        JsonIterator iter = new JsonIterator();
+        iter.buf = "test\\\\\"".getBytes(); // ' test\\" ' with an even number of backslashes
+        iter.head = 0;
+        iter.tail = iter.buf.length;
+    
+        assertEquals(iter.tail, ExperimentFunctions.findStringEnd(iter));
+    }
+
+    @Test
+    public void testFindStringEnd_UnterminatedString() {
+        JsonIterator iter = new JsonIterator();
+        iter.buf = "unfinished\\".getBytes(); // No closing quote
+        iter.head = 0;
+        iter.tail = iter.buf.length;
+        
+        assertEquals(-1, ExperimentFunctions.findStringEnd(iter));
     }
 
     @AfterAll
