@@ -104,6 +104,9 @@ Since there are only four active members in our group, we chose four functions, 
 
     The `findStringEnd` method returns is used in parsing to find the position in the iterator where the next string ends. It is mostly used in the code in for skipping/jumping over a newly encountered string in the iterator.
 
+- [`skipString(JsonIterator iter)`](./src/main/java/com/jsoniter/IterImplForStreaming.java)
+    The `skipString()` method skips over a string in the iterator. It handles escape sequences and processes the string, even if it's loaded incrementally from a stream.
+
 4. Are exceptions taken into account in the given measurements?
 
     We think JaCoCo does not seem to fully account for `exception-throwing branches` in its branch coverage measurement. Even though exceptions are explicitly thrown in different branches, it appears that JaCoCo treats them differently than regular conditionals (if or switch-case). This is consistent with our later observation where our test cases successfully executed exception paths (verified via debugging), yet JaCoCo still marked them as missed branches. Thus, when using JaCoCo, exception handling paths might need to be manually verified to ensure they are covered, as the tool may not always reflect this in its reports.
