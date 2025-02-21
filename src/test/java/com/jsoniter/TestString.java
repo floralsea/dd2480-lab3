@@ -168,7 +168,6 @@ public class TestString extends TestCase {
         assertEquals(iter.tail, IterImplSkip.findStringEnd(iter));  // return the position after the second unescaped quote
     }
 
-    
 
     // test also the refactoredfindStringEnd() in IterImplSkip.java
 
@@ -211,6 +210,5 @@ public class TestString extends TestCase {
     
         assertEquals(iter.tail, IterImplSkip.refactoredfindStringEnd(iter));  // return the position after the second unescaped quote
     }
-
 
 }
