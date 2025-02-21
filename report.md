@@ -382,13 +382,11 @@ For `skipString()` function, **Gustav Nordström** added four unit tests and imp
 
 ## Self-assessment: Way of working
 
-Current state according to the Essence standard: ...
+Current state according to the Essence standard: Collaborating
 
-Was the self-assessment unanimous? Any doubts about certain items?
+We're currently working as one cohesive unit, and are still improving. We've improved our communication since the start of the course, and we're collaborating well to reach our common goals.
 
-How have you improved so far?
-
-Where is potential for improvement?
+There are no real doubts about our potential areas for improvement. We acknowledge that there are opportunities to enhance or communication and further improve effectiveness. By focusing on more efficient collaboration and addressing minor inefficiencies, we can optimize our performance even further.
 
 ## Overall experience
 
