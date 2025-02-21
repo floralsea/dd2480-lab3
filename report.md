@@ -169,7 +169,7 @@ The table below shows the original CC counted by JaCoCo and new CC after refacto
 | readObject()    | Xu Zuo        | 9      | 5      | 44.4%      |
 | readObjectCB()  |               |        |        |            |
 | findStringEnd() |               |        |        |            |
-| skipString()    |               |        |        |            |
+| skipString()    |Gustav Nordström | 9    | 4      | 55.5%      |
 
 For more implementation details about each function refactoring, please click the link in the following paragraph.
 
@@ -178,6 +178,8 @@ For `readObject()` function, **Xu Zuo** refactored it and reduced the complexity
 Also, we used the same unit test cases (both the original project and new test cases we added) to test whether the refactored code worked, and the 
 refactored code worked well and passed all test cases. The original `readObject()` CC is `9`, and the refactored `readObject()` 
 by **Xu Zuo** is `5`, since we can't avoid the `switch` clause, we could only reduce it by 4, while this also meets the requirement.
+
+For `skipString()`, **Gustav Nordström** refactored it and reduced the complexity by **55.5%**. It passes the unit tests and the changes can be found in this [commit](https://github.com/floralsea/dd2480-lab3/commit/64db82459728e99b8143f65dc5e3dddae6fc9714). Two new methods were added, `handleEscapedBackslashes()` and `isEscaped()`. The latter method is where the major improvement lies, replacing two if-statements within a loop with a single loop.
 
 ## Coverage
 
