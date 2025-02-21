@@ -83,6 +83,9 @@ Since there are only four active members in our group, we chose four functions, 
    * Did all methods (tools vs. manual count) get the same result?
    * Are the results clear?
 2. Are the functions just complex, or also long?
+
+    The functions we selected, such as `readObject()` and `readObjectCB()`, exhibit high cyclomatic complexity due to multiple branching conditions (e.g., `switch-case`, `if-else` structures) rather than excessive length. While they are not particularly long in terms of lines of code, their complexity arises from multiple possible execution paths, error handling, and nested conditions. Other functions like `findStringEnd()` and `skipString()` also demonstrate high complexity due to loops and conditional checks, but they are relatively short in size.
+
 3. What is the purpose of the functions?
 
 - [`readObject(JsonIterator iter)`](./src/main/java/com/jsoniter/IterImplObject.java)
@@ -93,8 +96,13 @@ Since there are only four active members in our group, we chose four functions, 
     
     The `readObjectCB` method is similar to `readObject`, but it introduces the use of a callback (cb) to handle the parsed fields.
 
-1. Are exceptions taken into account in the given measurements?
-2. Is the documentation clear w.r.t. all the possible outcomes?
+3. Are exceptions taken into account in the given measurements?
+
+    We think JaCoCo does not seem to fully account for `exception-throwing branches` in its branch coverage measurement. Even though exceptions are explicitly thrown in different branches, it appears that JaCoCo treats them differently than regular conditionals (if or switch-case). This is consistent with our later observation where our test cases successfully executed exception paths (verified via debugging), yet JaCoCo still marked them as missed branches. Thus, when using JaCoCo, exception handling paths might need to be manually verified to ensure they are covered, as the tool may not always reflect this in its reports.
+   
+4. Is the documentation clear w.r.t. all the possible outcomes?
+
+   The documentation of the original functions provides some indication of expected outcomes. However, it does not explicitly detail all possible paths, including edge cases where certain JSON structures could trigger unexpected errors. Additionally, while some assumptions about input structure are implicit in the code, a more explicit explanation of expected inputs, error scenarios, and return values would improve clarity.
 
 ## Refactoring
 
