@@ -339,10 +339,10 @@ Report of old coverage: find in [`old-coverage branch`](https://github.com/flora
 Report of new coverage: find in [`coverage-improvemrnt branch`](https://github.com/floralsea/dd2480-lab3/tree/coverage-improvement)
 
 You can find `screenshots` in [`old-coverage branch`](https://github.com/floralsea/dd2480-lab3/tree/old-coverage), the location is 
-`src/main/resources`, or click this [link](https://github.com/floralsea/dd2480-lab3/tree/old-coverage/src/main/resources) directly to it. Also, you can 
+[`src/main/resources`](https://github.com/floralsea/dd2480-lab3/tree/coverage-improvement/src/main/resources), or click this [link](https://github.com/floralsea/dd2480-lab3/tree/old-coverage/src/main/resources) directly to it. Also, you can 
 find the `report` by `JaCoCo` under [site/](https://github.com/floralsea/dd2480-lab3/blob/old-coverage/site/jacoco/index.html).
 
-Similarly, we present our improvements in [`coverage-improvemrnt branch`](https://github.com/floralsea/dd2480-lab3/tree/coverage-improvement).
+Similarly, we present our improvements in [`coverage-improvemrnt branch`](https://github.com/floralsea/dd2480-lab3/tree/coverage-improvement), you can directly checkout `main` branch and see `sec/main/resources` for screenshots.
 
 The table below is the comparison of `old coverage` and `new coverage`:
 
